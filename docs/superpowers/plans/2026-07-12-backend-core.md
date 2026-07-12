@@ -1948,8 +1948,12 @@ export class JwtTokenService implements TokenService {
   }
 
   verifyAccessToken(token: string): { userId: string } {
-    const payload = jwt.verify(token, this.secret);
-    return payload as { userId: string };
+    // jwt.verify's return value includes standard claims (iat, exp) beyond
+    // the { userId } payload we signed — extract only userId so the return
+    // value actually matches the declared type instead of just casting the
+    // full decoded object (which would carry the extra claims silently).
+    const payload = jwt.verify(token, this.secret) as { userId: string; [key: string]: unknown };
+    return { userId: payload.userId };
   }
 }
 ```
