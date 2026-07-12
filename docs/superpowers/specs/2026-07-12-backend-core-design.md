@@ -187,7 +187,7 @@ successRate = min(baseSuccessRate + breakthroughFails * pityIncrement, maxSucces
 - `409` khi register với `username` đã tồn tại, hoặc khi `409 CONCURRENT_MODIFICATION` xảy ra trong breakthrough.
 - `400` khi thử đột phá mà chưa đủ linh khí, hoặc đang trong thời gian bị phạt (response kèm `punishedUntil` để client hiển thị đếm ngược).
 - `400` khi thử đột phá lúc đã ở cảnh giới tối đa.
-- Format lỗi thống nhất: `{ "error": { "code": "...", "message": "..." } }`, ném ra dưới dạng `AppError(status, code, message)` và render bởi một middleware xử lý lỗi duy nhất.
+- Format lỗi thống nhất: `{ "error": { "code": "...", "message": "..." } }`. Ném ra dưới dạng `DomainError(code, message)` — không mang HTTP status, vì status là khái niệm HTTP/presentation, giữ đúng quy tắc Clean Architecture ở mục 3.1 rằng `domain/`/`application/` không phụ thuộc khái niệm tầng ngoài. `presentation/middleware/errorHandler.ts` là nơi duy nhất map `code` → HTTP status và render JSON theo format trên.
 
 ## 9. Testing
 
