@@ -30,3 +30,5 @@ Task 3: added realm/sub-stage config (`src/infrastructure/config/realms.ts`) —
 Task 4: added lazy linh khí accumulation formula (`src/domain/cultivation/cultivation.calc.ts`), pure and framework-free per the Clean Architecture `domain/` rule.
 
 Task 5: added breakthrough pity formula and stage-transition logic (`src/domain/breakthrough/breakthrough.calc.ts`), pure and framework-free.
+
+Task 6: added domain entities (`User`, `Character`), `DomainError`, and ports (`UserRepository`, `CharacterRepository`, `PasswordHasher`, `TokenService`, `RandomSource`) under `src/domain/`.
