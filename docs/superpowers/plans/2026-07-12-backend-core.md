@@ -200,9 +200,16 @@ datasource db {
 generator client {
   provider = "prisma-client-js"
 }
+
+// Placeholder so `prisma generate` succeeds before Task 2 adds real models —
+// Prisma 5.x refuses to generate a client for a schema with zero models.
+// Task 2 replaces this entire file (including this model) with the real schema.
+model Placeholder {
+  id Int @id @default(autoincrement())
+}
 ```
 
-(No models yet — Task 2 adds `User` and `Character` and runs the first migration. This stub lets `prisma generate` succeed now so the app can boot.)
+(Task 2 adds `User` and `Character` and runs the first migration, replacing this stub — including the `Placeholder` model — wholesale.)
 
 - [ ] **Step 10: Create `backend/src/app.ts`**
 
