@@ -1553,7 +1553,9 @@ describe('AttemptBreakthroughUseCase', () => {
     await expect(useCase.execute('user-1')).rejects.toMatchObject({ code: 'INSUFFICIENT_LINH_KHI' });
 
     const state = await characters.findByUserId('user-1');
-    expect(state?.linhKhi).toBe(10); // unchanged: no time elapsed since lastUpdateAt in this test
+    // A small amount of real wall-clock time elapses between seeding and the
+    // assertion, so an exact 10 is not guaranteed — assert within a tight tolerance.
+    expect(state?.linhKhi).toBeCloseTo(10, 1);
   });
 
   it('rejects with PUNISHED while punishedUntil is in the future', async () => {
@@ -1584,7 +1586,7 @@ describe('AttemptBreakthroughUseCase', () => {
     expect(result.success).toBe(true);
     expect(result.character.realmMajor).toBe(0);
     expect(result.character.realmSub).toBe(1);
-    expect(result.character.linhKhi).toBe(50);
+    expect(result.character.linhKhi).toBeCloseTo(50, 1);
     expect(result.character.breakthroughFails).toBe(0);
     expect(result.character.punishedUntil).toBeNull();
   });
@@ -1600,7 +1602,7 @@ describe('AttemptBreakthroughUseCase', () => {
     expect(result.success).toBe(false);
     expect(result.character.realmMajor).toBe(0);
     expect(result.character.realmSub).toBe(0);
-    expect(result.character.linhKhi).toBe(150);
+    expect(result.character.linhKhi).toBeCloseTo(150, 1);
     expect(result.character.breakthroughFails).toBe(1);
     expect(result.character.punishedUntil).not.toBeNull();
   });
@@ -1621,12 +1623,31 @@ describe('AttemptBreakthroughUseCase', () => {
     characters.seed(makeCharacter({ linhKhi: 150 }));
     const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0));
 
-    // Simulate another request winning the race by changing lastUpdateAt first.
-    const original = await characters.findByUserId('user-1');
-    await characters.updateWithConcurrencyGuard(original!.id, original!.lastUpdateAt, {
-      ...original!,
-      lastUpdateAt: new Date(original!.lastUpdateAt.getTime() + 1),
-    });
+    // Simulate another request winning the race between execute()'s read and
+    // its write: intercept the fake's write method so that, on the first
+    // call only, it mutates the stored lastUpdateAt out from under the
+    // in-flight execute() before delegating to the real update logic. This
+    // makes the real updateWithConcurrencyGuard's expectedLastUpdateAt check
+    // fail exactly as it would if a second request had truly won the race.
+    const originalUpdate = characters.updateWithConcurrencyGuard.bind(characters);
+    let callCount = 0;
+    characters.updateWithConcurrencyGuard = async (id, expectedLastUpdateAt, data) => {
+      callCount += 1;
+      if (callCount === 1) {
+        const winner = await characters.findByUserId('user-1');
+        if (winner) {
+          await originalUpdate(id, winner.lastUpdateAt, {
+            realmMajor: winner.realmMajor,
+            realmSub: winner.realmSub,
+            linhKhi: winner.linhKhi,
+            lastUpdateAt: new Date(winner.lastUpdateAt.getTime() + 1),
+            breakthroughFails: winner.breakthroughFails,
+            punishedUntil: winner.punishedUntil,
+          });
+        }
+      }
+      return originalUpdate(id, expectedLastUpdateAt, data);
+    };
 
     await expect(useCase.execute('user-1')).rejects.toMatchObject({ code: 'CONCURRENT_MODIFICATION' });
   });
