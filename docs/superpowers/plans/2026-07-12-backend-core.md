@@ -2856,7 +2856,14 @@ describe('POST /cultivation/breakthrough', () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.character.realmSub).toBe(1);
-    expect(res.body.character.linhKhi).toBe(50);
+    // Not an exact toBe(50): linh khi accrues lazily from real wall-clock time
+    // (unlike Task 9's unit tests, which fully control `now`), so the register
+    // -> login -> update -> breakthrough round trip against real Postgres always
+    // adds a small, machine-speed-dependent sliver on top of the 150 - 100 = 50
+    // baseline. Bound it generously (a full second at cultivationRate 1.00/s)
+    // rather than asserting a value that can never land on exactly 50.
+    expect(res.body.character.linhKhi).toBeGreaterThanOrEqual(50);
+    expect(res.body.character.linhKhi).toBeLessThan(51);
   });
 
   it('punishes on a forced failure without deducting linh khi', async () => {
@@ -2873,7 +2880,11 @@ describe('POST /cultivation/breakthrough', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(false);
-    expect(res.body.character.linhKhi).toBe(150);
+    // Same lazy-accrual caveat as the forced-success case above: a failed
+    // breakthrough doesn't deduct linh khi, but real wall-clock time still
+    // passed since the 150 was written, so it never lands on exactly 150.
+    expect(res.body.character.linhKhi).toBeGreaterThanOrEqual(150);
+    expect(res.body.character.linhKhi).toBeLessThan(151);
     expect(res.body.character.punishedUntil).not.toBeNull();
   });
 
@@ -2916,6 +2927,19 @@ describe('POST /cultivation/breakthrough', () => {
     const user = await prisma.user.findUnique({ where: { username: 'mike' } });
     await prisma.character.update({ where: { userId: user!.id }, data: { linhKhi: 150 } });
 
+    // Pre-warm two Prisma pool connections before racing. With a cold pool,
+    // the loser's *initial read* frequently pays a one-time connection-open
+    // cost, while the winner reuses an already-established connection and
+    // completes its entire read-compute-write cycle within that window —
+    // that isn't a race at all, the loser reads the row *after* the winner
+    // already committed, so it gets 400 INSUFFICIENT_LINH_KHI instead of ever
+    // hitting the concurrency guard. Warming the pool first means both
+    // requests' initial reads contend for two already-open connections, so
+    // their dispatch-to-Postgres timing reflects true request concurrency
+    // instead of connection-setup latency. Confirmed via 15 repeated runs:
+    // 13/15 failures without this line, 0/15 with it.
+    await Promise.all([prisma.character.findFirst(), prisma.character.findFirst()]);
+
     const [first, second] = await Promise.all([
       request(app).post('/cultivation/breakthrough').set('Authorization', `Bearer ${token}`),
       request(app).post('/cultivation/breakthrough').set('Authorization', `Bearer ${token}`),
@@ -2954,14 +2978,40 @@ Expected: `200` with `{"token":"..."}` — copy the token for the next call.
 Run: `curl -s http://localhost:3000/cultivation/state -H "Authorization: Bearer <token>"`
 Expected: `200` with `{"realmMajor":0,"realmSub":0,"realmName":"Phàm Nhân - Sơ",...}`
 
+If this step fails with the containerized API unable to load its Prisma query engine (e.g. an error mentioning `libssl.so.1.1` or a missing shared library), it's because `node:20-alpine`'s current base image ships OpenSSL 3 only, not the OpenSSL 1.1 compat libraries Prisma's default `linux-musl` engine target expects. Fix both:
+
+In `backend/Dockerfile`, add `openssl` to the image (Prisma's runtime OpenSSL-version detection needs the CLI present to pick the right engine binary):
+
+```dockerfile
+FROM node:20-alpine
+WORKDIR /app
+RUN apk add --no-cache openssl
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE 3000
+CMD ["npm", "run", "dev"]
+```
+
+In `backend/prisma/schema.prisma`, add an explicit binary target for the Alpine/OpenSSL-3 environment alongside `native` (used for local host dev/test):
+
+```prisma
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+```
+
+Then re-run `docker compose up -d --build` and repeat the curl checks above.
+
 - [ ] **Step 10: Update CLAUDE.md**
 
-Append: "Task 14: wired `GET /cultivation/state` and `POST /cultivation/breakthrough` end-to-end. `createApp(overrides?)` now accepts `randomSource` so tests can force breakthrough success/failure deterministically. Phase 1 backend core is feature-complete: `docker compose up -d --build` then register → login → state → breakthrough all work against real Postgres."
+Append: "Task 14: wired `GET /cultivation/state` and `POST /cultivation/breakthrough` end-to-end. `createApp(overrides?)` now accepts `randomSource` so tests can force breakthrough success/failure deterministically. Phase 1 backend core is feature-complete: `docker compose up -d --build` then register → login → state → breakthrough all work against real Postgres. Also fixed two environment issues found during this task's mandatory Docker Compose verification step: (1) `node:20-alpine`'s current base ships OpenSSL 3 only, so Prisma's engine needs `openssl` installed in the image (`Dockerfile`) and an explicit `linux-musl-openssl-3.0.x` binary target (`prisma/schema.prisma`) alongside `native`, or the containerized API fails to load its query engine; (2) the concurrent-breakthrough integration test pre-warms two Prisma connections before racing two requests, since a cold connection pool made the race non-deterministic (the loser's first read paid a one-time connection-open cost, so it read *after* the winner had already committed and got 400 instead of racing into 409 — confirmed by running 15x with/without the pre-warm: 13/15 failures without it, 0/15 with it)."
 
 - [ ] **Step 11: Commit**
 
 ```bash
-git add backend/src/presentation/routes/cultivation.routes.ts backend/src/app.ts backend/tests/integration/cultivation.state.test.ts backend/tests/integration/cultivation.breakthrough.test.ts CLAUDE.md
+git add backend/src/presentation/routes/cultivation.routes.ts backend/src/app.ts backend/tests/integration/cultivation.state.test.ts backend/tests/integration/cultivation.breakthrough.test.ts backend/Dockerfile backend/prisma/schema.prisma CLAUDE.md
 git commit -m "feat: wire cultivation state and breakthrough endpoints end-to-end"
 ```
 
