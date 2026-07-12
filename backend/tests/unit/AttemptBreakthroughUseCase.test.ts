@@ -38,20 +38,51 @@ describe('AttemptBreakthroughUseCase', () => {
     expect(state?.linhKhi).toBeCloseTo(10, 1);
   });
 
-  it('rejects with PUNISHED while punishedUntil is in the future', async () => {
+  it('rejects with PUNISHED while punishedUntil is in the future, but still persists accrued linh khi', async () => {
     const characters = new InMemoryCharacterRepository();
     characters.seed(makeCharacter({ linhKhi: 500, punishedUntil: new Date(Date.now() + 60_000) }));
+    // Count calls to the write method: this is a deterministic, clock-independent
+    // way to prove persist() actually ran on this rejection path, which is the
+    // whole point of this task's "persist first, validate second" design — a
+    // future refactor that moved the throw ahead of the persist call for just
+    // this branch would silently drop accrued linh khi without this check.
+    let updateCalls = 0;
+    const originalUpdate = characters.updateWithConcurrencyGuard.bind(characters);
+    characters.updateWithConcurrencyGuard = async (id, expectedLastUpdateAt, data) => {
+      updateCalls += 1;
+      return originalUpdate(id, expectedLastUpdateAt, data);
+    };
     const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0));
 
     await expect(useCase.execute('user-1')).rejects.toMatchObject({ code: 'PUNISHED' });
+
+    expect(updateCalls).toBe(1);
+    const state = await characters.findByUserId('user-1');
+    // linh khi only ever increases with elapsed time, never decreases — this
+    // avoids a rate-dependent tolerance (unlike toBeCloseTo, which would need
+    // a different tolerance per realm's very different cultivationRate).
+    expect(state?.linhKhi).toBeGreaterThanOrEqual(500);
   });
 
-  it('rejects with MAX_STAGE_REACHED at Thái Ất - Đại Viên Mãn', async () => {
+  it('rejects with MAX_STAGE_REACHED at Thái Ất - Đại Viên Mãn, but still persists accrued linh khi', async () => {
     const characters = new InMemoryCharacterRepository();
     characters.seed(makeCharacter({ realmMajor: 11, realmSub: 3, linhKhi: 999_999_999 }));
+    let updateCalls = 0;
+    const originalUpdate = characters.updateWithConcurrencyGuard.bind(characters);
+    characters.updateWithConcurrencyGuard = async (id, expectedLastUpdateAt, data) => {
+      updateCalls += 1;
+      return originalUpdate(id, expectedLastUpdateAt, data);
+    };
     const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0));
 
     await expect(useCase.execute('user-1')).rejects.toMatchObject({ code: 'MAX_STAGE_REACHED' });
+
+    expect(updateCalls).toBe(1);
+    const state = await characters.findByUserId('user-1');
+    // Thái Ất - Đại Viên Mãn has a very high cultivationRate (255.09/s), so a
+    // fixed absolute tolerance (toBeCloseTo) would be flaky here even for a
+    // few ms of elapsed time — a monotonic lower bound is rate-independent.
+    expect(state?.linhKhi).toBeGreaterThanOrEqual(999_999_999);
   });
 
   it('advances the substage, carries over excess linh khi, and resets fails on success', async () => {
