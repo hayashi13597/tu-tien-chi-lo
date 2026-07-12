@@ -40,3 +40,5 @@ Task 8: added `GetCultivationStateUseCase` (`src/application/`), unit-tested aga
 Task 9: added `AttemptBreakthroughUseCase` (`src/application/`) with the optimistic-concurrency guard, unit-tested against `InMemoryCharacterRepository` and `FixedRandomSource` fakes — deterministic success/failure without any real RNG or database.
 
 Task 10: added infrastructure adapters `BcryptPasswordHasher` and `JwtTokenService` (`src/infrastructure/auth/`), and `MathRandomSource` (`src/infrastructure/random/`), each implementing a domain port from Task 6. `BcryptPasswordHasher` and `JwtTokenService` are fully unit-tested; `MathRandomSource` is a pass-through to `Math.random()` exercised indirectly during integration tests.
+
+Task 11: added `PrismaUserRepository`/`PrismaCharacterRepository` (`src/infrastructure/repositories/`), integration-tested against real Postgres. The concurrency guard uses `updateMany({ where: { id, lastUpdateAt } })` + a `count === 0` check.
