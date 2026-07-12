@@ -34,3 +34,5 @@ Task 5: added breakthrough pity formula and stage-transition logic (`src/domain/
 Task 6: added domain entities (`User`, `Character`), `DomainError`, and ports (`UserRepository`, `CharacterRepository`, `PasswordHasher`, `TokenService`, `RandomSource`) under `src/domain/`.
 
 Task 7: added `RegisterUserUseCase`/`LoginUserUseCase` (`src/application/`), unit-tested against in-memory fakes (`tests/fakes/`) with no database or real crypto involved.
+
+Task 8: added `GetCultivationStateUseCase` (`src/application/`), unit-tested against `InMemoryCharacterRepository` fake — no database needed.

@@ -1,0 +1,55 @@
+import { describe, it, expect } from 'vitest';
+import { GetCultivationStateUseCase } from '../../src/application/GetCultivationStateUseCase';
+import { InMemoryCharacterRepository } from '../fakes/InMemoryCharacterRepository';
+import { CharacterRecord } from '../../src/domain/entities/Character';
+
+function makeCharacter(overrides: Partial<CharacterRecord> = {}): CharacterRecord {
+  return {
+    id: 'char-1',
+    userId: 'user-1',
+    realmMajor: 0,
+    realmSub: 0,
+    linhKhi: 0,
+    lastUpdateAt: new Date(),
+    breakthroughFails: 0,
+    punishedUntil: null,
+    createdAt: new Date(),
+    ...overrides,
+  };
+}
+
+describe('GetCultivationStateUseCase', () => {
+  it('rejects an unknown user with CHARACTER_NOT_FOUND', async () => {
+    const useCase = new GetCultivationStateUseCase(new InMemoryCharacterRepository());
+    await expect(useCase.execute('nobody')).rejects.toMatchObject({ code: 'CHARACTER_NOT_FOUND' });
+  });
+
+  it('reports canBreakthrough=false and isMaxStage=false for a fresh Phàm Nhân - Sơ character', async () => {
+    const characters = new InMemoryCharacterRepository();
+    characters.seed(makeCharacter());
+    const result = await new GetCultivationStateUseCase(characters).execute('user-1');
+
+    expect(result.realmName).toBe('Phàm Nhân - Sơ');
+    expect(result.linhKhiRequired).toBe(100);
+    expect(result.canBreakthrough).toBe(false);
+    expect(result.isMaxStage).toBe(false);
+  });
+
+  it('reports canBreakthrough=true once accrued linh khi reaches the requirement', async () => {
+    const characters = new InMemoryCharacterRepository();
+    const lastUpdateAt = new Date(Date.now() - 200_000); // 200s ago, rate 1.0/s => +200
+    characters.seed(makeCharacter({ linhKhi: 0, lastUpdateAt }));
+    const result = await new GetCultivationStateUseCase(characters).execute('user-1');
+
+    expect(result.linhKhi).toBeGreaterThanOrEqual(100);
+    expect(result.canBreakthrough).toBe(true);
+  });
+
+  it('reports canBreakthrough=false while punishedUntil is in the future, even with enough linh khi', async () => {
+    const characters = new InMemoryCharacterRepository();
+    characters.seed(makeCharacter({ linhKhi: 500, punishedUntil: new Date(Date.now() + 60_000) }));
+    const result = await new GetCultivationStateUseCase(characters).execute('user-1');
+
+    expect(result.canBreakthrough).toBe(false);
+  });
+});
