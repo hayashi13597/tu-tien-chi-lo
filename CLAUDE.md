@@ -38,3 +38,5 @@ Task 7: added `RegisterUserUseCase`/`LoginUserUseCase` (`src/application/`), uni
 Task 8: added `GetCultivationStateUseCase` (`src/application/`), unit-tested against `InMemoryCharacterRepository` fake — no database needed.
 
 Task 9: added `AttemptBreakthroughUseCase` (`src/application/`) with the optimistic-concurrency guard, unit-tested against `InMemoryCharacterRepository` and `FixedRandomSource` fakes — deterministic success/failure without any real RNG or database.
+
+Task 10: added infrastructure adapters `BcryptPasswordHasher` and `JwtTokenService` (`src/infrastructure/auth/`), and `MathRandomSource` (`src/infrastructure/random/`), each implementing a domain port from Task 6. `BcryptPasswordHasher` and `JwtTokenService` are fully unit-tested; `MathRandomSource` is a pass-through to `Math.random()` exercised indirectly during integration tests.
