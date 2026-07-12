@@ -24,3 +24,5 @@ A cultivation-game (gameplay rebuilt to 100% feature parity with Nhất Niệm T
 Task 1: Scaffolded Express+TypeScript backend with Docker Compose dev environment (`api` + `db` services). Commands: `cd backend && docker compose up -d --build`, `npm test`. Health endpoint verified: `GET /health` returns `{"status":"ok"}`.
 
 Task 2: added `User`/`Character` Prisma models (`prisma/schema.prisma`) and the Prisma client singleton (`src/infrastructure/db/prisma.ts`). Run `npx prisma migrate dev --name init` after a fresh clone.
+
+Task 3: added realm/sub-stage config (`src/infrastructure/config/realms.ts`) — 12 realms × 4 substages, literal tunable data, `MAX_REALM_MAJOR` derived from array length.
