@@ -7,7 +7,26 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// Placeholder model - will be replaced by User and Character in Task 2
-model Placeholder {
-  id Int @id @default(autoincrement())
+model User {
+  id           String     @id @default(uuid())
+  username     String     @unique
+  passwordHash String
+  createdAt    DateTime   @default(now())
+  character    Character?
+}
+
+model Character {
+  id                String    @id @default(uuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id])
+
+  realmMajor        Int       @default(0)
+  realmSub          Int       @default(0)
+  linhKhi           Float     @default(0)
+  lastUpdateAt      DateTime  @default(now())
+
+  breakthroughFails Int       @default(0)
+  punishedUntil     DateTime?
+
+  createdAt         DateTime  @default(now())
 }
