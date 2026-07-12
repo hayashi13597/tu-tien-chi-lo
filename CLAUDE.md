@@ -32,3 +32,5 @@ Task 4: added lazy linh khí accumulation formula (`src/domain/cultivation/culti
 Task 5: added breakthrough pity formula and stage-transition logic (`src/domain/breakthrough/breakthrough.calc.ts`), pure and framework-free.
 
 Task 6: added domain entities (`User`, `Character`), `DomainError`, and ports (`UserRepository`, `CharacterRepository`, `PasswordHasher`, `TokenService`, `RandomSource`) under `src/domain/`.
+
+Task 7: added `RegisterUserUseCase`/`LoginUserUseCase` (`src/application/`), unit-tested against in-memory fakes (`tests/fakes/`) with no database or real crypto involved.
