@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: game
+      POSTGRES_PASSWORD: game
+      POSTGRES_DB: tu_tien_chi_lo
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  api:
+    build: .
+    command: npm run dev
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://game:game@db:5432/tu_tien_chi_lo
+      JWT_SECRET: dev-secret-change-me
+      PORT: 3000
+    volumes:
+      - ./src:/app/src
+      - ./prisma:/app/prisma
+    depends_on:
+      - db
+
+volumes:
+  db_data:

@@ -1,0 +1,13 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Placeholder model - will be replaced by User and Character in Task 2
+model Placeholder {
+  id Int @id @default(autoincrement())
+}

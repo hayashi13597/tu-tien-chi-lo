@@ -18,3 +18,7 @@ A cultivation-game (gameplay rebuilt to 100% feature parity with Nhất Niệm T
 - **Comment logic clearly.** Non-trivial business/domain logic (formulas, state transitions, concurrency handling, etc.) must have clear comments explaining the *why* and the mechanics — do not leave complex logic uncommented.
 - **Update CLAUDE.md after every task.** When executing an implementation plan, after completing each task, update this file to reflect new architecture, commands, or notes introduced by that task.
 - **Use context7 (`ctx7` CLI) before writing library-specific code.** Before using any API from a dependency (Express, Prisma, Next.js, GSAP, jsonwebtoken, zod, etc.), fetch current docs for that library via context7 and cross-check against the exact version pinned in `package.json` — do not rely on training data for library API shape.
+
+## Backend Progress
+
+Task 1: Scaffolded Express+TypeScript backend with Docker Compose dev environment (`api` + `db` services). Commands: `cd backend && docker compose up -d --build`, `npm test`. Health endpoint verified: `GET /health` returns `{"status":"ok"}`.
