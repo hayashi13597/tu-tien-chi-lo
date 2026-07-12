@@ -28,3 +28,5 @@ Task 2: added `User`/`Character` Prisma models (`prisma/schema.prisma`) and the 
 Task 3: added realm/sub-stage config (`src/infrastructure/config/realms.ts`) — 12 realms × 4 substages, literal tunable data, `MAX_REALM_MAJOR` derived from array length.
 
 Task 4: added lazy linh khí accumulation formula (`src/domain/cultivation/cultivation.calc.ts`), pure and framework-free per the Clean Architecture `domain/` rule.
+
+Task 5: added breakthrough pity formula and stage-transition logic (`src/domain/breakthrough/breakthrough.calc.ts`), pure and framework-free.
