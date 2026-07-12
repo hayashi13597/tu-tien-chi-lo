@@ -2956,7 +2956,7 @@ describe('POST /cultivation/breakthrough', () => {
 - [ ] **Step 6: Run the tests to verify they pass**
 
 Run: `cd backend && docker compose up -d db && npm test -- tests/integration/cultivation.breakthrough.test.ts`
-Expected: PASS (6 tests)
+Expected: PASS (7 tests)
 
 - [ ] **Step 7: Run the full test suite**
 
