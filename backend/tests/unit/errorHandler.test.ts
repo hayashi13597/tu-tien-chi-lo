@@ -9,6 +9,9 @@ function buildTestApp() {
   app.get('/boom-username-taken', () => {
     throw new DomainError('USERNAME_TAKEN', 'Username already exists');
   });
+  app.get('/boom-invalid-refresh-token', () => {
+    throw new DomainError('INVALID_REFRESH_TOKEN', 'Invalid or expired refresh token');
+  });
   app.get('/boom-unknown-code', () => {
     throw new DomainError('SOMETHING_NEW', 'Not yet mapped');
   });
@@ -24,6 +27,14 @@ describe('errorHandler', () => {
     const res = await request(buildTestApp()).get('/boom-username-taken');
     expect(res.status).toBe(409);
     expect(res.body).toEqual({ error: { code: 'USERNAME_TAKEN', message: 'Username already exists' } });
+  });
+
+  it('maps INVALID_REFRESH_TOKEN to 401', async () => {
+    const res = await request(buildTestApp()).get('/boom-invalid-refresh-token');
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({
+      error: { code: 'INVALID_REFRESH_TOKEN', message: 'Invalid or expired refresh token' },
+    });
   });
 
   it('falls back to 500 for a DomainError code with no status mapping', async () => {
