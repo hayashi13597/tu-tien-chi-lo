@@ -31,7 +31,7 @@ export function createApp(overrides: AppOverrides = {}) {
   const characterRepository = new PrismaCharacterRepository(client);
   const passwordHasher = new BcryptPasswordHasher();
   const tokenService = new JwtTokenService(
-    process.env.JWT_ACCESS_SECRET as string,
+    process.env.JWT_SECRET as string,
     process.env.JWT_REFRESH_SECRET as string,
   );
 
