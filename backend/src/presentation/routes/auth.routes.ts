@@ -2,11 +2,14 @@ import { Router } from 'express';
 import { registerSchema, loginSchema } from '../schemas/auth.schemas';
 import { RegisterUserUseCase } from '../../application/RegisterUserUseCase';
 import { LoginUserUseCase } from '../../application/LoginUserUseCase';
+import { RefreshAccessTokenUseCase } from '../../application/RefreshAccessTokenUseCase';
 import { DomainError } from '../../domain/errors';
+import { setAuthCookies, clearAuthCookies } from '../cookies';
 
 export interface AuthRouterDeps {
   registerUserUseCase: RegisterUserUseCase;
   loginUserUseCase: LoginUserUseCase;
+  refreshAccessTokenUseCase: RefreshAccessTokenUseCase;
 }
 
 export function createAuthRouter(deps: AuthRouterDeps): Router {
@@ -19,7 +22,11 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
         throw new DomainError('INVALID_INPUT', parsed.error.issues[0].message);
       }
       const result = await deps.registerUserUseCase.execute(parsed.data);
-      res.status(201).json(result);
+      setAuthCookies(res, result.accessToken, result.refreshToken);
+      // Explicit field selection — never res.json(result) — so accessToken/
+      // refreshToken never leak into the JSON body; they travel only via
+      // the httpOnly cookies just set above.
+      res.status(201).json({ id: result.id, username: result.username });
     } catch (err) {
       next(err);
     }
@@ -32,10 +39,38 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
         throw new DomainError('INVALID_INPUT', parsed.error.issues[0].message);
       }
       const result = await deps.loginUserUseCase.execute(parsed.data);
-      res.status(200).json(result);
+      setAuthCookies(res, result.token, result.refreshToken);
+      // Response body keeps its Phase 1 shape ({ token }) for header-based
+      // callers; refreshToken is cookie-only, never in the JSON body.
+      res.status(200).json({ token: result.token });
     } catch (err) {
       next(err);
     }
+  });
+
+  router.post('/refresh', async (req, res, next) => {
+    try {
+      // Cookie only, no header fallback: the whole point of this endpoint is
+      // to work once the access token has already expired.
+      const refreshToken = req.cookies?.refresh_token as string | undefined;
+      if (!refreshToken) {
+        throw new DomainError('INVALID_REFRESH_TOKEN', 'Missing refresh token');
+      }
+      const result = deps.refreshAccessTokenUseCase.execute(refreshToken);
+      setAuthCookies(res, result.token, result.refreshToken);
+      res.status(200).json({ token: result.token });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // No use case, no auth, no DB read: logout has zero business logic (it's
+  // idempotent and always succeeds, whether or not the caller had a session),
+  // so it's handled directly here rather than through an application-layer
+  // indirection with nothing to orchestrate.
+  router.post('/logout', (_req, res) => {
+    clearAuthCookies(res);
+    res.status(200).json({ message: 'Logged out' });
   });
 
   return router;

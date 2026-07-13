@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import jwt from 'jsonwebtoken';
 import { TokenService } from '../../domain/ports/TokenService';
 
@@ -8,7 +9,14 @@ export class JwtTokenService implements TokenService {
   ) {}
 
   signAccessToken(userId: string): string {
-    return jwt.sign({ userId }, this.accessSecret, { expiresIn: '15m' });
+    // jti (a random per-token id) is required, not cosmetic: jwt.sign() is a
+    // deterministic HMAC over { userId, iat, exp } + secret, and iat/exp only
+    // have second-level granularity. Two calls for the same userId within the
+    // same wall-clock second (e.g. register immediately followed by refresh)
+    // would otherwise produce byte-identical tokens, silently breaking the
+    // sliding-refresh guarantee that every refresh issues a genuinely new
+    // token (see RefreshAccessTokenUseCase).
+    return jwt.sign({ userId, jti: randomUUID() }, this.accessSecret, { expiresIn: '15m' });
   }
 
   verifyAccessToken(token: string): { userId: string } {
@@ -17,7 +25,7 @@ export class JwtTokenService implements TokenService {
   }
 
   signRefreshToken(userId: string): string {
-    return jwt.sign({ userId }, this.refreshSecret, { expiresIn: '7d' });
+    return jwt.sign({ userId, jti: randomUUID() }, this.refreshSecret, { expiresIn: '7d' });
   }
 
   // Verifies exclusively against refreshSecret — a token signed with
