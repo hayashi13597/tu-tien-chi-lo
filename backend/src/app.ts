@@ -30,9 +30,12 @@ export function createApp(overrides: AppOverrides = {}) {
   const userRepository = new PrismaUserRepository(client);
   const characterRepository = new PrismaCharacterRepository(client);
   const passwordHasher = new BcryptPasswordHasher();
-  const tokenService = new JwtTokenService(process.env.JWT_SECRET as string);
+  const tokenService = new JwtTokenService(
+    process.env.JWT_ACCESS_SECRET as string,
+    process.env.JWT_REFRESH_SECRET as string,
+  );
 
-  const registerUserUseCase = new RegisterUserUseCase(userRepository, passwordHasher);
+  const registerUserUseCase = new RegisterUserUseCase(userRepository, passwordHasher, tokenService);
   const loginUserUseCase = new LoginUserUseCase(userRepository, passwordHasher, tokenService);
   const getCultivationStateUseCase = new GetCultivationStateUseCase(characterRepository);
   const attemptBreakthroughUseCase = new AttemptBreakthroughUseCase(characterRepository, randomSource);

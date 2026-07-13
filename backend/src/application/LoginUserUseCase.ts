@@ -10,6 +10,7 @@ export interface LoginUserInput {
 
 export interface LoginUserOutput {
   token: string;
+  refreshToken: string;
 }
 
 export class LoginUserUseCase {
@@ -31,6 +32,7 @@ export class LoginUserUseCase {
     }
 
     const token = this.tokenService.signAccessToken(user.id);
-    return { token };
+    const refreshToken = this.tokenService.signRefreshToken(user.id);
+    return { token, refreshToken };
   }
 }
