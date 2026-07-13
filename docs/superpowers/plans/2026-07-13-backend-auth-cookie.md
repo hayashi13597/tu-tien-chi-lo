@@ -215,11 +215,11 @@ Expected: PASS (9 tests)
 - [ ] **Step 7: Run the full suite to check for regressions from the `FakeTokenService` prefix change**
 
 Run: `cd backend && docker compose up -d db && npm test`
-Expected: FAIL — `tests/unit/LoginUserUseCase.test.ts` and `tests/unit/auth.middleware.test.ts` still expect the old `token-for-` literal/shape. This is expected; Task 3 and Task 5 fix these. Confirm only those two files fail, nothing else.
+Expected: FAIL on `tests/unit/LoginUserUseCase.test.ts` (hardcodes the old `token-for-user-1` literal; fixed in Task 3). `tests/unit/auth.middleware.test.ts` does NOT hardcode a literal — it round-trips via `signAccessToken`/`verifyAccessToken` and only asserts on the resulting `userId`, so it stays green through this prefix change (Task 5 still updates it later, but for the cookie-fallback feature itself, not because of breakage here). If any file *other than* `LoginUserUseCase.test.ts` fails, stop and investigate before continuing — don't assume it's expected.
 
 - [ ] **Step 8: Update CLAUDE.md**
 
-Append under "## Backend Progress": "Task 1 (Phase 2): extended `TokenService` port with `signRefreshToken`/`verifyRefreshToken`; `JwtTokenService` now takes two secrets (`accessSecret`, `refreshSecret`) and signs access tokens with a 15-minute expiry (down from Phase 1's 7 days) and refresh tokens with a 7-day expiry. `FakeTokenService`'s token-string prefixes changed to distinguish access vs refresh tokens — `tests/unit/LoginUserUseCase.test.ts` and `tests/unit/auth.middleware.test.ts` need updating in later tasks."
+Append under "## Backend Progress": "Task 1 (Phase 2): extended `TokenService` port with `signRefreshToken`/`verifyRefreshToken`; `JwtTokenService` now takes two secrets (`accessSecret`, `refreshSecret`) and signs access tokens with a 15-minute expiry (down from Phase 1's 7 days) and refresh tokens with a 7-day expiry. `FakeTokenService`'s token-string prefixes changed to distinguish access vs refresh tokens — `tests/unit/LoginUserUseCase.test.ts` needs updating in Task 3 (hardcoded the old literal); `tests/unit/auth.middleware.test.ts` was unaffected (no hardcoded literal) but Task 5 still updates it for the cookie-fallback feature."
 
 - [ ] **Step 9: Commit**
 
