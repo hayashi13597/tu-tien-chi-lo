@@ -146,6 +146,27 @@ describe('JwtTokenService', () => {
     });
   });
 
+  describe('token uniqueness (jti)', () => {
+    it('signs two different access tokens for the same userId, even issued in the same instant', () => {
+      const service = new JwtTokenService('access-secret', 'refresh-secret');
+      const first = service.signAccessToken('user-123');
+      const second = service.signAccessToken('user-123');
+      // Without a random jti, jwt.sign() is a deterministic HMAC over
+      // { userId, iat, exp } + secret, and iat/exp only have second-level
+      // granularity — two calls in the same wall-clock second would
+      // otherwise produce byte-identical tokens, silently breaking the
+      // sliding-refresh guarantee that every refresh issues a new token.
+      expect(first).not.toBe(second);
+    });
+
+    it('signs two different refresh tokens for the same userId, even issued in the same instant', () => {
+      const service = new JwtTokenService('access-secret', 'refresh-secret');
+      const first = service.signRefreshToken('user-123');
+      const second = service.signRefreshToken('user-123');
+      expect(first).not.toBe(second);
+    });
+  });
+
   describe('access token expiry', () => {
     it('signs an access token with a 15-minute expiry', () => {
       const service = new JwtTokenService('access-secret', 'refresh-secret');
@@ -172,6 +193,7 @@ Expected: FAIL — `JwtTokenService` constructor still takes one argument, `sign
 - [ ] **Step 5: Update `backend/src/infrastructure/auth/JwtTokenService.ts`**
 
 ```ts
+import { randomUUID } from 'crypto';
 import jwt from 'jsonwebtoken';
 import { TokenService } from '../../domain/ports/TokenService';
 
@@ -182,7 +204,14 @@ export class JwtTokenService implements TokenService {
   ) {}
 
   signAccessToken(userId: string): string {
-    return jwt.sign({ userId }, this.accessSecret, { expiresIn: '15m' });
+    // jti (a random per-token id) is required, not cosmetic: jwt.sign() is a
+    // deterministic HMAC over { userId, iat, exp } + secret, and iat/exp only
+    // have second-level granularity. Two calls for the same userId within the
+    // same wall-clock second (e.g. register immediately followed by refresh)
+    // would otherwise produce byte-identical tokens, silently breaking the
+    // sliding-refresh guarantee that every refresh issues a genuinely new
+    // token (see RefreshAccessTokenUseCase in Task 4).
+    return jwt.sign({ userId, jti: randomUUID() }, this.accessSecret, { expiresIn: '15m' });
   }
 
   verifyAccessToken(token: string): { userId: string } {
@@ -191,7 +220,7 @@ export class JwtTokenService implements TokenService {
   }
 
   signRefreshToken(userId: string): string {
-    return jwt.sign({ userId }, this.refreshSecret, { expiresIn: '7d' });
+    return jwt.sign({ userId, jti: randomUUID() }, this.refreshSecret, { expiresIn: '7d' });
   }
 
   // Verifies exclusively against refreshSecret — a token signed with
@@ -210,7 +239,7 @@ export class JwtTokenService implements TokenService {
 - [ ] **Step 6: Run the tests to verify they pass**
 
 Run: `cd backend && npm test -- tests/unit/JwtTokenService.test.ts`
-Expected: PASS (9 tests)
+Expected: PASS (9 tests). (Note: Task 6 later discovers and fixes a real determinism bug in `signAccessToken`/`signRefreshToken` — missing `jti` — and adds a `describe('token uniqueness (jti)')` block with 2 more tests to this same file, bringing the total to 11. That addition is documented in this file's Task 6 section, not retrofitted here, since it wasn't known at the time this task was first written.)
 
 - [ ] **Step 7: Run the full suite to check for regressions from the `FakeTokenService` prefix change**
 
@@ -1453,14 +1482,55 @@ Expected: `200` with `{"message":"Logged out"}`.
 Run: `curl -s http://localhost:5000/health -H 'Origin: http://localhost:3000' -i`
 Expected: response headers include `Access-Control-Allow-Origin: http://localhost:3000` and `Access-Control-Allow-Credentials: true`.
 
-- [ ] **Step 15: Update CLAUDE.md**
+- [ ] **Step 15: Fix a cross-cutting bug in `JwtTokenService` (Task 1) surfaced by this task's own integration tests**
 
-Append: "Task 6 (Phase 2): wired cookie-based auth end-to-end. `POST /auth/register` and `POST /auth/login` now set `access_token`/`refresh_token` httpOnly cookies alongside their unchanged JSON response shapes; new `POST /auth/refresh` (cookie-only, sliding renewal) and `POST /auth/logout` (no auth, always 200, clears both cookies) added. `app.ts` now mounts `cors({ origin: process.env.CORS_ORIGIN, credentials: true })` and `cookieParser()` ahead of routes. Backend `PORT` changed from `3000` to `5000` (frees `3000` for the Phase 3 frontend dev server); new env vars `JWT_REFRESH_SECRET` and `CORS_ORIGIN=http://localhost:3000`. Phase 2 backend auth upgrade is feature-complete: `docker compose up -d --build` then register (cookies set) → protected route via cookie jar, no header → refresh (new cookies) → logout (cookies cleared, agent locked out) all work against real Postgres."
+While writing this task's integration tests (`auth.routes.test.ts`'s refresh test asserts the new cookie values differ from the pre-refresh ones), a real bug surfaces in `backend/src/infrastructure/auth/JwtTokenService.ts` (created in Task 1): `signAccessToken`/`signRefreshToken` sign only `{ userId }`, and `jwt.sign()` is a deterministic HMAC over `{ userId, iat, exp }` + secret — `iat`/`exp` only have second-level granularity, so two tokens issued for the same user within the same wall-clock second (e.g. register immediately followed by refresh) are byte-identical, silently breaking the sliding-refresh guarantee that every refresh issues a genuinely new token.
 
-- [ ] **Step 16: Commit**
+Fix by adding a random `jti` (JWT ID) claim to both signing methods:
+
+```ts
+import { randomUUID } from 'crypto';
+import jwt from 'jsonwebtoken';
+import { TokenService } from '../../domain/ports/TokenService';
+
+export class JwtTokenService implements TokenService {
+  constructor(
+    private readonly accessSecret: string,
+    private readonly refreshSecret: string,
+  ) {}
+
+  signAccessToken(userId: string): string {
+    return jwt.sign({ userId, jti: randomUUID() }, this.accessSecret, { expiresIn: '15m' });
+  }
+
+  verifyAccessToken(token: string): { userId: string } {
+    const payload = jwt.verify(token, this.accessSecret) as { userId: string; [key: string]: unknown };
+    return { userId: payload.userId };
+  }
+
+  signRefreshToken(userId: string): string {
+    return jwt.sign({ userId, jti: randomUUID() }, this.refreshSecret, { expiresIn: '7d' });
+  }
+
+  verifyRefreshToken(token: string): { userId: string } {
+    const payload = jwt.verify(token, this.refreshSecret) as { userId: string; [key: string]: unknown };
+    return { userId: payload.userId };
+  }
+}
+```
+
+`verifyAccessToken`/`verifyRefreshToken` are unaffected — they only ever read `payload.userId`, never the full payload, so an added `jti` field doesn't change their behavior.
+
+Also add direct unit test coverage for this invariant (the integration test only covers it indirectly via cookie-value comparison) — add to `backend/tests/unit/JwtTokenService.test.ts`, a new `describe('token uniqueness (jti)')` block with 2 tests asserting two consecutive `signAccessToken`/`signRefreshToken` calls for the same `userId` produce different tokens (see Task 1's section above for the exact test code). Verify via sabotage: temporarily remove the `jti` claim, confirm both new tests fail; restore it, confirm 11/11 pass in `JwtTokenService.test.ts`.
+
+- [ ] **Step 16: Update CLAUDE.md**
+
+Append: "Task 6 (Phase 2): wired cookie-based auth end-to-end. `POST /auth/register` and `POST /auth/login` now set `access_token`/`refresh_token` httpOnly cookies alongside their unchanged JSON response shapes; new `POST /auth/refresh` (cookie-only, sliding renewal) and `POST /auth/logout` (no auth, always 200, clears both cookies) added. `app.ts` now mounts `cors({ origin: process.env.CORS_ORIGIN, credentials: true })` and `cookieParser()` ahead of routes. Backend `PORT` changed from `3000` to `5000` (frees `3000` for the Phase 3 frontend dev server); new env vars `JWT_REFRESH_SECRET` and `CORS_ORIGIN=http://localhost:3000`. Also fixed a real bug in Task 1's `JwtTokenService` surfaced by this task's own integration tests: signing only `{ userId }` with second-granularity `iat`/`exp` made same-second tokens for one user byte-identical, breaking sliding renewal — fixed with a random `jti` claim, with direct unit test coverage added. Phase 2 backend auth upgrade is feature-complete: `docker compose up -d --build` then register (cookies set) → protected route via cookie jar, no header → refresh (new cookies) → logout (cookies cleared, agent locked out) all work against real Postgres."
+
+- [ ] **Step 17: Commit**
 
 ```bash
-git add backend/src/presentation/routes/auth.routes.ts backend/src/app.ts backend/.env.example backend/docker-compose.yml backend/tests/setup.ts backend/tests/integration/auth.routes.test.ts backend/tests/integration/cors.test.ts CLAUDE.md
+git add backend/src/presentation/routes/auth.routes.ts backend/src/app.ts backend/src/infrastructure/auth/JwtTokenService.ts backend/.env.example backend/docker-compose.yml backend/tests/setup.ts backend/tests/unit/JwtTokenService.test.ts backend/tests/integration/auth.routes.test.ts backend/tests/integration/cors.test.ts CLAUDE.md
 git commit -m "feat: wire cookie-based auth, refresh, logout, and CORS end-to-end"
 ```
 
