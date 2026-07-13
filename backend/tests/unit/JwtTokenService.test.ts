@@ -51,6 +51,27 @@ describe('JwtTokenService', () => {
     });
   });
 
+  describe('token uniqueness (jti)', () => {
+    it('signs two different access tokens for the same userId, even issued in the same instant', () => {
+      const service = new JwtTokenService('access-secret', 'refresh-secret');
+      const first = service.signAccessToken('user-123');
+      const second = service.signAccessToken('user-123');
+      // Without a random jti, jwt.sign() is a deterministic HMAC over
+      // { userId, iat, exp } + secret, and iat/exp only have second-level
+      // granularity — two calls in the same wall-clock second would
+      // otherwise produce byte-identical tokens, silently breaking the
+      // sliding-refresh guarantee that every refresh issues a new token.
+      expect(first).not.toBe(second);
+    });
+
+    it('signs two different refresh tokens for the same userId, even issued in the same instant', () => {
+      const service = new JwtTokenService('access-secret', 'refresh-secret');
+      const first = service.signRefreshToken('user-123');
+      const second = service.signRefreshToken('user-123');
+      expect(first).not.toBe(second);
+    });
+  });
+
   describe('access token expiry', () => {
     it('signs an access token with a 15-minute expiry', () => {
       const service = new JwtTokenService('access-secret', 'refresh-secret');
