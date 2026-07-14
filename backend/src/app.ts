@@ -33,10 +33,17 @@ export function createApp(overrides: AppOverrides = {}) {
   const userRepository = new PrismaUserRepository(client);
   const characterRepository = new PrismaCharacterRepository(client);
   const passwordHasher = new BcryptPasswordHasher();
-  const tokenService = new JwtTokenService(
-    process.env.JWT_SECRET as string,
-    process.env.JWT_REFRESH_SECRET as string,
-  );
+
+  const jwtSecret = process.env.JWT_SECRET as string;
+  const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET as string;
+  // JwtTokenService's access/refresh isolation is only cryptographically real
+  // if these two secrets actually differ (see JwtTokenService's typ-claim
+  // backstop for the same concern at the token level) — fail fast at startup
+  // rather than silently degrading into a security bug discovered later.
+  if (jwtSecret === jwtRefreshSecret) {
+    throw new Error('JWT_SECRET and JWT_REFRESH_SECRET must be set to different values');
+  }
+  const tokenService = new JwtTokenService(jwtSecret, jwtRefreshSecret);
 
   const registerUserUseCase = new RegisterUserUseCase(userRepository, passwordHasher, tokenService);
   const loginUserUseCase = new LoginUserUseCase(userRepository, passwordHasher, tokenService);

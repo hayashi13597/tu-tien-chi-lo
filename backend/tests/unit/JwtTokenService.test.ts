@@ -49,6 +49,22 @@ describe('JwtTokenService', () => {
       const accessToken = service.signAccessToken('user-123');
       expect(() => service.verifyRefreshToken(accessToken)).toThrow();
     });
+
+    it('rejects an access token presented to verifyRefreshToken even if both secrets happen to be identical (typ backstop)', () => {
+      // Defense-in-depth: secret distinctness is the primary defense (enforced
+      // at composition-root startup, see app.ts), but if it were ever
+      // misconfigured to the same value, the typ claim must still block
+      // token-kind confusion on its own.
+      const service = new JwtTokenService('same-secret', 'same-secret');
+      const accessToken = service.signAccessToken('user-123');
+      expect(() => service.verifyRefreshToken(accessToken)).toThrow();
+    });
+
+    it('rejects a refresh token presented to verifyAccessToken even if both secrets happen to be identical (typ backstop)', () => {
+      const service = new JwtTokenService('same-secret', 'same-secret');
+      const refreshToken = service.signRefreshToken('user-123');
+      expect(() => service.verifyAccessToken(refreshToken)).toThrow();
+    });
   });
 
   describe('token uniqueness (jti)', () => {
