@@ -16,7 +16,10 @@ afterEach(() => {
 
 describe("apiFetch", () => {
   it("returns JSON on a 200", async () => {
-    const fetchMock = vi.fn(async () => jsonResponse(200, { linhKhi: 5 }));
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, { linhKhi: 5 }),
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     const data = await apiFetch<{ linhKhi: number }>("/cultivation/state");
