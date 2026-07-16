@@ -203,6 +203,9 @@ body {
   gap: var(--space-5);
   position: sticky;
   top: var(--space-6);
+  /* Allow the column to shrink below its content's intrinsic width so long
+     numbers / the fixed-size stage can't blow the grid track out (mobile). */
+  min-width: 0;
 }
 @media (max-width: 1200px) {
   .cultivation-grid {
@@ -300,10 +303,15 @@ body {
   justify-content: center;
   perspective: 1400px;
   min-height: 600px;
+  /* Grid/flex child must be allowed to shrink; the fixed-size formation inside
+     is clipped rather than widening the track (prevents horizontal scroll). */
+  min-width: 0;
+  max-width: 100%;
 }
 .scene-3d {
   position: relative;
   width: 100%;
+  max-width: 100%;
   height: 520px;
   display: flex;
   align-items: center;
@@ -1208,6 +1216,12 @@ body {
   }
   .cultivation-stage {
     min-height: 460px;
+  }
+  .scene-3d {
+    height: 380px;
+  }
+  .realm-name {
+    font-size: 1.75rem;
   }
 }
 
