@@ -22,24 +22,6 @@ function base(props: IconProps) {
   };
 }
 
-export function MenuIcon(props: IconProps) {
-  return (
-    <svg {...base(props)}>
-      <title>Menu</title>
-      <path d="M4 6h16M4 12h16M4 18h16" />
-    </svg>
-  );
-}
-
-export function CloseIcon(props: IconProps) {
-  return (
-    <svg {...base(props)}>
-      <title>Close</title>
-      <path d="M18 6 6 18M6 6l12 12" />
-    </svg>
-  );
-}
-
 export function LogoutIcon(props: IconProps) {
   return (
     <svg {...base(props)}>
@@ -47,16 +29,6 @@ export function LogoutIcon(props: IconProps) {
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
       <path d="M16 17l5-5-5-5" />
       <path d="M21 12H9" />
-    </svg>
-  );
-}
-
-export function ChartIcon(props: IconProps) {
-  return (
-    <svg {...base(props)}>
-      <title>Chart</title>
-      <path d="M3 3v18h18" />
-      <path d="M7 15l4-4 3 3 5-6" />
     </svg>
   );
 }
