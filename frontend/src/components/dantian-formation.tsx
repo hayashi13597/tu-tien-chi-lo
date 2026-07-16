@@ -55,6 +55,14 @@ export function DantianFormation() {
   // core pulse, and floating-symbol drift. Scoped + auto-cleaned by useGSAP.
   useGSAP(
     () => {
+      // Respect the user's reduced-motion preference: skip the perpetual
+      // orbit/pulse/drift loops entirely (the formation still renders, static).
+      if (
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ) {
+        return;
+      }
       gsap.to(ring1Ref.current, {
         rotateY: 360,
         duration: 8,
@@ -117,6 +125,13 @@ export function DantianFormation() {
 
   // Mouse parallax: the whole scene eases toward a tilt tracking the cursor.
   useEffect(() => {
+    // Skip the continuous rAF parallax loop under reduced-motion.
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
     let targetRotY = 0;
     let targetRotX = 0;
     let rafId: number;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { MenuIcon } from "@/components/icons";
 
 interface QuickMenuProps {
   onOpenStats: () => void;
@@ -46,8 +47,9 @@ export function QuickMenu({ onOpenStats }: QuickMenuProps) {
         className="quick-menu-trigger"
         onClick={() => setOpen((v) => !v)}
         aria-label="Mở menu"
+        aria-expanded={open}
       >
-        ☰
+        <MenuIcon />
       </button>
     </div>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { DiamondMarker } from "@/components/icons";
 import { formatNum, formatSeconds } from "@/lib/format";
 import { getRealmMeta, getSubStageName } from "@/lib/realm-constants";
 import type { CultivationState } from "@/lib/types";
@@ -16,7 +17,10 @@ export function StatsPanel({ state, punishmentRemaining }: StatsPanelProps) {
 
   return (
     <aside className="panel">
-      <div className="panel-title">Tu Hành Bảng</div>
+      <div className="panel-title">
+        <DiamondMarker className="panel-title-marker" />
+        Tu Hành Bảng
+      </div>
       <div className="stat-row">
         <span className="stat-label">Cảnh giới</span>
         <span className="stat-value gold">{meta.name}</span>

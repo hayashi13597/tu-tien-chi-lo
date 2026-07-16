@@ -1,5 +1,6 @@
 "use client";
 
+import { DiamondMarker } from "@/components/icons";
 import { REALM_META } from "@/lib/realm-constants";
 
 interface RealmPathProps {
@@ -9,7 +10,10 @@ interface RealmPathProps {
 export function RealmPath({ currentRealmMajor }: RealmPathProps) {
   return (
     <section className="realm-path">
-      <div className="panel-title">Tu Tiên Lộ</div>
+      <div className="panel-title">
+        <DiamondMarker className="panel-title-marker" />
+        Tu Tiên Lộ
+      </div>
       <div className="realm-steps">
         {REALM_META.map((realm, i) => {
           let cls = "realm-step";

@@ -9,6 +9,7 @@ import {
 } from "@/components/breakthrough-overlay";
 import { CosmicBackground } from "@/components/cosmic-background";
 import { DantianFormation } from "@/components/dantian-formation";
+import { CloseIcon, LogoutIcon } from "@/components/icons";
 import { LingqiBar } from "@/components/lingqi-bar";
 import { LoadingScreen } from "@/components/loading-screen";
 import {
@@ -173,64 +174,63 @@ export default function Home() {
           <div className="logo-en">TU TIÊN CHI LỘ</div>
         </div>
         <div className="cultivator-info">
-          <div
-            className="cultivator-title"
-            style={{
-              display: "flex",
-              gap: "0.6rem",
-              alignItems: "center",
-              justifyContent: "flex-end",
-            }}
-          >
-            <button
-              type="button"
-              onClick={handleLogout}
-              style={{
-                background: "none",
-                border: "none",
-                color: "var(--muted)",
-                cursor: "pointer",
-                fontSize: "0.75rem",
-                textDecoration: "underline",
-              }}
-            >
-              Đăng xuất
-            </button>
+          <div className="cultivator-badge">
+            <div className="cultivator-name">{meta.name} Đạo Hữu</div>
+            <div className="cultivator-title">{subName} · Tu Tiên Giả</div>
           </div>
+          <button
+            type="button"
+            className="header-action"
+            onClick={handleLogout}
+          >
+            <LogoutIcon />
+            <span>Đăng xuất</span>
+          </button>
         </div>
       </header>
 
       <QuickMenu onOpenStats={() => setShowStats(true)} />
 
       <main className="app-main">
-        <section className="cultivation-stage">
-          <DantianFormation />
-          <ParticleCanvas ref={particleRef} />
-
-          <div className="realm-display">
-            <div className="realm-label">HIỆN TẠI CẢNH GIỚI</div>
-            <div className="realm-name">{meta.name}</div>
-            <div className="realm-sub">{subName}</div>
-            <div className="realm-desc">{meta.desc}</div>
+        <div className="cultivation-grid">
+          <div className="hud-col hud-col-left">
+            <StatsPanel
+              state={state}
+              punishmentRemaining={punishmentRemaining}
+            />
           </div>
 
-          <LingqiBar
-            linhKhi={displayLinhKhi}
-            linhKhiRequired={state.linhKhiRequired}
-          />
+          <section className="cultivation-stage">
+            <DantianFormation />
+            <ParticleCanvas ref={particleRef} />
 
-          <BreakthroughButton
-            canBreakthrough={state.canBreakthrough}
-            isMaxStage={state.isMaxStage}
-            punishedRemaining={punishmentRemaining}
-            onSuccess={handleSuccess}
-            onFailure={handleFailure}
-            onError={handleError}
-            onAttempt={handleBreakthroughClick}
-          />
-        </section>
+            <div className="realm-display">
+              <div className="realm-label">HIỆN TẠI CẢNH GIỚI</div>
+              <div className="realm-name">{meta.name}</div>
+              <div className="realm-sub">{subName}</div>
+              <div className="realm-desc">{meta.desc}</div>
+            </div>
 
-        <RealmPath currentRealmMajor={state.realmMajor} />
+            <LingqiBar
+              linhKhi={displayLinhKhi}
+              linhKhiRequired={state.linhKhiRequired}
+            />
+
+            <BreakthroughButton
+              canBreakthrough={state.canBreakthrough}
+              isMaxStage={state.isMaxStage}
+              punishedRemaining={punishmentRemaining}
+              onSuccess={handleSuccess}
+              onFailure={handleFailure}
+              onError={handleError}
+              onAttempt={handleBreakthroughClick}
+            />
+          </section>
+
+          <div className="hud-col hud-col-right">
+            <RealmPath currentRealmMajor={state.realmMajor} />
+          </div>
+        </div>
       </main>
 
       {showStats && (
@@ -261,7 +261,7 @@ export default function Home() {
               onClick={() => setShowStats(false)}
               aria-label="Đóng"
             >
-              ✕
+              <CloseIcon />
             </button>
             <StatsPanel
               state={state}
