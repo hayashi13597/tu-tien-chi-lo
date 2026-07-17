@@ -55,4 +55,19 @@ describe('GetCultivationStateUseCase', () => {
 
     expect(result.canBreakthrough).toBe(false);
   });
+
+  it('reflects an active cultivation buff in the accrued linh khi', async () => {
+    const characters = new InMemoryCharacterRepository();
+    const lastUpdateAt = new Date(Date.now() - 100_000); // 100s ago, base rate 1.0/s
+    // ×2 buff still active well into the future: 100s should accrue ~200, not ~100.
+    characters.seed(makeCharacter({
+      linhKhi: 0,
+      lastUpdateAt,
+      cultivationBuffMultiplier: 2,
+      cultivationBuffUntil: new Date(Date.now() + 60_000),
+    }));
+    const result = await new GetCultivationStateUseCase(characters).execute('user-1');
+
+    expect(result.linhKhi).toBeGreaterThanOrEqual(199);
+  });
 });
