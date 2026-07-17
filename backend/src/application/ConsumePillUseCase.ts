@@ -90,6 +90,9 @@ export class ConsumePillUseCase {
       isMaxStage: newAtMax,
       punishedUntil: updated.punishedUntil,
       cultivationRate: newStage.cultivationRate,
+      cultivationBuffMultiplier: updated.cultivationBuffMultiplier,
+      cultivationBuffUntil: updated.cultivationBuffUntil,
+      breakthroughBonusPct: updated.breakthroughBonusPct,
     };
   }
 }

@@ -14,6 +14,9 @@ export interface CultivationStateOutput {
   isMaxStage: boolean;
   punishedUntil: Date | null;
   cultivationRate: number;
+  cultivationBuffMultiplier: number | null;
+  cultivationBuffUntil: Date | null;
+  breakthroughBonusPct: number;
 }
 
 export class GetCultivationStateUseCase {
@@ -58,6 +61,9 @@ export class GetCultivationStateUseCase {
       isMaxStage: atMax,
       punishedUntil: character.punishedUntil,
       cultivationRate: stage.cultivationRate,
+      cultivationBuffMultiplier: character.cultivationBuffMultiplier,
+      cultivationBuffUntil: character.cultivationBuffUntil,
+      breakthroughBonusPct: character.breakthroughBonusPct,
     };
   }
 }
