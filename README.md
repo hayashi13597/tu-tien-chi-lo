@@ -11,7 +11,7 @@ Game tu tiên idle chạy trên web: tích lũy **linh khí** theo thời gian t
 
 ## Kiến trúc
 
-```
+```text
 tu-tien-chi-lo/
 ├── backend/    Express + TypeScript + Prisma + PostgreSQL (Clean Architecture)
 │   └── src/

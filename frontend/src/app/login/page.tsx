@@ -20,13 +20,9 @@ export default function LoginPage() {
   const [touched, setTouched] = useState(false);
 
   const usernameError =
-    username.length > 0 && username.length < 3
-      ? "Tên đạo hữu cần tối thiểu 3 ký tự"
-      : null;
+    username.length < 3 ? "Tên đạo hữu cần tối thiểu 3 ký tự" : null;
   const passwordError =
-    password.length > 0 && password.length < 8
-      ? "Mật khẩu cần tối thiểu 8 ký tự"
-      : null;
+    password.length < 8 ? "Mật khẩu cần tối thiểu 8 ký tự" : null;
 
   // Already logged in? Bounce to the dashboard.
   useEffect(() => {
@@ -80,7 +76,7 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             <div className="login-field">
               <label htmlFor="username" className="login-label">
                 Tên Đạo Hữu
