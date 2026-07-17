@@ -8,6 +8,9 @@ export interface CultivationState {
   isMaxStage: boolean;
   punishedUntil: string | null;
   cultivationRate: number;
+  cultivationBuffMultiplier: number | null;
+  cultivationBuffUntil: string | null; // ISO 8601
+  breakthroughBonusPct: number;
 }
 
 export interface BreakthroughResult {
@@ -80,4 +83,19 @@ export interface ActiveBuff {
   expiresAt?: number;
   multiplier?: number;
   bonusPct?: number;
+}
+
+// Flat inventory item as returned by GET /pills/inventory (backend InventoryDto).
+export interface PillInventoryItem {
+  id: string;
+  name: string;
+  glyph: string;
+  rarity: PillRarity;
+  effectKind: PillEffectKind;
+  amount: number | null;
+  multiplier: number | null;
+  durationSec: number | null;
+  bonusPct: number | null;
+  desc: string;
+  quantity: number;
 }
