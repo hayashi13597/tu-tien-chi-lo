@@ -46,3 +46,20 @@ describe('isMaxStage', () => {
     expect(isMaxStage(10, 3, 11)).toBe(false);
   });
 });
+
+describe('computeSuccessRate with breakthrough bonus', () => {
+  it('adds bonusPct to the raw rate', () => {
+    const r = computeSuccessRate({ baseSuccessRate: 50, pityIncrement: 0, maxSuccessRate: 95, breakthroughFails: 0, bonusPct: 20 });
+    expect(r).toBe(70);
+  });
+
+  it('still clamps at maxSuccessRate after adding the bonus', () => {
+    const r = computeSuccessRate({ baseSuccessRate: 90, pityIncrement: 0, maxSuccessRate: 95, breakthroughFails: 0, bonusPct: 40 });
+    expect(r).toBe(95);
+  });
+
+  it('defaults bonusPct to 0 when omitted', () => {
+    const r = computeSuccessRate({ baseSuccessRate: 60, pityIncrement: 0, maxSuccessRate: 95, breakthroughFails: 0 });
+    expect(r).toBe(60);
+  });
+});
