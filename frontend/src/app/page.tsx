@@ -9,13 +9,13 @@ import {
 } from "@/components/breakthrough-overlay";
 import { CosmicBackground } from "@/components/cosmic-background";
 import { DantianFormation } from "@/components/dantian-formation";
+import { LogoutIcon } from "@/components/icons";
 import { LingqiBar } from "@/components/lingqi-bar";
 import { LoadingScreen } from "@/components/loading-screen";
 import {
   ParticleCanvas,
   type ParticleCanvasHandle,
 } from "@/components/particle-canvas";
-import { QuickMenu } from "@/components/quick-menu";
 import { RealmPath } from "@/components/realm-path";
 import { StatsPanel } from "@/components/stats-panel";
 import { ToastContainer } from "@/components/toast-container";
@@ -41,7 +41,6 @@ export default function Home() {
   );
   const { toasts, addToast, removeToast } = useToast();
   const [phase, setPhase] = useState<BreakthroughPhase>("idle");
-  const [showStats, setShowStats] = useState(false);
   const particleRef = useRef<ParticleCanvasHandle>(null);
   // The POST result/error is stashed here while the tribulation animation plays,
   // then read in handleTribulationComplete to resolve success/failure.
@@ -161,6 +160,13 @@ export default function Home() {
   const meta = getRealmMeta(state.realmMajor);
   const subName = getSubStageName(state.realmSub);
 
+  // Enable the button off the same interpolated value the progress bar shows,
+  // so the bar reaching full and the button unlocking stay in sync between the
+  // 10s server polls. The server still enforces the real check on POST, and
+  // refetch reconciles any client-side optimism afterwards.
+  const canBreakthrough =
+    !state.isMaxStage && displayLinhKhi >= state.linhKhiRequired;
+
   return (
     <>
       <CosmicBackground />
@@ -173,103 +179,63 @@ export default function Home() {
           <div className="logo-en">TU TIÊN CHI LỘ</div>
         </div>
         <div className="cultivator-info">
-          <div
-            className="cultivator-title"
-            style={{
-              display: "flex",
-              gap: "0.6rem",
-              alignItems: "center",
-              justifyContent: "flex-end",
-            }}
-          >
-            <button
-              type="button"
-              onClick={handleLogout}
-              style={{
-                background: "none",
-                border: "none",
-                color: "var(--muted)",
-                cursor: "pointer",
-                fontSize: "0.75rem",
-                textDecoration: "underline",
-              }}
-            >
-              Đăng xuất
-            </button>
+          <div className="cultivator-badge">
+            <div className="cultivator-name">{meta.name} Đạo Hữu</div>
+            <div className="cultivator-title">{subName} · Tu Tiên Giả</div>
           </div>
+          <button
+            type="button"
+            className="header-action"
+            onClick={handleLogout}
+          >
+            <LogoutIcon />
+            <span>Đăng xuất</span>
+          </button>
         </div>
       </header>
 
-      <QuickMenu onOpenStats={() => setShowStats(true)} />
-
       <main className="app-main">
-        <section className="cultivation-stage">
-          <DantianFormation />
-          <ParticleCanvas ref={particleRef} />
-
-          <div className="realm-display">
-            <div className="realm-label">HIỆN TẠI CẢNH GIỚI</div>
-            <div className="realm-name">{meta.name}</div>
-            <div className="realm-sub">{subName}</div>
-            <div className="realm-desc">{meta.desc}</div>
-          </div>
-
-          <LingqiBar
-            linhKhi={displayLinhKhi}
-            linhKhiRequired={state.linhKhiRequired}
-          />
-
-          <BreakthroughButton
-            canBreakthrough={state.canBreakthrough}
-            isMaxStage={state.isMaxStage}
-            punishedRemaining={punishmentRemaining}
-            onSuccess={handleSuccess}
-            onFailure={handleFailure}
-            onError={handleError}
-            onAttempt={handleBreakthroughClick}
-          />
-        </section>
-
-        <RealmPath currentRealmMajor={state.realmMajor} />
-      </main>
-
-      {showStats && (
-        <div className="popup-overlay">
-          {/* Backdrop as a real button (sibling of the dialog) so click- and
-              keyboard-to-close are accessible without wrapping the dialog. */}
-          <button
-            type="button"
-            aria-label="Đóng bảng"
-            onClick={() => setShowStats(false)}
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: "transparent",
-              border: "none",
-              cursor: "default",
-            }}
-          />
-          <div
-            className="popup-panel"
-            role="dialog"
-            aria-label="Tu Hành Bảng"
-            aria-modal="true"
-          >
-            <button
-              type="button"
-              className="popup-close"
-              onClick={() => setShowStats(false)}
-              aria-label="Đóng"
-            >
-              ✕
-            </button>
+        <div className="cultivation-grid">
+          <div className="hud-col hud-col-left">
             <StatsPanel
               state={state}
               punishmentRemaining={punishmentRemaining}
             />
           </div>
+
+          <section className="cultivation-stage">
+            <DantianFormation />
+            <ParticleCanvas ref={particleRef} />
+
+            <div className="realm-display">
+              <div className="realm-label">HIỆN TẠI CẢNH GIỚI</div>
+              <div className="realm-name">{meta.name}</div>
+              <div className="realm-sub">{subName}</div>
+              <div className="realm-desc">{meta.desc}</div>
+            </div>
+
+            <LingqiBar
+              linhKhi={displayLinhKhi}
+              linhKhiRequired={state.linhKhiRequired}
+            />
+
+            <BreakthroughButton
+              canBreakthrough={canBreakthrough}
+              isMaxStage={state.isMaxStage}
+              busy={phase !== "idle"}
+              punishedRemaining={punishmentRemaining}
+              onSuccess={handleSuccess}
+              onFailure={handleFailure}
+              onError={handleError}
+              onAttempt={handleBreakthroughClick}
+            />
+          </section>
+
+          <div className="hud-col hud-col-right">
+            <RealmPath currentRealmMajor={state.realmMajor} />
+          </div>
         </div>
-      )}
+      </main>
 
       <BreakthroughOverlay
         phase={phase}
