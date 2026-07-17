@@ -13,6 +13,10 @@ interface UseCultivationStateResult {
   displayLinhKhi: number;
   /** Seconds of punishment remaining, or null when not punished. */
   punishmentRemaining: number | null;
+  /** Seconds left on the active cultivation buff, or null when none/expired. */
+  cultivationBuffRemaining: number | null;
+  /** Pending breakthrough success bonus (percentage points); 0 when none. */
+  breakthroughBonusPct: number;
   /** Current epoch ms, ticking every 1s to drive countdowns/interpolation. */
   now: number;
 }
@@ -77,6 +81,16 @@ export function useCultivationState(
     return diff > 0 ? diff : null;
   })();
 
+  // Same countdown pattern as punishment: seconds until the buff expires, driven
+  // by the 1s `now` tick, null once elapsed. Buff data is server-authoritative.
+  const cultivationBuffRemaining = (() => {
+    if (!state?.cultivationBuffUntil) return null;
+    const diff = (new Date(state.cultivationBuffUntil).getTime() - now) / 1000;
+    return diff > 0 ? diff : null;
+  })();
+
+  const breakthroughBonusPct = state?.breakthroughBonusPct ?? 0;
+
   return {
     state,
     error,
@@ -84,6 +98,8 @@ export function useCultivationState(
     refetch,
     displayLinhKhi,
     punishmentRemaining,
+    cultivationBuffRemaining,
+    breakthroughBonusPct,
     now,
   };
 }
