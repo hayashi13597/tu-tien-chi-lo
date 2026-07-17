@@ -8,9 +8,7 @@ export function applyConsume(
 ): InventoryPill[] {
   return inventory
     .map((item) =>
-      item.def.id === pillId
-        ? { ...item, quantity: item.quantity - 1 }
-        : item,
+      item.def.id === pillId ? { ...item, quantity: item.quantity - 1 } : item,
     )
     .filter((item) => item.quantity > 0);
 }
