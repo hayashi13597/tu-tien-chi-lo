@@ -15,8 +15,11 @@ import { LoginUserUseCase } from './application/LoginUserUseCase';
 import { RefreshAccessTokenUseCase } from './application/RefreshAccessTokenUseCase';
 import { GetCultivationStateUseCase } from './application/GetCultivationStateUseCase';
 import { AttemptBreakthroughUseCase } from './application/AttemptBreakthroughUseCase';
+import { GetInventoryUseCase } from './application/GetInventoryUseCase';
+import { ConsumePillUseCase } from './application/ConsumePillUseCase';
 import { createAuthRouter } from './presentation/routes/auth.routes';
 import { createCultivationRouter } from './presentation/routes/cultivation.routes';
+import { createPillsRouter } from './presentation/routes/pills.routes';
 import { createRequireAuth } from './presentation/middleware/auth';
 import { errorHandler } from './presentation/middleware/errorHandler';
 
@@ -52,6 +55,8 @@ export function createApp(overrides: AppOverrides = {}) {
   const refreshAccessTokenUseCase = new RefreshAccessTokenUseCase(tokenService);
   const getCultivationStateUseCase = new GetCultivationStateUseCase(characterRepository);
   const attemptBreakthroughUseCase = new AttemptBreakthroughUseCase(characterRepository, randomSource);
+  const getInventoryUseCase = new GetInventoryUseCase(pillRepository);
+  const consumePillUseCase = new ConsumePillUseCase(characterRepository, pillRepository);
 
   const requireAuth = createRequireAuth(tokenService);
 
@@ -71,6 +76,10 @@ export function createApp(overrides: AppOverrides = {}) {
   app.use(
     '/cultivation',
     createCultivationRouter({ getCultivationStateUseCase, attemptBreakthroughUseCase, requireAuth }),
+  );
+  app.use(
+    '/pills',
+    createPillsRouter({ getInventoryUseCase, consumePillUseCase, requireAuth }),
   );
 
   app.use(errorHandler);
