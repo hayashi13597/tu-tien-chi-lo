@@ -122,8 +122,7 @@ All under `src/components/`, className-driven with `globals.css` tokens.
 2. **`pill-modal.tsx`** — floating modal. A11y pattern from the former stats modal:
    an accessible sibling `<button>` backdrop fills the overlay (click + Esc to
    close) while `.popup-panel` (position: relative) stacks above — lint-clean under
-   Biome a11y rules. Contains title ("Đan Phòng · 丹房"), an optional filter-by-
-   effect-kind chip row (included since seed has >6 pills), a stagger-animated grid
+   Biome a11y rules. Contains title ("Đan Phòng · 丹房"), a stagger-animated grid
    of `pill-card`, and an empty state ("Đan phòng trống, cần luyện đan").
 3. **`pill-card.tsx`** — one pill: glyph in a rarity-colored orb, name, rarity
    badge, effect description, `×N` quantity, and a "Dùng" button. Rarity drives
@@ -207,4 +206,4 @@ Modified:
 
 ## Out of Scope (YAGNI)
 Luyện đan/furnace, recipe book, backend API/domain/Prisma, pill persistence,
-buff stacking, multi-effect pills.
+buff stacking, multi-effect pills, inventory filtering (8 seed pills fit one grid view).
