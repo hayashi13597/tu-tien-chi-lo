@@ -11,6 +11,7 @@ function findCookie(res: request.Response, name: string): string | undefined {
 }
 
 beforeEach(async () => {
+  await prisma.inventoryItem.deleteMany();
   await prisma.character.deleteMany();
   await prisma.user.deleteMany();
 });

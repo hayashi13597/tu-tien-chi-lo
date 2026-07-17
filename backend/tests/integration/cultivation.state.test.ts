@@ -12,6 +12,7 @@ async function registerAndLogin(username: string) {
 }
 
 beforeEach(async () => {
+  await prisma.inventoryItem.deleteMany();
   await prisma.character.deleteMany();
   await prisma.user.deleteMany();
 });

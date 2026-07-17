@@ -14,6 +14,9 @@ function makeCharacter(overrides: Partial<CharacterRecord> = {}): CharacterRecor
     breakthroughFails: 0,
     punishedUntil: null,
     createdAt: new Date(),
+    cultivationBuffMultiplier: null,
+    cultivationBuffUntil: null,
+    breakthroughBonusPct: 0,
     ...overrides,
   };
 }
