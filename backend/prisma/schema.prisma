@@ -19,6 +19,7 @@ model User {
   passwordHash String
   createdAt    DateTime   @default(now())
   character    Character?
+  inventory    InventoryItem[]
 }
 
 model Character {
@@ -34,5 +35,39 @@ model Character {
   breakthroughFails Int       @default(0)
   punishedUntil     DateTime?
 
+  // Active timed cultivation buff (from a consumed pill). Both null when no buff
+  // is active. computeLinhKhi integrates the buffed segment at rate × multiplier.
+  cultivationBuffMultiplier Float?
+  cultivationBuffUntil      DateTime?
+
+  // Pending one-shot breakthrough success-rate bonus (percentage points) from a
+  // consumed pill; added to the next attempt's rate, then reset to 0.
+  breakthroughBonusPct      Float     @default(0)
+
   createdAt         DateTime  @default(now())
+}
+
+model Pill {
+  id          String          @id
+  name        String
+  glyph       String
+  rarity      Int
+  effectKind  String
+  amount      Float?
+  multiplier  Float?
+  durationSec Int?
+  bonusPct    Float?
+  desc        String
+  inventory   InventoryItem[]
+}
+
+model InventoryItem {
+  id       String @id @default(uuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id])
+  pillId   String
+  pill     Pill   @relation(fields: [pillId], references: [id])
+  quantity Int    @default(0)
+
+  @@unique([userId, pillId])
 }

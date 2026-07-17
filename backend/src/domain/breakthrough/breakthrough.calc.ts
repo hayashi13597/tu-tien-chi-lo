@@ -6,8 +6,14 @@ export function computeSuccessRate(params: {
   pityIncrement: number;
   maxSuccessRate: number;
   breakthroughFails: number;
+  // One-shot bonus (percentage points) from a consumed breakthroughBoost pill.
+  // Added into the raw rate so it can push toward — but never past — the cap.
+  bonusPct?: number;
 }): number {
-  const raw = params.baseSuccessRate + params.breakthroughFails * params.pityIncrement;
+  const raw =
+    params.baseSuccessRate +
+    params.breakthroughFails * params.pityIncrement +
+    (params.bonusPct ?? 0);
   return Math.min(raw, params.maxSuccessRate);
 }
 

@@ -14,6 +14,9 @@ const STATUS_BY_CODE: Record<string, number> = {
   INSUFFICIENT_LINH_KHI: 400,
   PUNISHED: 400,
   MAX_STAGE_REACHED: 400,
+  PILL_NOT_FOUND: 404,
+  PILL_OUT_OF_STOCK: 409,
+  PILL_NOT_APPLICABLE: 400,
 };
 
 export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction) {
