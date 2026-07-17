@@ -1,107 +1,52 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { getRarityMeta, SEED_INVENTORY } from "@/lib/pill-constants";
-import { applyConsume, expireBuffs } from "@/lib/pill-logic";
-import type { ActiveBuff, InventoryPill } from "@/lib/types";
-
-export interface ConsumeCallbacks {
-  onLinhKhi: (amount: number, color: string) => void;
-  onCultivationBuff: (label: string, color: string) => void;
-  onBreakthroughBoost: (label: string, color: string) => void;
-  onClearPunishment: (color: string) => void;
-}
+import { consumePill, fetchInventory } from "@/lib/api";
+import type { CultivationState, PillInventoryItem } from "@/lib/types";
 
 export interface UsePillInventoryResult {
-  inventory: InventoryPill[];
-  activeBuffs: ActiveBuff[];
-  breakthroughBonusPct: number;
-  consume: (pillId: string, callbacks: ConsumeCallbacks) => void;
-  clearBreakthroughBoost: () => void;
-  now: number;
+  inventory: PillInventoryItem[];
+  loading: boolean;
+  error: string | null;
+  refetch: () => Promise<void>;
+  consume: (pillId: string) => Promise<CultivationState>;
 }
 
-export function usePillInventory(): UsePillInventoryResult {
-  const [inventory, setInventory] = useState<InventoryPill[]>(SEED_INVENTORY);
-  const [activeBuffs, setActiveBuffs] = useState<ActiveBuff[]>([]);
-  const [now, setNow] = useState(Date.now());
+// Server-backed inventory list. `enabled` gates the initial load so the fetch
+// only fires once the modal opens (lazy), not on dashboard mount.
+export function usePillInventory(enabled: boolean): UsePillInventoryResult {
+  const [inventory, setInventory] = useState<PillInventoryItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // 1s tick drives buff countdown display and expiry (mirrors the cultivation
-  // hook's own tick — buffs are client-only and independent of the server poll).
+  const refetch = useCallback(async () => {
+    setLoading(true);
+    try {
+      const inv = await fetchInventory();
+      setInventory(inv);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không tải được kho đan");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      const t = Date.now();
-      setNow(t);
-      setActiveBuffs((prev) => {
-        const next = expireBuffs(prev, t);
-        return next.length === prev.length ? prev : next;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const clearBreakthroughBoost = useCallback(() => {
-    setActiveBuffs((prev) =>
-      prev.filter((b) => b.kind !== "breakthroughBoost"),
-    );
-  }, []);
+    if (enabled) refetch();
+  }, [enabled, refetch]);
 
   const consume = useCallback(
-    (pillId: string, callbacks: ConsumeCallbacks) => {
-      const item = inventory.find((i) => i.def.id === pillId);
-      if (!item) return;
-      const { def } = item;
-      const color = getRarityMeta(def.rarity).color;
-      const e = def.effect;
-
-      setInventory((prev) => applyConsume(prev, pillId));
-
-      switch (e.kind) {
-        case "linhKhi":
-          callbacks.onLinhKhi(e.amount ?? 0, color);
-          break;
-        case "cultivationBuff": {
-          const label = `${def.name} ×${e.multiplier}`;
-          setActiveBuffs((prev) => [
-            // One cultivation buff at a time: drop any existing one, then add
-            // the fresh one with a renewed expiry (refresh, never stack).
-            ...prev.filter((b) => b.kind !== "cultivationBuff"),
-            {
-              kind: "cultivationBuff",
-              label,
-              multiplier: e.multiplier,
-              expiresAt: Date.now() + (e.durationSec ?? 0) * 1000,
-            },
-          ]);
-          callbacks.onCultivationBuff(label, color);
-          break;
-        }
-        case "breakthroughBoost": {
-          const label = `+${e.bonusPct}% đột phá`;
-          setActiveBuffs((prev) => [
-            ...prev.filter((b) => b.kind !== "breakthroughBoost"),
-            { kind: "breakthroughBoost", label, bonusPct: e.bonusPct },
-          ]);
-          callbacks.onBreakthroughBoost(label, color);
-          break;
-        }
-        case "clearPunishment":
-          callbacks.onClearPunishment(color);
-          break;
-      }
+    async (pillId: string): Promise<CultivationState> => {
+      // Server is authoritative: POST first, then re-read the list so quantities
+      // (and any 0-drop) reflect the committed state. The fresh cultivation
+      // state is returned to the caller to reconcile the dashboard.
+      const state = await consumePill(pillId);
+      await refetch();
+      return state;
     },
-    [inventory],
+    [refetch],
   );
 
-  const breakthroughBonusPct =
-    activeBuffs.find((b) => b.kind === "breakthroughBoost")?.bonusPct ?? 0;
-
-  return {
-    inventory,
-    activeBuffs,
-    breakthroughBonusPct,
-    consume,
-    clearBreakthroughBoost,
-    now,
-  };
+  return { inventory, loading, error, refetch, consume };
 }

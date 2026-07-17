@@ -2,10 +2,10 @@
 
 import type { CSSProperties } from "react";
 import { getRarityMeta } from "@/lib/pill-constants";
-import type { InventoryPill } from "@/lib/types";
+import type { PillInventoryItem } from "@/lib/types";
 
 interface PillCardProps {
-  item: InventoryPill;
+  item: PillInventoryItem;
   disabled: boolean;
   disabledReason?: string;
   onUse: (pillId: string) => void;
@@ -17,8 +17,7 @@ export function PillCard({
   disabledReason,
   onUse,
 }: PillCardProps) {
-  const { def, quantity } = item;
-  const rarity = getRarityMeta(def.rarity);
+  const rarity = getRarityMeta(item.rarity);
 
   return (
     <div
@@ -26,18 +25,18 @@ export function PillCard({
       style={{ "--rarity": rarity.color } as CSSProperties}
     >
       <div className="pill-orb">
-        <span className="pill-glyph">{def.glyph}</span>
+        <span className="pill-glyph">{item.glyph}</span>
       </div>
-      <span className="pill-name">{def.name}</span>
+      <span className="pill-name">{item.name}</span>
       <span className="pill-rarity">{rarity.name}</span>
-      <p className="pill-desc">{def.desc}</p>
-      <span className="pill-qty">Số lượng: ×{quantity}</span>
+      <p className="pill-desc">{item.desc}</p>
+      <span className="pill-qty">Số lượng: ×{item.quantity}</span>
       <button
         type="button"
         className="pill-use-btn"
         disabled={disabled}
         title={disabled ? disabledReason : undefined}
-        onClick={() => onUse(def.id)}
+        onClick={() => onUse(item.id)}
       >
         {disabled ? (disabledReason ?? "Không thể dùng") : "Dùng"}
       </button>

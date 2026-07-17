@@ -3,11 +3,14 @@
 import gsap from "gsap";
 import { useEffect, useRef } from "react";
 import { PillCard } from "@/components/pill-card";
-import type { InventoryPill, PillEffectKind } from "@/lib/types";
+import type { PillEffectKind, PillInventoryItem } from "@/lib/types";
 
 interface PillModalProps {
   open: boolean;
-  inventory: InventoryPill[];
+  inventory: PillInventoryItem[];
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
   onClose: () => void;
   onUse: (pillId: string) => void;
   isDisabled: (kind: PillEffectKind) => { disabled: boolean; reason?: string };
@@ -16,6 +19,9 @@ interface PillModalProps {
 export function PillModal({
   open,
   inventory,
+  loading,
+  error,
+  onRetry,
   onClose,
   onUse,
   isDisabled,
@@ -74,15 +80,29 @@ export function PillModal({
             Đóng
           </button>
         </div>
-        {inventory.length === 0 ? (
+        {error ? (
+          <div className="pill-empty">
+            <p style={{ color: "var(--red)", marginBottom: "1rem" }}>{error}</p>
+            <button
+              type="button"
+              className="pill-use-btn"
+              style={{ width: "auto" }}
+              onClick={onRetry}
+            >
+              Thử Lại
+            </button>
+          </div>
+        ) : loading && inventory.length === 0 ? (
+          <p className="pill-empty">Đang tải kho đan...</p>
+        ) : inventory.length === 0 ? (
           <p className="pill-empty">Đan phòng trống, cần luyện đan.</p>
         ) : (
           <div className="pill-grid">
             {inventory.map((item) => {
-              const { disabled, reason } = isDisabled(item.def.effect.kind);
+              const { disabled, reason } = isDisabled(item.effectKind);
               return (
                 <PillCard
-                  key={item.def.id}
+                  key={item.id}
                   item={item}
                   disabled={disabled}
                   disabledReason={reason}
