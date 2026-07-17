@@ -16,14 +16,20 @@ import {
   ParticleCanvas,
   type ParticleCanvasHandle,
 } from "@/components/particle-canvas";
+import { PillInventoryButton } from "@/components/pill-inventory-button";
+import { PillModal } from "@/components/pill-modal";
 import { RealmPath } from "@/components/realm-path";
 import { StatsPanel } from "@/components/stats-panel";
 import { ToastContainer } from "@/components/toast-container";
 import { useCultivationState } from "@/hooks/use-cultivation-state";
+import {
+  type ConsumeCallbacks,
+  usePillInventory,
+} from "@/hooks/use-pill-inventory";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth-context";
 import { getRealmMeta, getSubStageName } from "@/lib/realm-constants";
-import type { BreakthroughResult } from "@/lib/types";
+import type { BreakthroughResult, PillEffectKind } from "@/lib/types";
 
 export default function Home() {
   const { isAuthenticated, isLoading, logout } = useAuth();
@@ -41,6 +47,17 @@ export default function Home() {
   );
   const { toasts, addToast, removeToast } = useToast();
   const [phase, setPhase] = useState<BreakthroughPhase>("idle");
+  const [pillModalOpen, setPillModalOpen] = useState(false);
+  const [linhKhiBonus, setLinhKhiBonus] = useState(0);
+  const [punishmentCleared, setPunishmentCleared] = useState(false);
+  const {
+    inventory,
+    activeBuffs,
+    breakthroughBonusPct,
+    consume,
+    clearBreakthroughBoost,
+    now: pillNow,
+  } = usePillInventory();
   const particleRef = useRef<ParticleCanvasHandle>(null);
   // The POST result/error is stashed here while the tribulation animation plays,
   // then read in handleTribulationComplete to resolve success/failure.
@@ -64,6 +81,12 @@ export default function Home() {
     }, 2000);
     return () => clearInterval(interval);
   }, [isAuthenticated, state, phase]);
+
+  // Once the server poll shows punishment is gone, drop the local clear flag so
+  // a future punishment isn't masked by a stale flag.
+  useEffect(() => {
+    if (punishmentRemaining === null) setPunishmentCleared(false);
+  }, [punishmentRemaining]);
 
   const handleLogout = useCallback(async () => {
     await logout();
@@ -95,6 +118,55 @@ export default function Home() {
     setPhase("tribulating");
     addToast("Thiên Kiếp", "Kiếp vân hội tụ, chuẩn bị đón kiếp!", "purple");
   }, [phase, addToast]);
+
+  const effectiveState = state;
+
+  const handleUsePill = useCallback(
+    (pillId: string) => {
+      const callbacks: ConsumeCallbacks = {
+        onLinhKhi: (amount, color) => {
+          setLinhKhiBonus((b) => b + amount);
+          particleRef.current?.spawnBurst(color, 40);
+          addToast("Dùng Đan", `Hấp thu ${amount} linh khí`, "success");
+        },
+        onCultivationBuff: (label, color) => {
+          particleRef.current?.spawnBurst(color, 30);
+          addToast("Dược Lực", `Buff kích hoạt: ${label}`, "purple");
+        },
+        onBreakthroughBoost: (label, color) => {
+          particleRef.current?.spawnBurst(color, 30);
+          addToast("Dược Lực", label, "purple");
+        },
+        onClearPunishment: (color) => {
+          setPunishmentCleared(true);
+          particleRef.current?.spawnBurst(color, 30);
+          addToast("Giải Phạt", "Trạng thái trừng phạt đã được gỡ", "success");
+        },
+      };
+      consume(pillId, callbacks);
+    },
+    [consume, addToast],
+  );
+
+  const isPillDisabled = useCallback(
+    (kind: PillEffectKind): { disabled: boolean; reason?: string } => {
+      if (!effectiveState) return { disabled: true };
+      if (
+        (kind === "linhKhi" || kind === "breakthroughBoost") &&
+        effectiveState.isMaxStage
+      ) {
+        return { disabled: true, reason: "Đã đạt cực cảnh" };
+      }
+      if (
+        kind === "clearPunishment" &&
+        (punishmentRemaining === null || punishmentCleared)
+      ) {
+        return { disabled: true, reason: "Không bị trừng phạt" };
+      }
+      return { disabled: false };
+    },
+    [effectiveState, punishmentRemaining, punishmentCleared],
+  );
 
   // Called when the tribulation animation finishes: resolve the stashed result.
   const handleTribulationComplete = useCallback(() => {
@@ -128,8 +200,9 @@ export default function Home() {
       setTimeout(() => setPhase("idle"), 1500);
     }
 
+    clearBreakthroughBoost();
     refetch();
-  }, [addToast, refetch]);
+  }, [addToast, refetch, clearBreakthroughBoost]);
 
   if (isLoading || loading) {
     return <LoadingScreen />;
@@ -164,8 +237,10 @@ export default function Home() {
   // so the bar reaching full and the button unlocking stay in sync between the
   // 10s server polls. The server still enforces the real check on POST, and
   // refetch reconciles any client-side optimism afterwards.
+  const shownLinhKhi = displayLinhKhi + linhKhiBonus;
+  const shownPunishment = punishmentCleared ? null : punishmentRemaining;
   const canBreakthrough =
-    !state.isMaxStage && displayLinhKhi >= state.linhKhiRequired;
+    !state.isMaxStage && shownLinhKhi >= state.linhKhiRequired;
 
   return (
     <>
@@ -183,6 +258,7 @@ export default function Home() {
             <div className="cultivator-name">{meta.name} Đạo Hữu</div>
             <div className="cultivator-title">{subName} · Tu Tiên Giả</div>
           </div>
+          <PillInventoryButton onClick={() => setPillModalOpen(true)} />
           <button
             type="button"
             className="header-action"
@@ -197,10 +273,18 @@ export default function Home() {
       <main className="app-main">
         <div className="cultivation-grid">
           <div className="hud-col hud-col-left">
-            <StatsPanel
-              state={state}
-              punishmentRemaining={punishmentRemaining}
-            />
+            <StatsPanel state={state} punishmentRemaining={shownPunishment} />
+            {activeBuffs.length > 0 && (
+              <div className="buff-strip">
+                {activeBuffs.map((b) => (
+                  <span key={b.kind} className="buff-chip">
+                    {b.kind === "cultivationBuff" && b.expiresAt
+                      ? `${b.label} (${Math.max(0, Math.ceil((b.expiresAt - pillNow) / 1000))}s)`
+                      : b.label}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           <section className="cultivation-stage">
@@ -215,7 +299,7 @@ export default function Home() {
             </div>
 
             <LingqiBar
-              linhKhi={displayLinhKhi}
+              linhKhi={shownLinhKhi}
               linhKhiRequired={state.linhKhiRequired}
             />
 
@@ -223,11 +307,12 @@ export default function Home() {
               canBreakthrough={canBreakthrough}
               isMaxStage={state.isMaxStage}
               busy={phase !== "idle"}
-              punishedRemaining={punishmentRemaining}
+              punishedRemaining={shownPunishment}
               onSuccess={handleSuccess}
               onFailure={handleFailure}
               onError={handleError}
               onAttempt={handleBreakthroughClick}
+              bonusPct={breakthroughBonusPct}
             />
           </section>
 
@@ -241,6 +326,14 @@ export default function Home() {
         phase={phase}
         successColor={meta.color}
         onComplete={handleTribulationComplete}
+      />
+
+      <PillModal
+        open={pillModalOpen}
+        inventory={inventory}
+        onClose={() => setPillModalOpen(false)}
+        onUse={handleUsePill}
+        isDisabled={isPillDisabled}
       />
     </>
   );
