@@ -38,3 +38,46 @@ export interface ToastItem {
   message: string;
   type: "success" | "danger" | "purple" | "info";
 }
+
+export type PillRarity = 0 | 1 | 2 | 3 | 4;
+
+export type PillEffectKind =
+  | "linhKhi"
+  | "cultivationBuff"
+  | "breakthroughBoost"
+  | "clearPunishment";
+
+export interface PillEffect {
+  kind: PillEffectKind;
+  /** linhKhi: linh khí added immediately. */
+  amount?: number;
+  /** cultivationBuff: multiplier applied to cultivationRate while active. */
+  multiplier?: number;
+  /** cultivationBuff: buff lifetime in seconds. */
+  durationSec?: number;
+  /** breakthroughBoost: +percentage points to next breakthrough success. */
+  bonusPct?: number;
+}
+
+export interface PillDef {
+  id: string;
+  name: string;
+  glyph: string; // Hán tự shown on the pill orb
+  rarity: PillRarity;
+  effect: PillEffect;
+  desc: string;
+}
+
+export interface InventoryPill {
+  def: PillDef;
+  quantity: number;
+}
+
+export interface ActiveBuff {
+  kind: "cultivationBuff" | "breakthroughBoost";
+  label: string;
+  /** epoch ms; present for cultivationBuff only. */
+  expiresAt?: number;
+  multiplier?: number;
+  bonusPct?: number;
+}
