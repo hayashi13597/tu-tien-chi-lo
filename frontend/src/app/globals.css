@@ -1137,3 +1137,164 @@ body {
     animation: none !important;
   }
 }
+
+/* === ĐAN PHÒNG (alchemy inventory) === */
+.pill-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+}
+/* Accessible full-overlay backdrop button — click/Enter/Esc to close.
+   A <button> (not a div) keeps this lint-clean under the a11y rules. */
+.pill-backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(4, 2, 10, 0.7);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+}
+.pill-panel {
+  position: relative;
+  z-index: 1;
+  width: min(920px, 100%);
+  max-height: 85vh;
+  overflow-y: auto;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+  padding: var(--space-6);
+}
+.pill-panel-title {
+  font-family: var(--font-ma-shan), serif;
+  font-size: 1.5rem;
+  color: var(--gold);
+  margin-bottom: var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.pill-close {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--fg-dim);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-3);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.pill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-4);
+}
+.pill-card {
+  border: 1px solid color-mix(in srgb, var(--rarity) 45%, transparent);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+  box-shadow: 0 0 18px color-mix(in srgb, var(--rarity) 18%, transparent);
+  transition:
+    transform var(--dur) var(--ease-out),
+    box-shadow var(--dur) var(--ease-out);
+}
+.pill-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 28px color-mix(in srgb, var(--rarity) 40%, transparent);
+}
+.pill-orb {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(
+    circle at 35% 30%,
+    color-mix(in srgb, var(--rarity) 70%, #fff 10%),
+    var(--rarity) 70%
+  );
+  box-shadow:
+    0 0 20px color-mix(in srgb, var(--rarity) 60%, transparent),
+    inset -4px -4px 10px rgba(0, 0, 0, 0.4);
+}
+.pill-glyph {
+  font-family: var(--font-ma-shan), serif;
+  font-size: 1.6rem;
+  color: #0a0512;
+}
+.pill-name {
+  font-family: var(--font-zcool), serif;
+  font-size: 1.05rem;
+  color: var(--fg);
+}
+.pill-rarity {
+  font-size: 0.75rem;
+  color: var(--rarity);
+  border: 1px solid color-mix(in srgb, var(--rarity) 50%, transparent);
+  border-radius: 999px;
+  padding: 1px var(--space-2);
+}
+.pill-desc {
+  font-size: 0.8rem;
+  color: var(--fg-dim);
+  min-height: 2.5em;
+}
+.pill-qty {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.pill-use-btn {
+  margin-top: var(--space-2);
+  width: 100%;
+  padding: var(--space-2);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--gold) 15%, transparent);
+  color: var(--gold);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background var(--dur-fast);
+}
+.pill-use-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--gold) 30%, transparent);
+}
+.pill-use-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.pill-empty {
+  text-align: center;
+  color: var(--muted);
+  padding: var(--space-8);
+}
+.buff-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+.buff-chip {
+  font-size: 0.75rem;
+  color: var(--jade);
+  border: 1px solid var(--jade-glow);
+  border-radius: 999px;
+  padding: 2px var(--space-2);
+  background: rgba(93, 217, 177, 0.08);
+}
+.boost-badge {
+  display: inline-block;
+  margin-left: var(--space-2);
+  font-size: 0.75rem;
+  color: var(--gold);
+}
