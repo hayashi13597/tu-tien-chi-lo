@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import { prisma as defaultPrismaClient } from './infrastructure/db/prisma';
 import { PrismaUserRepository } from './infrastructure/repositories/PrismaUserRepository';
 import { PrismaCharacterRepository } from './infrastructure/repositories/PrismaCharacterRepository';
+import { PrismaPillRepository } from './infrastructure/repositories/PrismaPillRepository';
 import { BcryptPasswordHasher } from './infrastructure/auth/BcryptPasswordHasher';
 import { JwtTokenService } from './infrastructure/auth/JwtTokenService';
 import { MathRandomSource } from './infrastructure/random/MathRandomSource';
@@ -32,6 +33,7 @@ export function createApp(overrides: AppOverrides = {}) {
 
   const userRepository = new PrismaUserRepository(client);
   const characterRepository = new PrismaCharacterRepository(client);
+  const pillRepository = new PrismaPillRepository(client);
   const passwordHasher = new BcryptPasswordHasher();
 
   const jwtSecret = process.env.JWT_SECRET as string;
@@ -45,7 +47,7 @@ export function createApp(overrides: AppOverrides = {}) {
   }
   const tokenService = new JwtTokenService(jwtSecret, jwtRefreshSecret);
 
-  const registerUserUseCase = new RegisterUserUseCase(userRepository, passwordHasher, tokenService);
+  const registerUserUseCase = new RegisterUserUseCase(userRepository, passwordHasher, tokenService, pillRepository);
   const loginUserUseCase = new LoginUserUseCase(userRepository, passwordHasher, tokenService);
   const refreshAccessTokenUseCase = new RefreshAccessTokenUseCase(tokenService);
   const getCultivationStateUseCase = new GetCultivationStateUseCase(characterRepository);

@@ -11,6 +11,15 @@ export class InMemoryPillRepository implements PillRepository {
     this.pills.set(pill.id, pill);
   }
 
+  /** Test helper: register minimal definitions for every starter pill, so that
+   *  listInventory (which joins on a known definition) returns them after
+   *  seedStarterInventory — mirrors production where the FK guarantees defs. */
+  seedStarterDefinitions(): void {
+    for (const { pillId } of STARTER_INVENTORY) {
+      this.seedPill({ id: pillId, name: pillId, glyph: 'x', rarity: 0, effectKind: 'linhKhi', amount: 0, multiplier: null, durationSec: null, bonusPct: null, desc: '' });
+    }
+  }
+
   /** Test helper: set a user's quantity for a pill directly. */
   setQuantity(userId: string, pillId: string, quantity: number): void {
     this.inv.set(`${userId}:${pillId}`, quantity);
