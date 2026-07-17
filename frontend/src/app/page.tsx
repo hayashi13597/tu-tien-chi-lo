@@ -160,6 +160,13 @@ export default function Home() {
   const meta = getRealmMeta(state.realmMajor);
   const subName = getSubStageName(state.realmSub);
 
+  // Enable the button off the same interpolated value the progress bar shows,
+  // so the bar reaching full and the button unlocking stay in sync between the
+  // 10s server polls. The server still enforces the real check on POST, and
+  // refetch reconciles any client-side optimism afterwards.
+  const canBreakthrough =
+    !state.isMaxStage && displayLinhKhi >= state.linhKhiRequired;
+
   return (
     <>
       <CosmicBackground />
@@ -213,8 +220,9 @@ export default function Home() {
             />
 
             <BreakthroughButton
-              canBreakthrough={state.canBreakthrough}
+              canBreakthrough={canBreakthrough}
               isMaxStage={state.isMaxStage}
+              busy={phase !== "idle"}
               punishedRemaining={punishmentRemaining}
               onSuccess={handleSuccess}
               onFailure={handleFailure}

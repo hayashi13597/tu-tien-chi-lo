@@ -8,6 +8,10 @@ import type { BreakthroughResult } from "@/lib/types";
 interface BreakthroughButtonProps {
   canBreakthrough: boolean;
   isMaxStage: boolean;
+  /** True for the whole breakthrough flow (tribulation animation + resolution),
+   * not just the POST. Keeps the button locked until phase returns to idle so
+   * rapid clicks can't fire multiple backend attempts per animation. */
+  busy: boolean;
   punishedRemaining: number | null;
   onAttempt: () => void;
   onSuccess: (result: BreakthroughResult) => void;
@@ -18,6 +22,7 @@ interface BreakthroughButtonProps {
 export function BreakthroughButton({
   canBreakthrough,
   isMaxStage,
+  busy,
   punishedRemaining,
   onAttempt,
   onSuccess,
@@ -27,16 +32,22 @@ export function BreakthroughButton({
   const [attempting, setAttempting] = useState(false);
 
   const disabled =
-    attempting || isMaxStage || punishedRemaining !== null || !canBreakthrough;
+    attempting ||
+    busy ||
+    isMaxStage ||
+    punishedRemaining !== null ||
+    !canBreakthrough;
 
   let label = "Đột Phá Cảnh Giới";
   if (isMaxStage) label = "Đã Đạt Cực Cảnh";
   else if (punishedRemaining !== null)
     label = `Bị Phạt (${formatSeconds(punishedRemaining)})`;
   else if (!canBreakthrough) label = "Linh Khí Chưa Đủ";
-  else if (attempting) label = "Đang Đột Phá...";
+  else if (attempting || busy) label = "Đang Đột Phá...";
 
   const handleClick = async () => {
+    // Guard against a click landing before the disabled state re-renders.
+    if (disabled) return;
     onAttempt();
     setAttempting(true);
     try {
