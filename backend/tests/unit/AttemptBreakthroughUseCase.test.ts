@@ -171,7 +171,10 @@ describe('AttemptBreakthroughUseCase breakthrough bonus', () => {
   it('applies breakthroughBonusPct and resets it to 0 on success', async () => {
     const characters = new InMemoryCharacterRepository();
     characters.seed(makeCharacter({ linhKhi: 150, breakthroughBonusPct: 30 }));
-    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0));
+    // Roll 0.92 → 92, above the base rate (90, so this would FAIL without the
+    // bonus) but below the boosted rate (min(90+30, cap 95) = 95). Success here
+    // proves the bonus actually entered the rate, not just that the roll was low.
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0.92));
     const result = await useCase.execute('user-1');
     expect(result.success).toBe(true);
     expect(result.character.breakthroughBonusPct).toBe(0);

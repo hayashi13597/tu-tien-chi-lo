@@ -68,6 +68,10 @@ describe('GetCultivationStateUseCase', () => {
     }));
     const result = await new GetCultivationStateUseCase(characters).execute('user-1');
 
+    // ~200 with a tight band: the use case's own `new Date()` runs a beat after
+    // the seed's Date.now(), so slightly over 200 is expected — but severe
+    // over-accrual (e.g. the buff applied to the wrong segment) must still fail.
     expect(result.linhKhi).toBeGreaterThanOrEqual(199);
+    expect(result.linhKhi).toBeLessThan(203);
   });
 });
