@@ -61,6 +61,27 @@ export function StatsPanel({
             )}
         </span>
       </div>
+      {/* Chance the next breakthrough would succeed (base + pity + boost).
+          Hidden at max stage, where no breakthrough is possible. */}
+      {!state.isMaxStage && (
+        <div className="stat-row">
+          <span className="stat-label">Tỷ lệ đột phá</span>
+          <span
+            className={`stat-value ${
+              state.breakthroughBonusPct > 0 ? "gold" : "jade"
+            }`}
+          >
+            {state.breakthroughSuccessRate.toFixed(1)}%
+            {/* Show the pending boost is what lifted the rate. */}
+            {state.breakthroughBonusPct > 0 && (
+              <span className="stat-value gold">
+                {" "}
+                (+{state.breakthroughBonusPct}%)
+              </span>
+            )}
+          </span>
+        </div>
+      )}
       <div className="stat-row">
         <span className="stat-label">Trạng thái</span>
         {state.isMaxStage ? (

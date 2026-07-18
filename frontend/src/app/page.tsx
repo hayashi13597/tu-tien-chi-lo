@@ -9,14 +9,13 @@ import {
 } from "@/components/breakthrough-overlay";
 import { CosmicBackground } from "@/components/cosmic-background";
 import { DantianFormation } from "@/components/dantian-formation";
-import { LogoutIcon } from "@/components/icons";
+import { HeaderMenu } from "@/components/header-menu";
 import { LingqiBar } from "@/components/lingqi-bar";
 import { LoadingScreen } from "@/components/loading-screen";
 import {
   ParticleCanvas,
   type ParticleCanvasHandle,
 } from "@/components/particle-canvas";
-import { PillInventoryButton } from "@/components/pill-inventory-button";
 import { PillModal } from "@/components/pill-modal";
 import { RealmPath } from "@/components/realm-path";
 import { StatsPanel } from "@/components/stats-panel";
@@ -250,19 +249,10 @@ export default function Home() {
           <div className="logo-en">TU TIÊN CHI LỘ</div>
         </div>
         <div className="cultivator-info">
-          <div className="cultivator-badge">
-            <div className="cultivator-name">{meta.name} Đạo Hữu</div>
-            <div className="cultivator-title">{subName} · Tu Tiên Giả</div>
-          </div>
-          <PillInventoryButton onClick={() => setPillModalOpen(true)} />
-          <button
-            type="button"
-            className="header-action"
-            onClick={handleLogout}
-          >
-            <LogoutIcon />
-            <span>Đăng xuất</span>
-          </button>
+          <HeaderMenu
+            onOpenPills={() => setPillModalOpen(true)}
+            onLogout={handleLogout}
+          />
         </div>
       </header>
 

@@ -141,19 +141,6 @@ body {
   align-items: center;
   gap: var(--space-4);
 }
-.cultivator-badge {
-  text-align: right;
-  line-height: 1.3;
-}
-.cultivator-name {
-  font-family: var(--font-zcool), "ZCOOL XiaoWei", serif;
-  color: var(--gold);
-  font-size: 1rem;
-}
-.cultivator-title {
-  color: var(--muted);
-  font-size: 0.75rem;
-}
 /* Icon + label button used for logout in the header. */
 .header-action {
   display: inline-flex;
@@ -178,6 +165,93 @@ body {
 }
 .header-action:active {
   transform: scale(0.97);
+}
+
+/* Desktop cluster of header actions (Đan Phòng + Đăng xuất). Collapsed into
+   the hamburger below the mobile breakpoint. */
+.header-actions-desktop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+/* Hamburger wrapper — hidden on desktop, shown on mobile (see @media 768). */
+.header-menu {
+  display: none;
+  position: relative;
+}
+.header-menu-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 44x44 min touch target per mobile a11y guidance. */
+  width: 44px;
+  height: 44px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--fg-dim);
+  cursor: pointer;
+  transition:
+    color var(--dur) var(--ease-out),
+    border-color var(--dur) var(--ease-out);
+}
+.header-menu-toggle:hover,
+.header-menu-toggle[aria-expanded="true"] {
+  color: var(--gold);
+  border-color: var(--border-bright);
+}
+.header-menu-dropdown {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: 20;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  background: rgba(12, 6, 22, 0.96);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  animation: header-menu-in var(--dur) var(--ease-out);
+}
+@keyframes header-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.header-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  /* Full-width rows, ≥44px tall for comfortable tapping. */
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--fg-dim);
+  font-size: 0.9rem;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+.header-menu-item:hover {
+  color: var(--gold);
+  background: var(--surface-2);
+}
+.header-menu-item:active {
+  transform: scale(0.98);
 }
 
 /* === MAIN LAYOUT === */
@@ -1070,8 +1144,17 @@ body {
 @media (max-width: 768px) {
   .app-header {
     padding: var(--space-4);
-    flex-direction: column;
-    gap: var(--space-4);
+  }
+  /* Collapse the inline actions into the hamburger dropdown. Keep the header
+     a single row (logo | badge + menu) instead of stacking. */
+  .header-actions-desktop {
+    display: none;
+  }
+  .header-menu {
+    display: block;
+  }
+  .cultivator-info {
+    gap: var(--space-3);
   }
   .app-main {
     padding: var(--space-4);

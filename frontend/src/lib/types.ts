@@ -11,6 +11,8 @@ export interface CultivationState {
   cultivationBuffMultiplier: number | null;
   cultivationBuffUntil: string | null; // ISO 8601
   breakthroughBonusPct: number;
+  /** Success chance (%) the next breakthrough would use: base + pity + boost. */
+  breakthroughSuccessRate: number;
 }
 
 export interface BreakthroughResult {

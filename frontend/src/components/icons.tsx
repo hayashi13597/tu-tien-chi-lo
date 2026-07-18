@@ -33,6 +33,29 @@ export function LogoutIcon(props: IconProps) {
   );
 }
 
+// Hamburger toggle for the mobile header menu.
+export function MenuIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <title>Menu</title>
+      <path d="M4 6h16" />
+      <path d="M4 12h16" />
+      <path d="M4 18h16" />
+    </svg>
+  );
+}
+
+// Close (X) for the open mobile header menu.
+export function CloseIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <title>Đóng</title>
+      <path d="M18 6 6 18" />
+      <path d="M6 6l12 12" />
+    </svg>
+  );
+}
+
 // Diamond marker used as a decorative bullet before panel titles.
 export function DiamondMarker(props: IconProps) {
   return (

@@ -42,6 +42,8 @@ describe('GET /cultivation/state', () => {
     expect(res.body.linhKhiRequired).toBe(100);
     expect(res.body.canBreakthrough).toBe(false);
     expect(res.body.isMaxStage).toBe(false);
+    // Fresh Phàm Nhân - Sơ: base rate, no pity, no boost.
+    expect(res.body.breakthroughSuccessRate).toBe(90);
   });
 
   it('does not write to the database on repeated calls', async () => {
@@ -73,5 +75,7 @@ describe('GET /cultivation/state', () => {
     expect(res.body.cultivationBuffMultiplier).toBe(1.5);
     expect(typeof res.body.cultivationBuffUntil).toBe('string'); // ISO
     expect(res.body.breakthroughBonusPct).toBe(15);
+    // Phàm Nhân - Sơ base 90 + 15% boost = 105, clamped to the stage cap 95.
+    expect(res.body.breakthroughSuccessRate).toBe(95);
   });
 });
