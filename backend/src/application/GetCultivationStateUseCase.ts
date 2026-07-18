@@ -1,6 +1,6 @@
 import { CharacterRepository } from '../domain/ports/CharacterRepository';
 import { DomainError } from '../domain/errors';
-import { REALMS, MAX_REALM_MAJOR } from '../infrastructure/config/realms';
+import { REALMS, MAX_REALM_MAJOR } from '../domain/config/realms';
 import { computeLinhKhi } from '../domain/cultivation/cultivation.calc';
 import { isMaxStage } from '../domain/breakthrough/breakthrough.calc';
 

@@ -1,7 +1,7 @@
 import { CharacterRepository } from '../domain/ports/CharacterRepository';
 import { PillRepository } from '../domain/ports/PillRepository';
 import { DomainError } from '../domain/errors';
-import { REALMS, MAX_REALM_MAJOR } from '../infrastructure/config/realms';
+import { REALMS, MAX_REALM_MAJOR } from '../domain/config/realms';
 import { computeLinhKhi } from '../domain/cultivation/cultivation.calc';
 import { isMaxStage } from '../domain/breakthrough/breakthrough.calc';
 import { applyPillEffect } from '../domain/pills/pill.calc';
@@ -73,6 +73,11 @@ export class ConsumePillUseCase {
       breakthroughBonusPct: effect.breakthroughBonusPct,
     });
     if (!updated) {
+      // Compensate: the effect was never applied, so give the unit back —
+      // otherwise a lost concurrency race would silently burn the pill.
+      // (Saga-style compensation rather than a cross-repository transaction,
+      // which would leak a unit-of-work/Prisma concern into this layer.)
+      await this.pills.incrementOne(userId, pillId);
       throw new DomainError('CONCURRENT_MODIFICATION', 'Character was modified by another request');
     }
 
