@@ -67,9 +67,9 @@ describe('AttemptBreakthroughUseCase', () => {
     expect(state?.linhKhi).toBeGreaterThanOrEqual(500);
   });
 
-  it('rejects with MAX_STAGE_REACHED at Thái Ất - Đại Viên Mãn, but still persists accrued linh khi', async () => {
+  it('rejects with MAX_STAGE_REACHED at Thái Ất - Viên Mãn, but still persists accrued linh khi', async () => {
     const characters = new InMemoryCharacterRepository();
-    characters.seed(makeCharacter({ realmMajor: 11, realmSub: 3, linhKhi: 999_999_999 }));
+    characters.seed(makeCharacter({ realmMajor: 11, realmSub: 4, linhKhi: 999_999_999 }));
     let updateCalls = 0;
     const originalUpdate = characters.updateWithConcurrencyGuard.bind(characters);
     characters.updateWithConcurrencyGuard = async (id, expectedLastUpdateAt, data) => {
@@ -82,7 +82,7 @@ describe('AttemptBreakthroughUseCase', () => {
 
     expect(updateCalls).toBe(1);
     const state = await characters.findByUserId('user-1');
-    // Thái Ất - Đại Viên Mãn has a very high cultivationRate (255.09/s), so a
+    // Thái Ất - Viên Mãn has a very high cultivationRate (255.09/s), so a
     // fixed absolute tolerance (toBeCloseTo) would be flaky here even for a
     // few ms of elapsed time — a monotonic lower bound is rate-independent.
     expect(state?.linhKhi).toBeGreaterThanOrEqual(999_999_999);
@@ -121,9 +121,9 @@ describe('AttemptBreakthroughUseCase', () => {
     expect(result.character.punishedUntil).not.toBeNull();
   });
 
-  it('rolls over realmMajor when breaking through from Đại Viên Mãn (substage 3)', async () => {
+  it('rolls over realmMajor when breaking through from Viên Mãn (peak substage 4)', async () => {
     const characters = new InMemoryCharacterRepository();
-    characters.seed(makeCharacter({ realmMajor: 0, realmSub: 3, linhKhi: 500 }));
+    characters.seed(makeCharacter({ realmMajor: 0, realmSub: 4, linhKhi: 500 }));
     const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0));
 
     const result = await useCase.execute('user-1');

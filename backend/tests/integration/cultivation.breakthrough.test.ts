@@ -102,14 +102,14 @@ describe('POST /cultivation/breakthrough', () => {
     expect(res.body.error.code).toBe('PUNISHED');
   });
 
-  it('rejects with 400 MAX_STAGE_REACHED at Thái Ất - Đại Viên Mãn', async () => {
+  it('rejects with 400 MAX_STAGE_REACHED at Thái Ất - Viên Mãn', async () => {
     const app = createApp({ prismaClient: prismaClientForApp, randomSource: new FixedRandomSource(0) });
     const token = await registerAndLogin(app, 'laura');
 
     const user = await prisma.user.findUnique({ where: { username: 'laura' } });
     await prisma.character.update({
       where: { userId: user!.id },
-      data: { realmMajor: 11, realmSub: 3, linhKhi: 999_999_999 },
+      data: { realmMajor: 11, realmSub: 4, linhKhi: 999_999_999 },
     });
 
     const res = await request(app)

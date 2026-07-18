@@ -1,5 +1,5 @@
 // Realm metadata for the 12 realms the backend returns (realmMajor 0-11,
-// realmSub 0-3). Kept in sync with backend/src/infrastructure/config/realms.ts
+// realmSub 0-4). Kept in sync with backend/src/domain/config/realms.ts
 // by name; the visual fields (glyph/color/desc) are frontend-only presentation.
 export interface RealmMeta {
   name: string;
@@ -84,10 +84,11 @@ export const REALM_META: RealmMeta[] = [
 ];
 
 export const SUB_STAGE_NAMES = [
-  "Sơ",
-  "Trung",
+  "Sơ Kỳ",
+  "Trung Kỳ",
+  "Hậu Kỳ",
+  "Đại Thành",
   "Viên Mãn",
-  "Đại Viên Mãn",
 ] as const;
 
 // Hanzi placed around each ring of the dantian formation (ring index -> chars)

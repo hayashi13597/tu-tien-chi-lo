@@ -1,7 +1,7 @@
 import { CharacterRepository } from '../domain/ports/CharacterRepository';
 import { PillRepository } from '../domain/ports/PillRepository';
 import { DomainError } from '../domain/errors';
-import { REALMS, MAX_REALM_MAJOR } from '../domain/config/realms';
+import { REALMS, MAX_REALM_MAJOR, MAX_REALM_SUB } from '../domain/config/realms';
 import { computeLinhKhi } from '../domain/cultivation/cultivation.calc';
 import { isMaxStage, computeSuccessRate } from '../domain/breakthrough/breakthrough.calc';
 import { applyPillEffect } from '../domain/pills/pill.calc';
@@ -25,7 +25,7 @@ export class ConsumePillUseCase {
 
     const stage = REALMS[character.realmMajor].subStages[character.realmSub];
     const now = new Date();
-    const atMax = isMaxStage(character.realmMajor, character.realmSub, MAX_REALM_MAJOR);
+    const atMax = isMaxStage(character.realmMajor, character.realmSub, MAX_REALM_MAJOR, MAX_REALM_SUB);
     const punished = character.punishedUntil !== null && character.punishedUntil.getTime() > now.getTime();
 
     // Applicability guards (before spending the pill): a pill that can't do
@@ -83,7 +83,7 @@ export class ConsumePillUseCase {
 
     // Return the fresh cultivation state (same shape GET /cultivation/state uses).
     const newStage = REALMS[updated.realmMajor].subStages[updated.realmSub];
-    const newAtMax = isMaxStage(updated.realmMajor, updated.realmSub, MAX_REALM_MAJOR);
+    const newAtMax = isMaxStage(updated.realmMajor, updated.realmSub, MAX_REALM_MAJOR, MAX_REALM_SUB);
     const newPunished = updated.punishedUntil !== null && updated.punishedUntil.getTime() > now.getTime();
     return {
       realmMajor: updated.realmMajor,

@@ -72,7 +72,7 @@ describe('ConsumePillUseCase', () => {
   });
 
   it('rejects linhKhi/boost at max stage (PILL_NOT_APPLICABLE)', async () => {
-    const { pills, useCase } = setup({ realmMajor: 11, realmSub: 3 });
+    const { pills, useCase } = setup({ realmMajor: 11, realmSub: 4 });
     pills.seedPill(pill('a', { effectKind: 'linhKhi', amount: 100 }));
     pills.setQuantity('user-1', 'a', 1);
     await expect(useCase.execute('user-1', 'a')).rejects.toMatchObject({ code: 'PILL_NOT_APPLICABLE' });

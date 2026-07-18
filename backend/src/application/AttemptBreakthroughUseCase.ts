@@ -1,7 +1,7 @@
 import { CharacterRepository } from '../domain/ports/CharacterRepository';
 import { RandomSource } from '../domain/ports/RandomSource';
 import { DomainError } from '../domain/errors';
-import { REALMS, MAX_REALM_MAJOR } from '../domain/config/realms';
+import { REALMS, MAX_REALM_MAJOR, MAX_REALM_SUB } from '../domain/config/realms';
 import { computeLinhKhi } from '../domain/cultivation/cultivation.calc';
 import { computeSuccessRate, rollSuccess, nextStage, isMaxStage } from '../domain/breakthrough/breakthrough.calc';
 import { CharacterRecord } from '../domain/entities/Character';
@@ -41,7 +41,7 @@ export class AttemptBreakthroughUseCase {
       buff,
     });
 
-    const atMax = isMaxStage(character.realmMajor, character.realmSub, MAX_REALM_MAJOR);
+    const atMax = isMaxStage(character.realmMajor, character.realmSub, MAX_REALM_MAJOR, MAX_REALM_SUB);
     const punished = character.punishedUntil !== null && character.punishedUntil.getTime() > now.getTime();
 
     if (atMax) {
@@ -93,7 +93,7 @@ export class AttemptBreakthroughUseCase {
     const succeeded = rollSuccess(successRate, this.randomSource.next());
 
     if (succeeded) {
-      const { realmMajor, realmSub } = nextStage(character.realmMajor, character.realmSub);
+      const { realmMajor, realmSub } = nextStage(character.realmMajor, character.realmSub, MAX_REALM_SUB);
       const updated = await this.persist(character, currentLinhKhi - stage.linhKhiRequired, now, {
         realmMajor,
         realmSub,
