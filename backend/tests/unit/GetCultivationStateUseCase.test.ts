@@ -36,6 +36,18 @@ describe('GetCultivationStateUseCase', () => {
     expect(result.linhKhiRequired).toBe(100);
     expect(result.canBreakthrough).toBe(false);
     expect(result.isMaxStage).toBe(false);
+    // Phàm Nhân - Sơ base rate, no fails, no boost => the raw base success rate.
+    expect(result.breakthroughSuccessRate).toBe(90);
+  });
+
+  it('raises the reported breakthrough success rate with pity and a pending boost', async () => {
+    const characters = new InMemoryCharacterRepository();
+    // 2 fails at Phàm Nhân - Sơ (pity +10 each) + a 15% pending boost:
+    // 90 + 2*10 + 15 = 125, clamped to the stage cap of 95.
+    characters.seed(makeCharacter({ breakthroughFails: 2, breakthroughBonusPct: 15 }));
+    const result = await new GetCultivationStateUseCase(characters).execute('user-1');
+
+    expect(result.breakthroughSuccessRate).toBe(95);
   });
 
   it('reports canBreakthrough=true once accrued linh khi reaches the requirement', async () => {

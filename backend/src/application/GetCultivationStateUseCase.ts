@@ -2,7 +2,7 @@ import { CharacterRepository } from '../domain/ports/CharacterRepository';
 import { DomainError } from '../domain/errors';
 import { REALMS, MAX_REALM_MAJOR } from '../domain/config/realms';
 import { computeLinhKhi } from '../domain/cultivation/cultivation.calc';
-import { isMaxStage } from '../domain/breakthrough/breakthrough.calc';
+import { isMaxStage, computeSuccessRate } from '../domain/breakthrough/breakthrough.calc';
 
 export interface CultivationStateOutput {
   realmMajor: number;
@@ -17,6 +17,11 @@ export interface CultivationStateOutput {
   cultivationBuffMultiplier: number | null;
   cultivationBuffUntil: Date | null;
   breakthroughBonusPct: number;
+  // The success chance (percentage) the next breakthrough attempt would use:
+  // the stage base rate + pity for accumulated fails + any pending boost pill,
+  // clamped to the stage cap. Read-only mirror of AttemptBreakthroughUseCase's
+  // computeSuccessRate so the client can show it without knowing the formula.
+  breakthroughSuccessRate: number;
 }
 
 export class GetCultivationStateUseCase {
@@ -49,6 +54,16 @@ export class GetCultivationStateUseCase {
     const punished = character.punishedUntil !== null && character.punishedUntil.getTime() > now.getTime();
     const atMax = isMaxStage(character.realmMajor, character.realmSub, MAX_REALM_MAJOR);
 
+    // Same inputs AttemptBreakthroughUseCase feeds computeSuccessRate, so the
+    // displayed chance matches what an attempt right now would actually roll.
+    const breakthroughSuccessRate = computeSuccessRate({
+      baseSuccessRate: stage.baseSuccessRate,
+      pityIncrement: stage.pityIncrement,
+      maxSuccessRate: stage.maxSuccessRate,
+      breakthroughFails: character.breakthroughFails,
+      bonusPct: character.breakthroughBonusPct,
+    });
+
     return {
       realmMajor: character.realmMajor,
       realmSub: character.realmSub,
@@ -64,6 +79,7 @@ export class GetCultivationStateUseCase {
       cultivationBuffMultiplier: character.cultivationBuffMultiplier,
       cultivationBuffUntil: character.cultivationBuffUntil,
       breakthroughBonusPct: character.breakthroughBonusPct,
+      breakthroughSuccessRate,
     };
   }
 }

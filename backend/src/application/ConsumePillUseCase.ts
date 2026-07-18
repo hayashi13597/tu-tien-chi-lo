@@ -3,7 +3,7 @@ import { PillRepository } from '../domain/ports/PillRepository';
 import { DomainError } from '../domain/errors';
 import { REALMS, MAX_REALM_MAJOR } from '../domain/config/realms';
 import { computeLinhKhi } from '../domain/cultivation/cultivation.calc';
-import { isMaxStage } from '../domain/breakthrough/breakthrough.calc';
+import { isMaxStage, computeSuccessRate } from '../domain/breakthrough/breakthrough.calc';
 import { applyPillEffect } from '../domain/pills/pill.calc';
 import { CultivationStateOutput } from './GetCultivationStateUseCase';
 
@@ -98,6 +98,15 @@ export class ConsumePillUseCase {
       cultivationBuffMultiplier: updated.cultivationBuffMultiplier,
       cultivationBuffUntil: updated.cultivationBuffUntil,
       breakthroughBonusPct: updated.breakthroughBonusPct,
+      // Recompute against the post-consume character (a breakthroughBoost pill
+      // just changed breakthroughBonusPct), so the returned rate is current.
+      breakthroughSuccessRate: computeSuccessRate({
+        baseSuccessRate: newStage.baseSuccessRate,
+        pityIncrement: newStage.pityIncrement,
+        maxSuccessRate: newStage.maxSuccessRate,
+        breakthroughFails: updated.breakthroughFails,
+        bonusPct: updated.breakthroughBonusPct,
+      }),
     };
   }
 }
