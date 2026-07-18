@@ -1,15 +1,17 @@
 import { TokenService } from '../../src/domain/ports/TokenService';
 
 export class FakeTokenService implements TokenService {
-  signAccessToken(userId: string): string {
-    return `access-token-for-${userId}`;
+  signAccessToken(userId: string, role: string): string {
+    return `access-token-for-${role}:${userId}`;
   }
 
-  verifyAccessToken(token: string): { userId: string } {
+  verifyAccessToken(token: string): { userId: string; role: string } {
     if (!token.startsWith('access-token-for-')) {
       throw new Error('invalid token');
     }
-    return { userId: token.replace('access-token-for-', '') };
+    const body = token.replace('access-token-for-', '');
+    const [role, userId] = body.split(':');
+    return { userId, role };
   }
 
   signRefreshToken(userId: string): string {

@@ -3,6 +3,7 @@ import { TokenService } from '../../domain/ports/TokenService';
 
 export interface AuthedRequest extends Request {
   userId?: string;
+  role?: string;
 }
 
 // Factory, not a bare middleware: depends on the TokenService port rather
@@ -30,6 +31,7 @@ export function createRequireAuth(tokenService: TokenService) {
       // this middleware runs before a route handler's try/catch exists.
       const payload = tokenService.verifyAccessToken(token);
       req.userId = payload.userId;
+      req.role = payload.role;
       next();
     } catch {
       res.status(401).json({ error: { code: 'UNAUTHORIZED', message: 'Invalid or expired token' } });

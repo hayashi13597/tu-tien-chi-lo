@@ -41,7 +41,7 @@ export class RegisterUserUseCase {
     // the route can set the same cookie pair login does without a second
     // round trip. The route decides what to expose in the JSON body — see
     // the Global Constraints note on never echoing the raw result object.
-    const accessToken = this.tokenService.signAccessToken(user.id);
+    const accessToken = this.tokenService.signAccessToken(user.id, user.role);
     const refreshToken = this.tokenService.signRefreshToken(user.id);
 
     return { id: user.id, username: user.username, accessToken, refreshToken };

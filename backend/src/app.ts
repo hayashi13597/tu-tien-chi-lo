@@ -56,7 +56,7 @@ export function createApp(overrides: AppOverrides = {}) {
 
   const registerUserUseCase = new RegisterUserUseCase(userRepository, passwordHasher, tokenService, pillRepository);
   const loginUserUseCase = new LoginUserUseCase(userRepository, passwordHasher, tokenService);
-  const refreshAccessTokenUseCase = new RefreshAccessTokenUseCase(tokenService);
+  const refreshAccessTokenUseCase = new RefreshAccessTokenUseCase(tokenService, userRepository);
   const getCultivationStateUseCase = new GetCultivationStateUseCase(characterRepository, realmConfigProvider);
   const attemptBreakthroughUseCase = new AttemptBreakthroughUseCase(characterRepository, randomSource, realmConfigProvider);
   const getInventoryUseCase = new GetInventoryUseCase(pillRepository);
