@@ -1,4 +1,4 @@
-import type { ApiError } from "./types";
+import type { ApiError, CultivationState, PillInventoryItem } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:5000";
 
@@ -63,6 +63,19 @@ export async function apiFetch<T>(
   }
 
   return res.json() as Promise<T>;
+}
+
+// GET /pills/inventory — the player's owned pills with quantities.
+export function fetchInventory(): Promise<PillInventoryItem[]> {
+  return apiFetch<PillInventoryItem[]>("/pills/inventory");
+}
+
+// POST /pills/consume — consume one pill; returns the fresh cultivation state.
+export function consumePill(pillId: string): Promise<CultivationState> {
+  return apiFetch<CultivationState>("/pills/consume", {
+    method: "POST",
+    body: JSON.stringify({ pillId }),
+  });
 }
 
 export { API_BASE };

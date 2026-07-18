@@ -1,6 +1,7 @@
 import { UserRepository } from '../domain/ports/UserRepository';
 import { PasswordHasher } from '../domain/ports/PasswordHasher';
 import { TokenService } from '../domain/ports/TokenService';
+import { PillRepository } from '../domain/ports/PillRepository';
 import { DomainError } from '../domain/errors';
 
 export interface RegisterUserInput {
@@ -20,6 +21,7 @@ export class RegisterUserUseCase {
     private readonly users: UserRepository,
     private readonly passwordHasher: PasswordHasher,
     private readonly tokenService: TokenService,
+    private readonly pills: PillRepository,
   ) {}
 
   async execute(input: RegisterUserInput): Promise<RegisterUserOutput> {
@@ -30,6 +32,10 @@ export class RegisterUserUseCase {
 
     const passwordHash = await this.passwordHasher.hash(input.password);
     const user = await this.users.create({ username: input.username, passwordHash });
+
+    // New agents start with a small stash of pills (parity with the frontend
+    // mock's seed). The User + its default Character already exist at this point.
+    await this.pills.seedStarterInventory(user.id);
 
     // Register also logs the user in immediately (per the design spec), so
     // the route can set the same cookie pair login does without a second

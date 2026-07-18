@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { REALMS, MAX_REALM_MAJOR } from '../../src/infrastructure/config/realms';
+import { REALMS, MAX_REALM_MAJOR } from '../../src/domain/config/realms';
 
 describe('realms config', () => {
   it('has 12 realms, each with exactly 4 substages', () => {

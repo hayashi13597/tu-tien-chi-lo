@@ -13,6 +13,7 @@ async function registerAndLogin(app: ReturnType<typeof createApp>, username: str
 }
 
 beforeEach(async () => {
+  await prisma.inventoryItem.deleteMany();
   await prisma.character.deleteMany();
   await prisma.user.deleteMany();
 });

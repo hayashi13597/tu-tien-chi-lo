@@ -7,6 +7,7 @@ const users = new PrismaUserRepository(prisma);
 const characters = new PrismaCharacterRepository(prisma);
 
 beforeEach(async () => {
+  await prisma.inventoryItem.deleteMany();
   await prisma.character.deleteMany();
   await prisma.user.deleteMany();
 });
@@ -37,6 +38,9 @@ describe('PrismaCharacterRepository', () => {
       lastUpdateAt: new Date(),
       breakthroughFails: 0,
       punishedUntil: null,
+      cultivationBuffMultiplier: null,
+      cultivationBuffUntil: null,
+      breakthroughBonusPct: 0,
     });
 
     expect(updated?.realmSub).toBe(1);
@@ -55,6 +59,9 @@ describe('PrismaCharacterRepository', () => {
       lastUpdateAt: new Date(),
       breakthroughFails: 0,
       punishedUntil: null,
+      cultivationBuffMultiplier: null,
+      cultivationBuffUntil: null,
+      breakthroughBonusPct: 0,
     });
 
     // Second writer still has the stale lastUpdateAt read before the first write.
@@ -65,6 +72,9 @@ describe('PrismaCharacterRepository', () => {
       lastUpdateAt: new Date(),
       breakthroughFails: 0,
       punishedUntil: null,
+      cultivationBuffMultiplier: null,
+      cultivationBuffUntil: null,
+      breakthroughBonusPct: 0,
     });
 
     expect(staleResult).toBeNull();

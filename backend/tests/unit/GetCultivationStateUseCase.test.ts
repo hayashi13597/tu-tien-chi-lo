@@ -14,6 +14,9 @@ function makeCharacter(overrides: Partial<CharacterRecord> = {}): CharacterRecor
     breakthroughFails: 0,
     punishedUntil: null,
     createdAt: new Date(),
+    cultivationBuffMultiplier: null,
+    cultivationBuffUntil: null,
+    breakthroughBonusPct: 0,
     ...overrides,
   };
 }
@@ -51,5 +54,24 @@ describe('GetCultivationStateUseCase', () => {
     const result = await new GetCultivationStateUseCase(characters).execute('user-1');
 
     expect(result.canBreakthrough).toBe(false);
+  });
+
+  it('reflects an active cultivation buff in the accrued linh khi', async () => {
+    const characters = new InMemoryCharacterRepository();
+    const lastUpdateAt = new Date(Date.now() - 100_000); // 100s ago, base rate 1.0/s
+    // ×2 buff still active well into the future: 100s should accrue ~200, not ~100.
+    characters.seed(makeCharacter({
+      linhKhi: 0,
+      lastUpdateAt,
+      cultivationBuffMultiplier: 2,
+      cultivationBuffUntil: new Date(Date.now() + 60_000),
+    }));
+    const result = await new GetCultivationStateUseCase(characters).execute('user-1');
+
+    // ~200 with a tight band: the use case's own `new Date()` runs a beat after
+    // the seed's Date.now(), so slightly over 200 is expected — but severe
+    // over-accrual (e.g. the buff applied to the wrong segment) must still fail.
+    expect(result.linhKhi).toBeGreaterThanOrEqual(199);
+    expect(result.linhKhi).toBeLessThan(203);
   });
 });

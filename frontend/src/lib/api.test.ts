@@ -91,3 +91,44 @@ describe("apiFetch", () => {
     ).rejects.toThrow("Linh khí chưa đủ");
   });
 });
+
+describe("pill api", () => {
+  it("fetchInventory returns the parsed array", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, [{ id: "hoi-khi-dan", quantity: 5 }]),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { fetchInventory } = await import("./api");
+    const inv = await fetchInventory();
+    expect(inv).toEqual([{ id: "hoi-khi-dan", quantity: 5 }]);
+    expect(fetchMock.mock.calls[0][0]).toContain("/pills/inventory");
+  });
+
+  it("consumePill posts the pillId and returns fresh state", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, { linhKhi: 42 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { consumePill } = await import("./api");
+    const state = await consumePill("hoi-khi-dan");
+    expect(state).toEqual({ linhKhi: 42 });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain("/pills/consume");
+    expect(init?.method).toBe("POST");
+    expect(JSON.parse(init?.body as string)).toEqual({ pillId: "hoi-khi-dan" });
+  });
+
+  it("consumePill surfaces the server error message", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(409, {
+          error: { code: "PILL_OUT_OF_STOCK", message: "Hết hàng" },
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { consumePill } = await import("./api");
+    await expect(consumePill("x")).rejects.toThrow("Hết hàng");
+  });
+});

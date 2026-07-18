@@ -42,3 +42,17 @@ export function DiamondMarker(props: IconProps) {
     </svg>
   );
 }
+
+// Alchemy cauldron (đan lô) used on the Đan Phòng header button.
+export function CauldronIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <title>Đan Phòng</title>
+      <path d="M8 3c0 1.5 1 2 1 3M12 3c0 1.5 1 2 1 3" />
+      <path d="M4 8h16" />
+      <path d="M6 8v5a6 6 0 0 0 12 0V8" />
+      <path d="M9 21h6" />
+      <path d="M12 19v2" />
+    </svg>
+  );
+}

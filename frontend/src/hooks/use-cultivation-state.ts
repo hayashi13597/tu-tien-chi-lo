@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import {
+  effectiveCultivationRate,
+  interpolateLinhKhi,
+} from "@/lib/cultivation-display";
 import type { CultivationState } from "@/lib/types";
 
 interface UseCultivationStateResult {
@@ -13,6 +17,12 @@ interface UseCultivationStateResult {
   displayLinhKhi: number;
   /** Seconds of punishment remaining, or null when not punished. */
   punishmentRemaining: number | null;
+  /** Seconds left on the active cultivation buff, or null when none/expired. */
+  cultivationBuffRemaining: number | null;
+  /** Base rate × buff multiplier while a buff is active; base rate otherwise. */
+  effectiveRate: number;
+  /** Pending breakthrough success bonus (percentage points); 0 when none. */
+  breakthroughBonusPct: number;
   /** Current epoch ms, ticking every 1s to drive countdowns/interpolation. */
   now: number;
 }
@@ -64,18 +74,31 @@ export function useCultivationState(
     return () => clearInterval(interval);
   }, []);
 
-  // Linear interpolation: stored linh khí + rate * seconds since the last poll.
-  const displayLinhKhi = (() => {
-    if (!state) return 0;
-    const elapsed = (now - lastFetchRef.current) / 1000;
-    return state.linhKhi + elapsed * state.cultivationRate;
-  })();
+  // Interpolation between polls mirrors the backend's piecewise buffed accrual
+  // (buffed segment at rate × multiplier, remainder at base rate) so the bar
+  // moves at the buffed speed while a speed pill is active.
+  const displayLinhKhi = state
+    ? interpolateLinhKhi(state, lastFetchRef.current, now)
+    : 0;
 
   const punishmentRemaining = (() => {
     if (!state?.punishedUntil) return null;
     const diff = (new Date(state.punishedUntil).getTime() - now) / 1000;
     return diff > 0 ? diff : null;
   })();
+
+  // Same countdown pattern as punishment: seconds until the buff expires, driven
+  // by the 1s `now` tick, null once elapsed. Buff data is server-authoritative.
+  const cultivationBuffRemaining = (() => {
+    if (!state?.cultivationBuffUntil) return null;
+    const diff = (new Date(state.cultivationBuffUntil).getTime() - now) / 1000;
+    return diff > 0 ? diff : null;
+  })();
+
+  const breakthroughBonusPct = state?.breakthroughBonusPct ?? 0;
+
+  // The per-second rate currently in effect, for display (Tốc độ tu luyện).
+  const effectiveRate = state ? effectiveCultivationRate(state, now) : 0;
 
   return {
     state,
@@ -84,6 +107,9 @@ export function useCultivationState(
     refetch,
     displayLinhKhi,
     punishmentRemaining,
+    cultivationBuffRemaining,
+    effectiveRate,
+    breakthroughBonusPct,
     now,
   };
 }

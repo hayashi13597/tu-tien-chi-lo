@@ -15,6 +15,9 @@ function makeCharacter(overrides: Partial<CharacterRecord> = {}): CharacterRecor
     breakthroughFails: 0,
     punishedUntil: null,
     createdAt: new Date(),
+    cultivationBuffMultiplier: null,
+    cultivationBuffUntil: null,
+    breakthroughBonusPct: 0,
     ...overrides,
   };
 }
@@ -161,5 +164,37 @@ describe('AttemptBreakthroughUseCase', () => {
     };
 
     await expect(useCase.execute('user-1')).rejects.toMatchObject({ code: 'CONCURRENT_MODIFICATION' });
+  });
+});
+
+describe('AttemptBreakthroughUseCase breakthrough bonus', () => {
+  it('applies breakthroughBonusPct and resets it to 0 on success', async () => {
+    const characters = new InMemoryCharacterRepository();
+    characters.seed(makeCharacter({ linhKhi: 150, breakthroughBonusPct: 30 }));
+    // Roll 0.92 → 92, above the base rate (90, so this would FAIL without the
+    // bonus) but below the boosted rate (min(90+30, cap 95) = 95). Success here
+    // proves the bonus actually entered the rate, not just that the roll was low.
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0.92));
+    const result = await useCase.execute('user-1');
+    expect(result.success).toBe(true);
+    expect(result.character.breakthroughBonusPct).toBe(0);
+  });
+
+  it('resets breakthroughBonusPct to 0 on failure too', async () => {
+    const characters = new InMemoryCharacterRepository();
+    characters.seed(makeCharacter({ linhKhi: 150, breakthroughBonusPct: 10 }));
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0.999));
+    const result = await useCase.execute('user-1');
+    expect(result.success).toBe(false);
+    expect(result.character.breakthroughBonusPct).toBe(0);
+  });
+
+  it('leaves breakthroughBonusPct untouched on a rejected attempt (insufficient)', async () => {
+    const characters = new InMemoryCharacterRepository();
+    characters.seed(makeCharacter({ linhKhi: 10, breakthroughBonusPct: 25 }));
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0));
+    await expect(useCase.execute('user-1')).rejects.toMatchObject({ code: 'INSUFFICIENT_LINH_KHI' });
+    const saved = await characters.findByUserId('user-1');
+    expect(saved?.breakthroughBonusPct).toBe(25);
   });
 });

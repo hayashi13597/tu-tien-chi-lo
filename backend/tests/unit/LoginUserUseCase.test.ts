@@ -4,13 +4,14 @@ import { LoginUserUseCase } from '../../src/application/LoginUserUseCase';
 import { InMemoryUserRepository } from '../fakes/InMemoryUserRepository';
 import { FakePasswordHasher } from '../fakes/FakePasswordHasher';
 import { FakeTokenService } from '../fakes/FakeTokenService';
+import { InMemoryPillRepository } from '../fakes/InMemoryPillRepository';
 
 describe('LoginUserUseCase', () => {
   it('returns an access token and a refresh token for valid credentials', async () => {
     const users = new InMemoryUserRepository();
     const passwordHasher = new FakePasswordHasher();
     const tokenService = new FakeTokenService();
-    const registered = await new RegisterUserUseCase(users, passwordHasher, tokenService).execute({
+    const registered = await new RegisterUserUseCase(users, passwordHasher, tokenService, new InMemoryPillRepository()).execute({
       username: 'dave',
       password: 'password123',
     });
@@ -33,7 +34,7 @@ describe('LoginUserUseCase', () => {
     const users = new InMemoryUserRepository();
     const passwordHasher = new FakePasswordHasher();
     const tokenService = new FakeTokenService();
-    await new RegisterUserUseCase(users, passwordHasher, tokenService).execute({
+    await new RegisterUserUseCase(users, passwordHasher, tokenService, new InMemoryPillRepository()).execute({
       username: 'erin',
       password: 'password123',
     });

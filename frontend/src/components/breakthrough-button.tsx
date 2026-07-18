@@ -17,6 +17,8 @@ interface BreakthroughButtonProps {
   onSuccess: (result: BreakthroughResult) => void;
   onFailure: (result: BreakthroughResult) => void;
   onError: (message: string) => void;
+  /** Pending breakthrough-boost bonus from a consumed pill; 0 when none. */
+  bonusPct?: number;
 }
 
 export function BreakthroughButton({
@@ -28,6 +30,7 @@ export function BreakthroughButton({
   onSuccess,
   onFailure,
   onError,
+  bonusPct = 0,
 }: BreakthroughButtonProps) {
   const [attempting, setAttempting] = useState(false);
 
@@ -76,6 +79,9 @@ export function BreakthroughButton({
         disabled={disabled}
       >
         <span>{label}</span>
+        {bonusPct > 0 && !isMaxStage && (
+          <span className="boost-badge">+{bonusPct}%</span>
+        )}
       </button>
     </div>
   );

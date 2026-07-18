@@ -16,14 +16,19 @@ import {
   ParticleCanvas,
   type ParticleCanvasHandle,
 } from "@/components/particle-canvas";
+import { PillInventoryButton } from "@/components/pill-inventory-button";
+import { PillModal } from "@/components/pill-modal";
 import { RealmPath } from "@/components/realm-path";
 import { StatsPanel } from "@/components/stats-panel";
 import { ToastContainer } from "@/components/toast-container";
 import { useCultivationState } from "@/hooks/use-cultivation-state";
+import { usePillInventory } from "@/hooks/use-pill-inventory";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth-context";
+import { formatSeconds } from "@/lib/format";
+import { getRarityMeta } from "@/lib/pill-constants";
 import { getRealmMeta, getSubStageName } from "@/lib/realm-constants";
-import type { BreakthroughResult } from "@/lib/types";
+import type { BreakthroughResult, PillEffectKind } from "@/lib/types";
 
 export default function Home() {
   const { isAuthenticated, isLoading, logout } = useAuth();
@@ -35,12 +40,23 @@ export default function Home() {
     refetch,
     displayLinhKhi,
     punishmentRemaining,
+    cultivationBuffRemaining,
+    effectiveRate,
+    breakthroughBonusPct,
   } = useCultivationState(
     isAuthenticated,
     useCallback(() => router.replace("/login"), [router]),
   );
   const { toasts, addToast, removeToast } = useToast();
   const [phase, setPhase] = useState<BreakthroughPhase>("idle");
+  const [pillModalOpen, setPillModalOpen] = useState(false);
+  const {
+    inventory,
+    loading: inventoryLoading,
+    error: inventoryError,
+    refetch: refetchInventory,
+    consume,
+  } = usePillInventory(pillModalOpen);
   const particleRef = useRef<ParticleCanvasHandle>(null);
   // The POST result/error is stashed here while the tribulation animation plays,
   // then read in handleTribulationComplete to resolve success/failure.
@@ -96,6 +112,60 @@ export default function Home() {
     addToast("Thiên Kiếp", "Kiếp vân hội tụ, chuẩn bị đón kiếp!", "purple");
   }, [phase, addToast]);
 
+  const handleUsePill = useCallback(
+    async (pillId: string) => {
+      const item = inventory.find((p) => p.id === pillId);
+      try {
+        await consume(pillId); // POST /pills/consume + refetch inventory
+        await refetch(); // pull authoritative cultivation state (buff/boost/linhKhi)
+        if (item) {
+          const color = getRarityMeta(item.rarity).color;
+          particleRef.current?.spawnBurst(
+            color,
+            item.effectKind === "linhKhi" ? 40 : 30,
+          );
+          const msg =
+            item.effectKind === "linhKhi"
+              ? `Hấp thu ${item.amount} linh khí`
+              : item.effectKind === "cultivationBuff"
+                ? `Buff kích hoạt: ${item.name}`
+                : item.effectKind === "breakthroughBoost"
+                  ? `+${item.bonusPct}% đột phá`
+                  : "Trạng thái trừng phạt đã được gỡ";
+          addToast(
+            "Dùng Đan",
+            msg,
+            item.effectKind === "clearPunishment" ? "success" : "purple",
+          );
+        }
+      } catch (err) {
+        addToast(
+          "Lỗi",
+          err instanceof Error ? err.message : "Dùng đan thất bại",
+          "danger",
+        );
+      }
+    },
+    [inventory, consume, refetch, addToast],
+  );
+
+  const isPillDisabled = useCallback(
+    (kind: PillEffectKind): { disabled: boolean; reason?: string } => {
+      if (!state) return { disabled: true };
+      if (
+        (kind === "linhKhi" || kind === "breakthroughBoost") &&
+        state.isMaxStage
+      ) {
+        return { disabled: true, reason: "Đã đạt cực cảnh" };
+      }
+      if (kind === "clearPunishment" && punishmentRemaining === null) {
+        return { disabled: true, reason: "Không bị trừng phạt" };
+      }
+      return { disabled: false };
+    },
+    [state, punishmentRemaining],
+  );
+
   // Called when the tribulation animation finishes: resolve the stashed result.
   const handleTribulationComplete = useCallback(() => {
     const result = breakthroughResultRef.current;
@@ -128,6 +198,8 @@ export default function Home() {
       setTimeout(() => setPhase("idle"), 1500);
     }
 
+    // The server resets the breakthrough boost on any resolved attempt; the
+    // refetch below pulls the authoritative state (breakthroughBonusPct: 0).
     refetch();
   }, [addToast, refetch]);
 
@@ -162,8 +234,7 @@ export default function Home() {
 
   // Enable the button off the same interpolated value the progress bar shows,
   // so the bar reaching full and the button unlocking stay in sync between the
-  // 10s server polls. The server still enforces the real check on POST, and
-  // refetch reconciles any client-side optimism afterwards.
+  // 10s server polls. The server still enforces the real check on POST.
   const canBreakthrough =
     !state.isMaxStage && displayLinhKhi >= state.linhKhiRequired;
 
@@ -183,6 +254,7 @@ export default function Home() {
             <div className="cultivator-name">{meta.name} Đạo Hữu</div>
             <div className="cultivator-title">{subName} · Tu Tiên Giả</div>
           </div>
+          <PillInventoryButton onClick={() => setPillModalOpen(true)} />
           <button
             type="button"
             className="header-action"
@@ -200,7 +272,25 @@ export default function Home() {
             <StatsPanel
               state={state}
               punishmentRemaining={punishmentRemaining}
+              effectiveRate={effectiveRate}
             />
+            {(cultivationBuffRemaining !== null ||
+              breakthroughBonusPct > 0) && (
+              <div className="buff-strip">
+                {cultivationBuffRemaining !== null &&
+                  state.cultivationBuffMultiplier && (
+                    <span className="buff-chip">
+                      Tăng tốc ×{state.cultivationBuffMultiplier} (
+                      {formatSeconds(cultivationBuffRemaining)})
+                    </span>
+                  )}
+                {breakthroughBonusPct > 0 && (
+                  <span className="buff-chip">
+                    +{breakthroughBonusPct}% đột phá
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           <section className="cultivation-stage">
@@ -228,6 +318,7 @@ export default function Home() {
               onFailure={handleFailure}
               onError={handleError}
               onAttempt={handleBreakthroughClick}
+              bonusPct={breakthroughBonusPct}
             />
           </section>
 
@@ -241,6 +332,17 @@ export default function Home() {
         phase={phase}
         successColor={meta.color}
         onComplete={handleTribulationComplete}
+      />
+
+      <PillModal
+        open={pillModalOpen}
+        inventory={inventory}
+        loading={inventoryLoading}
+        error={inventoryError}
+        onRetry={refetchInventory}
+        onClose={() => setPillModalOpen(false)}
+        onUse={handleUsePill}
+        isDisabled={isPillDisabled}
       />
     </>
   );

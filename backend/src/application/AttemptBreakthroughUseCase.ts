@@ -1,7 +1,7 @@
 import { CharacterRepository } from '../domain/ports/CharacterRepository';
 import { RandomSource } from '../domain/ports/RandomSource';
 import { DomainError } from '../domain/errors';
-import { REALMS, MAX_REALM_MAJOR } from '../infrastructure/config/realms';
+import { REALMS, MAX_REALM_MAJOR } from '../domain/config/realms';
 import { computeLinhKhi } from '../domain/cultivation/cultivation.calc';
 import { computeSuccessRate, rollSuccess, nextStage, isMaxStage } from '../domain/breakthrough/breakthrough.calc';
 import { CharacterRecord } from '../domain/entities/Character';
@@ -25,14 +25,20 @@ export class AttemptBreakthroughUseCase {
 
     const stage = REALMS[character.realmMajor].subStages[character.realmSub];
     const now = new Date();
-    // Recompute lazily-accrued linh khi once, up front. Every branch below
-    // (including the three rejection paths) persists this value as its first
-    // write, so a rejected attempt never silently drops accrued progress.
+    // Recompute lazily-accrued linh khi (respecting any active buff) once, up
+    // front. Every branch below (including the three rejection paths) persists
+    // this value as its first write, so a rejected attempt never silently drops
+    // accrued progress.
+    const buff =
+      character.cultivationBuffMultiplier !== null && character.cultivationBuffUntil !== null
+        ? { multiplier: character.cultivationBuffMultiplier, until: character.cultivationBuffUntil }
+        : undefined;
     const currentLinhKhi = computeLinhKhi({
       storedLinhKhi: character.linhKhi,
       lastUpdateAt: character.lastUpdateAt,
       now,
       cultivationRate: stage.cultivationRate,
+      buff,
     });
 
     const atMax = isMaxStage(character.realmMajor, character.realmSub, MAX_REALM_MAJOR);
@@ -44,6 +50,9 @@ export class AttemptBreakthroughUseCase {
         realmSub: character.realmSub,
         breakthroughFails: character.breakthroughFails,
         punishedUntil: character.punishedUntil,
+        cultivationBuffMultiplier: character.cultivationBuffMultiplier,
+        cultivationBuffUntil: character.cultivationBuffUntil,
+        breakthroughBonusPct: character.breakthroughBonusPct,
       });
       throw new DomainError('MAX_STAGE_REACHED', 'Already at the maximum realm and substage');
     }
@@ -54,6 +63,9 @@ export class AttemptBreakthroughUseCase {
         realmSub: character.realmSub,
         breakthroughFails: character.breakthroughFails,
         punishedUntil: character.punishedUntil,
+        cultivationBuffMultiplier: character.cultivationBuffMultiplier,
+        cultivationBuffUntil: character.cultivationBuffUntil,
+        breakthroughBonusPct: character.breakthroughBonusPct,
       });
       throw new DomainError('PUNISHED', 'Currently punished after a failed breakthrough');
     }
@@ -64,6 +76,9 @@ export class AttemptBreakthroughUseCase {
         realmSub: character.realmSub,
         breakthroughFails: character.breakthroughFails,
         punishedUntil: character.punishedUntil,
+        cultivationBuffMultiplier: character.cultivationBuffMultiplier,
+        cultivationBuffUntil: character.cultivationBuffUntil,
+        breakthroughBonusPct: character.breakthroughBonusPct,
       });
       throw new DomainError('INSUFFICIENT_LINH_KHI', 'Not enough linh khi to attempt a breakthrough');
     }
@@ -73,6 +88,7 @@ export class AttemptBreakthroughUseCase {
       pityIncrement: stage.pityIncrement,
       maxSuccessRate: stage.maxSuccessRate,
       breakthroughFails: character.breakthroughFails,
+      bonusPct: character.breakthroughBonusPct,
     });
     const succeeded = rollSuccess(successRate, this.randomSource.next());
 
@@ -83,6 +99,9 @@ export class AttemptBreakthroughUseCase {
         realmSub,
         breakthroughFails: 0,
         punishedUntil: null,
+        cultivationBuffMultiplier: character.cultivationBuffMultiplier,
+        cultivationBuffUntil: character.cultivationBuffUntil,
+        breakthroughBonusPct: 0,
       });
       return { success: true, character: updated };
     }
@@ -92,6 +111,9 @@ export class AttemptBreakthroughUseCase {
       realmSub: character.realmSub,
       breakthroughFails: character.breakthroughFails + 1,
       punishedUntil: new Date(now.getTime() + stage.punishmentSeconds * 1000),
+      cultivationBuffMultiplier: character.cultivationBuffMultiplier,
+      cultivationBuffUntil: character.cultivationBuffUntil,
+      breakthroughBonusPct: 0,
     });
     return { success: false, character: updated };
   }
@@ -100,7 +122,7 @@ export class AttemptBreakthroughUseCase {
     original: CharacterRecord,
     linhKhi: number,
     lastUpdateAt: Date,
-    rest: { realmMajor: number; realmSub: number; breakthroughFails: number; punishedUntil: Date | null },
+    rest: { realmMajor: number; realmSub: number; breakthroughFails: number; punishedUntil: Date | null; cultivationBuffMultiplier: number | null; cultivationBuffUntil: Date | null; breakthroughBonusPct: number },
   ): Promise<CharacterRecord> {
     // Scoped to the lastUpdateAt read at the top of execute(): if another
     // request already wrote to this character first, lastUpdateAt on the row

@@ -5,6 +5,7 @@ import { PrismaUserRepository } from '../../src/infrastructure/repositories/Pris
 const repository = new PrismaUserRepository(prisma);
 
 beforeEach(async () => {
+  await prisma.inventoryItem.deleteMany();
   await prisma.character.deleteMany();
   await prisma.user.deleteMany();
 });
