@@ -41,6 +41,7 @@ export default function Home() {
     displayLinhKhi,
     punishmentRemaining,
     cultivationBuffRemaining,
+    effectiveRate,
     breakthroughBonusPct,
   } = useCultivationState(
     isAuthenticated,
@@ -271,6 +272,7 @@ export default function Home() {
             <StatsPanel
               state={state}
               punishmentRemaining={punishmentRemaining}
+              effectiveRate={effectiveRate}
             />
             {(cultivationBuffRemaining !== null ||
               breakthroughBonusPct > 0) && (

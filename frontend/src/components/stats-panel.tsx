@@ -8,9 +8,15 @@ import type { CultivationState } from "@/lib/types";
 interface StatsPanelProps {
   state: CultivationState;
   punishmentRemaining: number | null;
+  /** Rate currently in effect (base × buff multiplier while buffed). */
+  effectiveRate: number;
 }
 
-export function StatsPanel({ state, punishmentRemaining }: StatsPanelProps) {
+export function StatsPanel({
+  state,
+  punishmentRemaining,
+  effectiveRate,
+}: StatsPanelProps) {
   const meta = getRealmMeta(state.realmMajor);
   const subName = getSubStageName(state.realmSub);
   const progress = ((state.linhKhi / state.linhKhiRequired) * 100).toFixed(1);
@@ -44,7 +50,15 @@ export function StatsPanel({ state, punishmentRemaining }: StatsPanelProps) {
       <div className="stat-row">
         <span className="stat-label">Tốc độ tu luyện</span>
         <span className="stat-value jade">
-          {state.cultivationRate.toFixed(2)}/giây
+          {effectiveRate.toFixed(2)}/giây
+          {/* Buffed: show the boosted rate is temporary, gold like other boons. */}
+          {effectiveRate > state.cultivationRate &&
+            state.cultivationBuffMultiplier && (
+              <span className="stat-value gold">
+                {" "}
+                (×{state.cultivationBuffMultiplier})
+              </span>
+            )}
         </span>
       </div>
       <div className="stat-row">
