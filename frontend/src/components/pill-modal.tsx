@@ -27,11 +27,17 @@ export function PillModal({
   isDisabled,
 }: PillModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  // True once the card stagger has run for the current open session; reset on
+  // close so the next open animates again.
+  const staggeredRef = useRef(false);
 
-  // Open animation: panel scales/fades in, cards stagger up. Runs each time the
-  // modal transitions to open. GSAP + useEffect matches the existing overlays.
+  // Open animation: panel scales/fades in. Runs each time the modal transitions
+  // to open. GSAP + useEffect matches the existing overlays.
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      staggeredRef.current = false;
+      return;
+    }
     const panel = panelRef.current;
     if (!panel) return;
     gsap.fromTo(
@@ -39,8 +45,21 @@ export function PillModal({
       { opacity: 0, scale: 0.92, y: 20 },
       { opacity: 1, scale: 1, y: 0, duration: 0.35, ease: "power2.out" },
     );
+  }, [open]);
+
+  // Card stagger: the inventory loads lazily after open, so the cards don't
+  // exist yet when the panel animates in. Run the stagger on the first render
+  // where cards are actually in the DOM, and only once per open session —
+  // refetches after a consume must not replay the entrance animation.
+  useEffect(() => {
+    if (!open || staggeredRef.current || inventory.length === 0) return;
+    const panel = panelRef.current;
+    if (!panel) return;
+    const cards = panel.querySelectorAll(".pill-card");
+    if (cards.length === 0) return;
+    staggeredRef.current = true;
     gsap.fromTo(
-      panel.querySelectorAll(".pill-card"),
+      cards,
       { opacity: 0, y: 24 },
       {
         opacity: 1,
@@ -51,7 +70,7 @@ export function PillModal({
         ease: "power2.out",
       },
     );
-  }, [open]);
+  }, [open, inventory]);
 
   // Close on Escape while open.
   useEffect(() => {
