@@ -21,6 +21,9 @@ function buildTestApp() {
   app.get('/boom-invalid-realm-config', () => {
     throw new DomainError('INVALID_REALM_CONFIG', 'bad config');
   });
+  app.get('/boom-user-not-found', () => {
+    throw new DomainError('USER_NOT_FOUND', 'User no longer exists');
+  });
   app.get('/boom-unexpected', () => {
     throw new Error('unexpected');
   });
@@ -59,6 +62,12 @@ describe('errorHandler', () => {
     const res = await request(buildTestApp()).get('/boom-invalid-realm-config');
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('INVALID_REALM_CONFIG');
+  });
+
+  it('maps USER_NOT_FOUND to 401', async () => {
+    const res = await request(buildTestApp()).get('/boom-user-not-found');
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ error: { code: 'USER_NOT_FOUND', message: 'User no longer exists' } });
   });
 
   it('formats a non-DomainError as a 500 INTERNAL_ERROR', async () => {

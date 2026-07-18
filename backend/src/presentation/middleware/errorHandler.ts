@@ -19,6 +19,7 @@ const STATUS_BY_CODE: Record<string, number> = {
   PILL_NOT_APPLICABLE: 400,
   FORBIDDEN: 403,
   INVALID_REALM_CONFIG: 400,
+  USER_NOT_FOUND: 401,
 };
 
 export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction) {
