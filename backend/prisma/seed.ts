@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { SEED_REALMS, flattenRealms } from '../src/domain/config/realms';
 
 const prisma = new PrismaClient();
 
@@ -20,6 +21,17 @@ async function main() {
   for (const p of PILLS) {
     // Idempotent: re-running the seed updates definitions without duplicating.
     await prisma.pill.upsert({ where: { id: p.id }, create: p, update: p });
+  }
+
+  // Seed the realm config from the original hard-coded balance. Idempotent:
+  // upsert by the (realmMajor, realmSub) unique key so re-running updates values
+  // in place instead of duplicating rows.
+  for (const row of flattenRealms(SEED_REALMS)) {
+    await prisma.realmStage.upsert({
+      where: { realmMajor_realmSub: { realmMajor: row.realmMajor, realmSub: row.realmSub } },
+      create: row,
+      update: row,
+    });
   }
 }
 
