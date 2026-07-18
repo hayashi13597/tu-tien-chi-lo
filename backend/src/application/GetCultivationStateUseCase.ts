@@ -37,6 +37,28 @@ export class GetCultivationStateUseCase {
     }
 
     const config = this.realmConfig.get();
+    // Self-heal: if the stored stage no longer exists in the current config
+    // (e.g. an admin removed a realm/sub-stage under this character), clamp to
+    // the nearest valid stage and persist the correction. This is the read path,
+    // so it also removes the previous out-of-range 500. Uses the existing
+    // optimistic-concurrency guard; a lost race just means another request
+    // already wrote — we fall through with the clamped indices for this response.
+    const clamped = config.clampStage(character.realmMajor, character.realmSub);
+    if (clamped.realmMajor !== character.realmMajor || clamped.realmSub !== character.realmSub) {
+      character.realmMajor = clamped.realmMajor;
+      character.realmSub = clamped.realmSub;
+      await this.characters.updateWithConcurrencyGuard(character.id, character.lastUpdateAt, {
+        realmMajor: character.realmMajor,
+        realmSub: character.realmSub,
+        linhKhi: character.linhKhi,
+        lastUpdateAt: character.lastUpdateAt,
+        breakthroughFails: character.breakthroughFails,
+        punishedUntil: character.punishedUntil,
+        cultivationBuffMultiplier: character.cultivationBuffMultiplier,
+        cultivationBuffUntil: character.cultivationBuffUntil,
+        breakthroughBonusPct: character.breakthroughBonusPct,
+      });
+    }
     const stage = config.getStage(character.realmMajor, character.realmSub);
     const now = new Date();
     // Reflect any active timed cultivation buff on the read path too, so the
