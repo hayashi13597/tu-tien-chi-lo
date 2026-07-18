@@ -96,4 +96,20 @@ describe('ConsumePillUseCase', () => {
     pills.setQuantity('nobody', 'a', 1);
     await expect(useCase.execute('nobody', 'a')).rejects.toMatchObject({ code: 'CHARACTER_NOT_FOUND' });
   });
+
+  it('restores the decremented pill when the character update loses the concurrency guard', async () => {
+    const { characters, pills, useCase } = setup();
+    pills.seedPill(pill('a', { effectKind: 'linhKhi', amount: 100 }));
+    pills.setQuantity('user-1', 'a', 1);
+
+    // Simulate losing the optimistic-concurrency race: another request wrote
+    // between this use case's read and its guarded update, so the guard misses.
+    characters.updateWithConcurrencyGuard = async () => null;
+
+    await expect(useCase.execute('user-1', 'a')).rejects.toMatchObject({ code: 'CONCURRENT_MODIFICATION' });
+
+    // The unit spent by decrementOne must have been given back.
+    const inv = await pills.listInventory('user-1');
+    expect(inv.find((e) => e.pill.id === 'a')?.quantity).toBe(1);
+  });
 });

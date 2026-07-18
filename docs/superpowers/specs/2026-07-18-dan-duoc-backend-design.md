@@ -142,8 +142,12 @@ the optimistic-concurrency guard intact.
 5. `pills.decrementOne(...)` — if it returns false, throw `PILL_OUT_OF_STOCK`.
    Decrement BEFORE the character write so a concurrent double-consume can't
    apply the effect twice (the second loses the row-level guard).
-6. `applyPillEffect(...)`, persist via `updateWithConcurrencyGuard`
-   (throw `CONCURRENT_MODIFICATION` on guard miss).
+6. `applyPillEffect(...)`, persist via `updateWithConcurrencyGuard`. On a guard
+   miss, compensate with `pills.incrementOne(...)` (give the unit back — the
+   effect was never applied, so the pill must not be burned) and only then
+   throw `CONCURRENT_MODIFICATION`. Saga-style compensation keeps the
+   pill-decrement + character-update pair atomic in outcome without leaking a
+   cross-repository transaction/unit-of-work into the application layer.
 7. Return the updated cultivation-state-shaped output (reuse the state DTO).
 
 ### `AttemptBreakthroughUseCase` (MODIFY)

@@ -39,6 +39,15 @@ export class PrismaPillRepository implements PillRepository {
     return result.count === 1;
   }
 
+  async incrementOne(userId: string, pillId: string): Promise<void> {
+    // Compensating action (see the port): unconditional +1 on the owned row.
+    // No quantity guard needed — this only runs after a successful decrement.
+    await this.client.inventoryItem.updateMany({
+      where: { userId, pillId },
+      data: { quantity: { increment: 1 } },
+    });
+  }
+
   async seedStarterInventory(userId: string): Promise<void> {
     await this.client.inventoryItem.createMany({
       data: STARTER_INVENTORY.map((s) => ({ userId, pillId: s.pillId, quantity: s.quantity })),

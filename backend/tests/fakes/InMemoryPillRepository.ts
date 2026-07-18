@@ -48,6 +48,11 @@ export class InMemoryPillRepository implements PillRepository {
     return true;
   }
 
+  async incrementOne(userId: string, pillId: string): Promise<void> {
+    const key = `${userId}:${pillId}`;
+    this.inv.set(key, (this.inv.get(key) ?? 0) + 1);
+  }
+
   async seedStarterInventory(userId: string): Promise<void> {
     for (const { pillId, quantity } of STARTER_INVENTORY) {
       this.inv.set(`${userId}:${pillId}`, quantity);

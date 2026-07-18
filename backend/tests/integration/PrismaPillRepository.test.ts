@@ -43,4 +43,13 @@ describe('PrismaPillRepository', () => {
     const row = await prisma.inventoryItem.findUnique({ where: { userId_pillId: { userId, pillId: 'hoi-khi-dan' } } });
     expect(row?.quantity).toBe(0);
   });
+
+  it('incrementOne gives a spent unit back (decrement compensation)', async () => {
+    const userId = await makeUser();
+    await prisma.inventoryItem.create({ data: { userId, pillId: 'giai-phat-dan', quantity: 1 } });
+    expect(await repo.decrementOne(userId, 'giai-phat-dan')).toBe(true);
+    await repo.incrementOne(userId, 'giai-phat-dan');
+    const row = await prisma.inventoryItem.findUnique({ where: { userId_pillId: { userId, pillId: 'giai-phat-dan' } } });
+    expect(row?.quantity).toBe(1);
+  });
 });

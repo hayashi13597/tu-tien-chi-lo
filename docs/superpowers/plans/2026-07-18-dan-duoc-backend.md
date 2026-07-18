@@ -1166,6 +1166,11 @@ export class ConsumePillUseCase {
       breakthroughBonusPct: effect.breakthroughBonusPct,
     });
     if (!updated) {
+      // Compensate: the effect was never applied, so give the unit back —
+      // otherwise a lost concurrency race would silently burn the pill.
+      // (Saga-style compensation rather than a cross-repository transaction,
+      // which would leak a unit-of-work/Prisma concern into this layer.)
+      await this.pills.incrementOne(userId, pillId);
       throw new DomainError('CONCURRENT_MODIFICATION', 'Character was modified by another request');
     }
 

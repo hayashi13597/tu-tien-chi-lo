@@ -18,5 +18,9 @@ export interface PillRepository {
   // Atomically decrement one unit guarded on quantity > 0. Returns false if the
   // user doesn't own the pill or its quantity is already 0.
   decrementOne(userId: string, pillId: string): Promise<boolean>;
+  // Compensating action for decrementOne: gives one unit back when the effect
+  // could not be applied (e.g. the character write lost its concurrency guard),
+  // so a failed consume never silently burns a pill.
+  incrementOne(userId: string, pillId: string): Promise<void>;
   seedStarterInventory(userId: string): Promise<void>;
 }
