@@ -10,11 +10,30 @@ export interface SubStageConfig {
 
 export interface RealmConfig {
   name: string;
-  // Five sub-stages per realm: Sơ Kỳ → Trung Kỳ → Hậu Kỳ → Đại Thành → Viên Mãn.
-  subStages: [SubStageConfig, SubStageConfig, SubStageConfig, SubStageConfig, SubStageConfig];
+  // One or more sub-stages, ordered Sơ Kỳ → … → Viên Mãn. The count is no longer
+  // fixed at 5: admins may add/remove sub-stages, so consumers must read the
+  // length via RealmConfigSet.peakRealmSub instead of assuming an index.
+  subStages: SubStageConfig[];
 }
 
-export const REALMS: RealmConfig[] = [
+// Flat DB-row shape: one row per sub-stage, the storage form of the config.
+export interface SubStageRow {
+  realmMajor: number;
+  realmSub: number;
+  realmName: string;
+  subStageName: string;
+  linhKhiRequired: number;
+  cultivationRate: number;
+  baseSuccessRate: number;
+  pityIncrement: number;
+  maxSuccessRate: number;
+  punishmentSeconds: number;
+}
+
+// SEED_REALMS is the original hard-coded balance, kept only as the seed source
+// of truth and a reference. Runtime reads the config from the DB (RealmStage);
+// this literal is upserted by prisma/seed.ts.
+export const SEED_REALMS: RealmConfig[] = [
   {
     name: 'Phàm Nhân',
     subStages: [
@@ -137,9 +156,88 @@ export const REALMS: RealmConfig[] = [
   },
 ];
 
-export const MAX_REALM_MAJOR = REALMS.length - 1;
+// Immutable view over the realm config with the pure helpers the use cases need.
+// Replaces the old REALMS[..] indexing + MAX_REALM_* constants so the sub-stage
+// count and realm count come from the data, not magic numbers.
+export class RealmConfigSet {
+  constructor(private readonly realms: RealmConfig[]) {}
 
-// The peak (final) sub-stage index within each realm — a breakthrough from here
-// rolls over into the next realm major. Derived from the sub-stage count so the
-// magic number stays in one place if the sub-stage layout ever changes again.
-export const MAX_REALM_SUB = REALMS[0].subStages.length - 1;
+  getStage(realmMajor: number, realmSub: number): SubStageConfig {
+    return this.realms[realmMajor].subStages[realmSub];
+  }
+
+  realmName(realmMajor: number): string {
+    return this.realms[realmMajor].name;
+  }
+
+  get maxRealmMajor(): number {
+    return this.realms.length - 1;
+  }
+
+  peakRealmSub(realmMajor: number): number {
+    return this.realms[realmMajor].subStages.length - 1;
+  }
+
+  // Nearest valid (major, sub) for a possibly out-of-range character — e.g. after
+  // an admin removes a realm/sub-stage under someone standing on it. Clamp major
+  // into [0, maxRealmMajor] first, then sub into [0, peakRealmSub(clampedMajor)],
+  // because the valid sub range depends on which realm we landed in.
+  clampStage(realmMajor: number, realmSub: number): { realmMajor: number; realmSub: number } {
+    const major = Math.min(Math.max(realmMajor, 0), this.maxRealmMajor);
+    const sub = Math.min(Math.max(realmSub, 0), this.peakRealmSub(major));
+    return { realmMajor: major, realmSub: sub };
+  }
+
+  toRealms(): RealmConfig[] {
+    return this.realms;
+  }
+}
+
+// Group ordered flat rows back into the nested realm structure.
+export function realmConfigSetFromRows(rows: SubStageRow[]): RealmConfigSet {
+  const sorted = [...rows].sort((a, b) =>
+    a.realmMajor - b.realmMajor || a.realmSub - b.realmSub,
+  );
+  const realms: RealmConfig[] = [];
+  for (const r of sorted) {
+    if (!realms[r.realmMajor]) {
+      realms[r.realmMajor] = { name: r.realmName, subStages: [] };
+    }
+    realms[r.realmMajor].subStages[r.realmSub] = {
+      name: r.subStageName,
+      linhKhiRequired: r.linhKhiRequired,
+      cultivationRate: r.cultivationRate,
+      baseSuccessRate: r.baseSuccessRate,
+      pityIncrement: r.pityIncrement,
+      maxSuccessRate: r.maxSuccessRate,
+      punishmentSeconds: r.punishmentSeconds,
+    };
+  }
+  return new RealmConfigSet(realms);
+}
+
+// Nested → flat rows, assigning realmMajor/realmSub from array positions.
+export function flattenRealms(realms: RealmConfig[]): SubStageRow[] {
+  const rows: SubStageRow[] = [];
+  realms.forEach((realm, realmMajor) => {
+    realm.subStages.forEach((s, realmSub) => {
+      rows.push({
+        realmMajor,
+        realmSub,
+        realmName: realm.name,
+        subStageName: s.name,
+        linhKhiRequired: s.linhKhiRequired,
+        cultivationRate: s.cultivationRate,
+        baseSuccessRate: s.baseSuccessRate,
+        pityIncrement: s.pityIncrement,
+        maxSuccessRate: s.maxSuccessRate,
+        punishmentSeconds: s.punishmentSeconds,
+      });
+    });
+  });
+  return rows;
+}
+
+export function defaultRealmConfigSet(): RealmConfigSet {
+  return new RealmConfigSet(SEED_REALMS);
+}

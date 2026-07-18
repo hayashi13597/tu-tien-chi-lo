@@ -1,6 +1,6 @@
 import { CharacterRepository } from '../domain/ports/CharacterRepository';
 import { DomainError } from '../domain/errors';
-import { REALMS, MAX_REALM_MAJOR, MAX_REALM_SUB } from '../domain/config/realms';
+import { RealmConfigSource } from '../domain/ports/RealmConfigSource';
 import { computeLinhKhi } from '../domain/cultivation/cultivation.calc';
 import { isMaxStage, computeSuccessRate } from '../domain/breakthrough/breakthrough.calc';
 
@@ -25,7 +25,10 @@ export interface CultivationStateOutput {
 }
 
 export class GetCultivationStateUseCase {
-  constructor(private readonly characters: CharacterRepository) {}
+  constructor(
+    private readonly characters: CharacterRepository,
+    private readonly realmConfig: RealmConfigSource,
+  ) {}
 
   async execute(userId: string): Promise<CultivationStateOutput> {
     const character = await this.characters.findByUserId(userId);
@@ -33,7 +36,8 @@ export class GetCultivationStateUseCase {
       throw new DomainError('CHARACTER_NOT_FOUND', 'Character not found');
     }
 
-    const stage = REALMS[character.realmMajor].subStages[character.realmSub];
+    const config = this.realmConfig.get();
+    const stage = config.getStage(character.realmMajor, character.realmSub);
     const now = new Date();
     // Reflect any active timed cultivation buff on the read path too, so the
     // client's polled state shows the faster accrual while the buff lasts —
@@ -52,7 +56,7 @@ export class GetCultivationStateUseCase {
     });
 
     const punished = character.punishedUntil !== null && character.punishedUntil.getTime() > now.getTime();
-    const atMax = isMaxStage(character.realmMajor, character.realmSub, MAX_REALM_MAJOR, MAX_REALM_SUB);
+    const atMax = isMaxStage(character.realmMajor, character.realmSub, config.maxRealmMajor, config.peakRealmSub(character.realmMajor));
 
     // Same inputs AttemptBreakthroughUseCase feeds computeSuccessRate, so the
     // displayed chance matches what an attempt right now would actually roll.
@@ -67,7 +71,7 @@ export class GetCultivationStateUseCase {
     return {
       realmMajor: character.realmMajor,
       realmSub: character.realmSub,
-      realmName: `${REALMS[character.realmMajor].name} - ${stage.name}`,
+      realmName: `${config.realmName(character.realmMajor)} - ${stage.name}`,
       linhKhi: currentLinhKhi,
       linhKhiRequired: stage.linhKhiRequired,
       // This is a read path: it never persists, so `canBreakthrough` only informs

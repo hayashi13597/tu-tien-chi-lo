@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { ConsumePillUseCase } from '../../src/application/ConsumePillUseCase';
 import { InMemoryCharacterRepository } from '../fakes/InMemoryCharacterRepository';
 import { InMemoryPillRepository } from '../fakes/InMemoryPillRepository';
+import { StaticRealmConfigSource } from '../fakes/StaticRealmConfigSource';
 import { CharacterRecord } from '../../src/domain/entities/Character';
 import { PillRecord } from '../../src/domain/pills/pill';
 
@@ -19,7 +20,7 @@ function setup(charOver: Partial<CharacterRecord> = {}) {
   const characters = new InMemoryCharacterRepository();
   characters.seed(makeCharacter(charOver));
   const pills = new InMemoryPillRepository();
-  return { characters, pills, useCase: new ConsumePillUseCase(characters, pills) };
+  return { characters, pills, useCase: new ConsumePillUseCase(characters, pills, new StaticRealmConfigSource()) };
 }
 
 describe('ConsumePillUseCase', () => {

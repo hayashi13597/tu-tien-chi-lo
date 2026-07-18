@@ -1,7 +1,7 @@
 import { CharacterRepository } from '../domain/ports/CharacterRepository';
 import { RandomSource } from '../domain/ports/RandomSource';
 import { DomainError } from '../domain/errors';
-import { REALMS, MAX_REALM_MAJOR, MAX_REALM_SUB } from '../domain/config/realms';
+import { RealmConfigSource } from '../domain/ports/RealmConfigSource';
 import { computeLinhKhi } from '../domain/cultivation/cultivation.calc';
 import { computeSuccessRate, rollSuccess, nextStage, isMaxStage } from '../domain/breakthrough/breakthrough.calc';
 import { CharacterRecord } from '../domain/entities/Character';
@@ -15,6 +15,7 @@ export class AttemptBreakthroughUseCase {
   constructor(
     private readonly characters: CharacterRepository,
     private readonly randomSource: RandomSource,
+    private readonly realmConfig: RealmConfigSource,
   ) {}
 
   async execute(userId: string): Promise<AttemptBreakthroughOutput> {
@@ -23,7 +24,8 @@ export class AttemptBreakthroughUseCase {
       throw new DomainError('CHARACTER_NOT_FOUND', 'Character not found');
     }
 
-    const stage = REALMS[character.realmMajor].subStages[character.realmSub];
+    const config = this.realmConfig.get();
+    const stage = config.getStage(character.realmMajor, character.realmSub);
     const now = new Date();
     // Recompute lazily-accrued linh khi (respecting any active buff) once, up
     // front. Every branch below (including the three rejection paths) persists
@@ -41,7 +43,7 @@ export class AttemptBreakthroughUseCase {
       buff,
     });
 
-    const atMax = isMaxStage(character.realmMajor, character.realmSub, MAX_REALM_MAJOR, MAX_REALM_SUB);
+    const atMax = isMaxStage(character.realmMajor, character.realmSub, config.maxRealmMajor, config.peakRealmSub(character.realmMajor));
     const punished = character.punishedUntil !== null && character.punishedUntil.getTime() > now.getTime();
 
     if (atMax) {
@@ -93,7 +95,7 @@ export class AttemptBreakthroughUseCase {
     const succeeded = rollSuccess(successRate, this.randomSource.next());
 
     if (succeeded) {
-      const { realmMajor, realmSub } = nextStage(character.realmMajor, character.realmSub, MAX_REALM_SUB);
+      const { realmMajor, realmSub } = nextStage(character.realmMajor, character.realmSub, config.peakRealmSub(character.realmMajor));
       const updated = await this.persist(character, currentLinhKhi - stage.linhKhiRequired, now, {
         realmMajor,
         realmSub,
