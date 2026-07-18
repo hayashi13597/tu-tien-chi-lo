@@ -50,41 +50,6 @@ export type PillEffectKind =
   | "breakthroughBoost"
   | "clearPunishment";
 
-export interface PillEffect {
-  kind: PillEffectKind;
-  /** linhKhi: linh khí added immediately. */
-  amount?: number;
-  /** cultivationBuff: multiplier applied to cultivationRate while active. */
-  multiplier?: number;
-  /** cultivationBuff: buff lifetime in seconds. */
-  durationSec?: number;
-  /** breakthroughBoost: +percentage points to next breakthrough success. */
-  bonusPct?: number;
-}
-
-export interface PillDef {
-  id: string;
-  name: string;
-  glyph: string; // Hán tự shown on the pill orb
-  rarity: PillRarity;
-  effect: PillEffect;
-  desc: string;
-}
-
-export interface InventoryPill {
-  def: PillDef;
-  quantity: number;
-}
-
-export interface ActiveBuff {
-  kind: "cultivationBuff" | "breakthroughBoost";
-  label: string;
-  /** epoch ms; present for cultivationBuff only. */
-  expiresAt?: number;
-  multiplier?: number;
-  bonusPct?: number;
-}
-
 // Flat inventory item as returned by GET /pills/inventory (backend InventoryDto).
 export interface PillInventoryItem {
   id: string;
