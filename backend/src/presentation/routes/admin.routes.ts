@@ -1,12 +1,14 @@
 import { Router, RequestHandler } from 'express';
 import { updateRealmsSchema } from '../schemas/admin.schemas';
 import { UpdateRealmConfigUseCase } from '../../application/UpdateRealmConfigUseCase';
+import { GetAdminStatsUseCase } from '../../application/GetAdminStatsUseCase';
 import { RealmConfigProvider } from '../../infrastructure/config/RealmConfigProvider';
 import { requireAdmin } from '../middleware/requireAdmin';
 import { DomainError } from '../../domain/errors';
 
 export interface AdminRouterDeps {
   updateRealmConfigUseCase: UpdateRealmConfigUseCase;
+  getAdminStatsUseCase: GetAdminStatsUseCase;
   realmConfigProvider: RealmConfigProvider;
   requireAuth: RequestHandler;
 }
@@ -32,6 +34,14 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
       // Reload the cache so the new config is live for every subsequent request.
       await deps.realmConfigProvider.reload();
       res.status(200).json({ realms: saved });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get('/stats', async (_req, res, next) => {
+    try {
+      res.status(200).json(await deps.getAdminStatsUseCase.execute());
     } catch (err) {
       next(err);
     }
