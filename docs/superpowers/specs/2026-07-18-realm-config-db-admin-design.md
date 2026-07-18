@@ -183,8 +183,10 @@ Enforced by zod (request shape) + `UpdateRealmConfigUseCase` (business invariant
   `0..M` (no index gaps — the code addresses stages by contiguous index).
 - Numeric sanity: `linhKhiRequired > 0`; `baseSuccessRate`, `maxSuccessRate` in
   `[0, 100]`; `pityIncrement >= 0`; `punishmentSeconds >= 0`; `cultivationRate > 0`.
-- `linhKhiRequired` is strictly increasing across the flat `(major, sub)` order — the
-  monotonic invariant the progression relies on.
+- `linhKhiRequired` is strictly increasing **within each realm** (Sơ Kỳ → Viên Mãn) — the
+  monotonic invariant a realm's progression relies on. It does *not* increase across realm
+  boundaries: the balance resets to a lower value at each new realm (e.g. Phàm Nhân peak 500
+  → Luyện Khí start 300), so the check is per-realm, not across the flat order.
 - Violations → `DomainError('INVALID_REALM_CONFIG', ...)` → HTTP 400.
 
 ## Error codes (new)

@@ -19,20 +19,23 @@ export class UpdateRealmConfigUseCase {
       }
     }
 
-    // linhKhiRequired must strictly increase across the whole progression (flat
-    // major→sub order) — the monotonic invariant the accrual/breakthrough loop
-    // relies on. Nested arrays already give contiguous indices, so no gap check
-    // is needed here.
-    const rows = flattenRealms(realms);
-    for (let i = 1; i < rows.length; i++) {
-      if (rows[i].linhKhiRequired <= rows[i - 1].linhKhiRequired) {
-        throw new DomainError(
-          'INVALID_REALM_CONFIG',
-          `linhKhiRequired must strictly increase (violation at realm ${rows[i].realmMajor}, sub ${rows[i].realmSub})`,
-        );
+    // linhKhiRequired must strictly increase within each realm (Sơ Kỳ → Viên
+    // Mãn) — the monotonic invariant a realm's progression relies on. It does NOT
+    // increase across realm boundaries: the seed resets to a lower value at each
+    // new realm (e.g. Phàm Nhân peak 500 → Luyện Khí start 300), so the check is
+    // per-realm, not across the flat order.
+    for (const realm of realms) {
+      for (let i = 1; i < realm.subStages.length; i++) {
+        if (realm.subStages[i].linhKhiRequired <= realm.subStages[i - 1].linhKhiRequired) {
+          throw new DomainError(
+            'INVALID_REALM_CONFIG',
+            `linhKhiRequired must strictly increase within realm "${realm.name}" (violation at sub-stage ${i})`,
+          );
+        }
       }
     }
 
+    const rows = flattenRealms(realms);
     await this.repo.replaceAll(rows);
     return realms;
   }

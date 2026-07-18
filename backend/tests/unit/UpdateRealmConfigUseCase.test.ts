@@ -23,7 +23,19 @@ describe('UpdateRealmConfigUseCase', () => {
     expect(rows[2].realmName).toBe('B');
   });
 
-  it('rejects a non-increasing linhKhiRequired across the flat order', async () => {
+  it('allows linhKhiRequired to reset lower at a new realm boundary', async () => {
+    // The real balance resets to a lower requirement at each new realm (e.g.
+    // Phàm Nhân peak 500 → Luyện Khí start 300); monotonicity is per-realm only.
+    const resetting: RealmConfig[] = [
+      { name: 'A', subStages: [stage('A0', 100), stage('A1', 500)] },
+      { name: 'B', subStages: [stage('B0', 300), stage('B1', 600)] },
+    ];
+    const repo = new InMemoryRealmConfigRepository();
+    const result = await new UpdateRealmConfigUseCase(repo).execute(resetting);
+    expect(result).toEqual(resetting);
+  });
+
+  it('rejects a non-increasing linhKhiRequired within a realm', async () => {
     const bad: RealmConfig[] = [
       { name: 'A', subStages: [stage('A0', 200), stage('A1', 150)] },
     ];

@@ -19,9 +19,11 @@ import { GetCultivationStateUseCase } from './application/GetCultivationStateUse
 import { AttemptBreakthroughUseCase } from './application/AttemptBreakthroughUseCase';
 import { GetInventoryUseCase } from './application/GetInventoryUseCase';
 import { ConsumePillUseCase } from './application/ConsumePillUseCase';
+import { UpdateRealmConfigUseCase } from './application/UpdateRealmConfigUseCase';
 import { createAuthRouter } from './presentation/routes/auth.routes';
 import { createCultivationRouter } from './presentation/routes/cultivation.routes';
 import { createPillsRouter } from './presentation/routes/pills.routes';
+import { createAdminRouter } from './presentation/routes/admin.routes';
 import { createRequireAuth } from './presentation/middleware/auth';
 import { errorHandler } from './presentation/middleware/errorHandler';
 
@@ -61,6 +63,7 @@ export function createApp(overrides: AppOverrides = {}) {
   const attemptBreakthroughUseCase = new AttemptBreakthroughUseCase(characterRepository, randomSource, realmConfigProvider);
   const getInventoryUseCase = new GetInventoryUseCase(pillRepository);
   const consumePillUseCase = new ConsumePillUseCase(characterRepository, pillRepository, realmConfigProvider);
+  const updateRealmConfigUseCase = new UpdateRealmConfigUseCase(realmConfigRepository);
 
   const requireAuth = createRequireAuth(tokenService);
 
@@ -91,6 +94,10 @@ export function createApp(overrides: AppOverrides = {}) {
   app.use(
     '/pills',
     createPillsRouter({ getInventoryUseCase, consumePillUseCase, requireAuth }),
+  );
+  app.use(
+    '/admin',
+    createAdminRouter({ updateRealmConfigUseCase, realmConfigProvider, requireAuth }),
   );
 
   app.use(errorHandler);
