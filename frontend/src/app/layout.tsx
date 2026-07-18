@@ -35,6 +35,7 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
+      data-scroll-behavior="smooth"
       className={`${maShan.variable} ${zcool.variable} ${beVietnam.variable}`}
     >
       <body>

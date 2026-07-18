@@ -38,7 +38,7 @@ describe('GET /cultivation/state', () => {
     const res = await request(app).get('/cultivation/state').set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.realmName).toBe('Phàm Nhân - Sơ');
+    expect(res.body.realmName).toBe('Phàm Nhân - Sơ Kỳ');
     expect(res.body.linhKhiRequired).toBe(100);
     expect(res.body.canBreakthrough).toBe(false);
     expect(res.body.isMaxStage).toBe(false);

@@ -23,15 +23,26 @@ export function rollSuccess(successRatePercent: number, randomValue: number): bo
   return randomValue * 100 < successRatePercent;
 }
 
-// A breakthrough always advances exactly one substage; crossing Đại Viên Mãn
-// (substage 3) rolls over into the next realm major at substage 0 (Sơ).
-export function nextStage(realmMajor: number, realmSub: number): { realmMajor: number; realmSub: number } {
-  if (realmSub < 3) {
+// A breakthrough always advances exactly one substage; crossing the peak
+// substage (Viên Mãn, index peakRealmSub) rolls over into the next realm major
+// at substage 0 (Sơ Kỳ). peakRealmSub is injected (from MAX_REALM_SUB) rather
+// than hardcoded so the sub-stage count lives in one place (the realm config).
+export function nextStage(
+  realmMajor: number,
+  realmSub: number,
+  peakRealmSub: number,
+): { realmMajor: number; realmSub: number } {
+  if (realmSub < peakRealmSub) {
     return { realmMajor, realmSub: realmSub + 1 };
   }
   return { realmMajor: realmMajor + 1, realmSub: 0 };
 }
 
-export function isMaxStage(realmMajor: number, realmSub: number, maxRealmMajor: number): boolean {
-  return realmMajor === maxRealmMajor && realmSub === 3;
+export function isMaxStage(
+  realmMajor: number,
+  realmSub: number,
+  maxRealmMajor: number,
+  peakRealmSub: number,
+): boolean {
+  return realmMajor === maxRealmMajor && realmSub === peakRealmSub;
 }

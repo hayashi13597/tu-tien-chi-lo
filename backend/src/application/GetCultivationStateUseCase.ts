@@ -1,6 +1,6 @@
 import { CharacterRepository } from '../domain/ports/CharacterRepository';
 import { DomainError } from '../domain/errors';
-import { REALMS, MAX_REALM_MAJOR } from '../domain/config/realms';
+import { REALMS, MAX_REALM_MAJOR, MAX_REALM_SUB } from '../domain/config/realms';
 import { computeLinhKhi } from '../domain/cultivation/cultivation.calc';
 import { isMaxStage, computeSuccessRate } from '../domain/breakthrough/breakthrough.calc';
 
@@ -52,7 +52,7 @@ export class GetCultivationStateUseCase {
     });
 
     const punished = character.punishedUntil !== null && character.punishedUntil.getTime() > now.getTime();
-    const atMax = isMaxStage(character.realmMajor, character.realmSub, MAX_REALM_MAJOR);
+    const atMax = isMaxStage(character.realmMajor, character.realmSub, MAX_REALM_MAJOR, MAX_REALM_SUB);
 
     // Same inputs AttemptBreakthroughUseCase feeds computeSuccessRate, so the
     // displayed chance matches what an attempt right now would actually roll.

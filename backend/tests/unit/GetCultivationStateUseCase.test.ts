@@ -32,7 +32,7 @@ describe('GetCultivationStateUseCase', () => {
     characters.seed(makeCharacter());
     const result = await new GetCultivationStateUseCase(characters).execute('user-1');
 
-    expect(result.realmName).toBe('Phàm Nhân - Sơ');
+    expect(result.realmName).toBe('Phàm Nhân - Sơ Kỳ');
     expect(result.linhKhiRequired).toBe(100);
     expect(result.canBreakthrough).toBe(false);
     expect(result.isMaxStage).toBe(false);

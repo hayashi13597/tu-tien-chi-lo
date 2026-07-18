@@ -29,7 +29,8 @@ describe("getRealmMeta", () => {
 
 describe("getSubStageName", () => {
   it("returns the matching sub-stage", () => {
-    expect(getSubStageName(2)).toBe("Viên Mãn");
+    expect(getSubStageName(2)).toBe("Hậu Kỳ");
+    expect(getSubStageName(4)).toBe("Viên Mãn");
   });
   it("falls back to index 0 when out of range", () => {
     expect(getSubStageName(99)).toBe(SUB_STAGE_NAMES[0]);

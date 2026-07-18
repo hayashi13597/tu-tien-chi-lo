@@ -25,25 +25,25 @@ describe('rollSuccess', () => {
 
 describe('nextStage', () => {
   it('advances the substage within the same realm', () => {
-    expect(nextStage(1, 0)).toEqual({ realmMajor: 1, realmSub: 1 });
+    expect(nextStage(1, 0, 4)).toEqual({ realmMajor: 1, realmSub: 1 });
   });
 
-  it('rolls over to the next realm major at Đại Viên Mãn (substage 3)', () => {
-    expect(nextStage(1, 3)).toEqual({ realmMajor: 2, realmSub: 0 });
+  it('rolls over to the next realm major at Viên Mãn (peak substage 4)', () => {
+    expect(nextStage(1, 4, 4)).toEqual({ realmMajor: 2, realmSub: 0 });
   });
 });
 
 describe('isMaxStage', () => {
-  it('is true only at the max realm major and substage 3', () => {
-    expect(isMaxStage(11, 3, 11)).toBe(true);
+  it('is true only at the max realm major and the peak substage', () => {
+    expect(isMaxStage(11, 4, 11, 4)).toBe(true);
   });
 
   it('is false at the max realm major but an earlier substage', () => {
-    expect(isMaxStage(11, 2, 11)).toBe(false);
+    expect(isMaxStage(11, 3, 11, 4)).toBe(false);
   });
 
   it('is false below the max realm major', () => {
-    expect(isMaxStage(10, 3, 11)).toBe(false);
+    expect(isMaxStage(10, 4, 11, 4)).toBe(false);
   });
 });
 
