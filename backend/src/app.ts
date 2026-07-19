@@ -21,6 +21,9 @@ import { AttemptBreakthroughUseCase } from './application/AttemptBreakthroughUse
 import { GetInventoryUseCase } from './application/GetInventoryUseCase';
 import { ConsumePillUseCase } from './application/ConsumePillUseCase';
 import { UpdateRealmConfigUseCase } from './application/UpdateRealmConfigUseCase';
+import { ListPillsAdminUseCase } from './application/ListPillsAdminUseCase';
+import { CreatePillUseCase } from './application/CreatePillUseCase';
+import { UpdatePillUseCase } from './application/UpdatePillUseCase';
 import { GetCurrentUserUseCase } from './application/GetCurrentUserUseCase';
 import { GetAdminStatsUseCase } from './application/GetAdminStatsUseCase';
 import { createAuthRouter } from './presentation/routes/auth.routes';
@@ -68,6 +71,9 @@ export function createApp(overrides: AppOverrides = {}) {
   const getInventoryUseCase = new GetInventoryUseCase(pillRepository);
   const consumePillUseCase = new ConsumePillUseCase(characterRepository, pillRepository, realmConfigProvider);
   const updateRealmConfigUseCase = new UpdateRealmConfigUseCase(realmConfigRepository);
+  const listPillsAdminUseCase = new ListPillsAdminUseCase(pillRepository);
+  const createPillUseCase = new CreatePillUseCase(pillRepository);
+  const updatePillUseCase = new UpdatePillUseCase(pillRepository);
   const getCurrentUserUseCase = new GetCurrentUserUseCase(userRepository);
   const getAdminStatsUseCase = new GetAdminStatsUseCase(statsRepository, realmConfigProvider);
 
@@ -103,7 +109,7 @@ export function createApp(overrides: AppOverrides = {}) {
   );
   app.use(
     '/admin',
-    createAdminRouter({ updateRealmConfigUseCase, getAdminStatsUseCase, realmConfigProvider, requireAuth }),
+    createAdminRouter({ updateRealmConfigUseCase, getAdminStatsUseCase, listPillsAdminUseCase, createPillUseCase, updatePillUseCase, realmConfigProvider, requireAuth }),
   );
 
   app.use(errorHandler);
