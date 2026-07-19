@@ -5,14 +5,20 @@ describe('JwtTokenService', () => {
   describe('access tokens', () => {
     it('signs a token that verifies back to the same userId', () => {
       const service = new JwtTokenService('access-secret', 'refresh-secret');
-      const token = service.signAccessToken('user-123');
-      expect(service.verifyAccessToken(token)).toEqual({ userId: 'user-123' });
+      const token = service.signAccessToken('user-123', 'user');
+      expect(service.verifyAccessToken(token)).toEqual({ userId: 'user-123', role: 'user' });
+    });
+
+    it('round-trips the role claim through the access token', () => {
+      const service = new JwtTokenService('access-secret', 'refresh-secret');
+      const token = service.signAccessToken('user-123', 'admin');
+      expect(service.verifyAccessToken(token)).toEqual({ userId: 'user-123', role: 'admin' });
     });
 
     it('throws when verifying an access token signed with a different access secret', () => {
       const signer = new JwtTokenService('access-secret-a', 'refresh-secret');
       const verifier = new JwtTokenService('access-secret-b', 'refresh-secret');
-      const token = signer.signAccessToken('user-123');
+      const token = signer.signAccessToken('user-123', 'user');
       expect(() => verifier.verifyAccessToken(token)).toThrow();
     });
 
@@ -46,7 +52,7 @@ describe('JwtTokenService', () => {
 
     it('rejects an access token presented to verifyRefreshToken when secrets differ', () => {
       const service = new JwtTokenService('access-secret', 'refresh-secret');
-      const accessToken = service.signAccessToken('user-123');
+      const accessToken = service.signAccessToken('user-123', 'user');
       expect(() => service.verifyRefreshToken(accessToken)).toThrow();
     });
 
@@ -56,7 +62,7 @@ describe('JwtTokenService', () => {
       // misconfigured to the same value, the typ claim must still block
       // token-kind confusion on its own.
       const service = new JwtTokenService('same-secret', 'same-secret');
-      const accessToken = service.signAccessToken('user-123');
+      const accessToken = service.signAccessToken('user-123', 'user');
       expect(() => service.verifyRefreshToken(accessToken)).toThrow();
     });
 
@@ -70,8 +76,8 @@ describe('JwtTokenService', () => {
   describe('token uniqueness (jti)', () => {
     it('signs two different access tokens for the same userId, even issued in the same instant', () => {
       const service = new JwtTokenService('access-secret', 'refresh-secret');
-      const first = service.signAccessToken('user-123');
-      const second = service.signAccessToken('user-123');
+      const first = service.signAccessToken('user-123', 'user');
+      const second = service.signAccessToken('user-123', 'user');
       // Without a random jti, jwt.sign() is a deterministic HMAC over
       // { userId, iat, exp } + secret, and iat/exp only have second-level
       // granularity — two calls in the same wall-clock second would
@@ -91,7 +97,7 @@ describe('JwtTokenService', () => {
   describe('access token expiry', () => {
     it('signs an access token with a 15-minute expiry', () => {
       const service = new JwtTokenService('access-secret', 'refresh-secret');
-      const token = service.signAccessToken('user-123');
+      const token = service.signAccessToken('user-123', 'user');
       const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
       expect(payload.exp - payload.iat).toBe(15 * 60);
     });

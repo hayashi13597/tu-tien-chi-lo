@@ -1,6 +1,6 @@
 import { CharacterRepository } from '../domain/ports/CharacterRepository';
 import { DomainError } from '../domain/errors';
-import { REALMS, MAX_REALM_MAJOR, MAX_REALM_SUB } from '../domain/config/realms';
+import { RealmConfigSource } from '../domain/ports/RealmConfigSource';
 import { computeLinhKhi } from '../domain/cultivation/cultivation.calc';
 import { isMaxStage, computeSuccessRate } from '../domain/breakthrough/breakthrough.calc';
 
@@ -25,7 +25,10 @@ export interface CultivationStateOutput {
 }
 
 export class GetCultivationStateUseCase {
-  constructor(private readonly characters: CharacterRepository) {}
+  constructor(
+    private readonly characters: CharacterRepository,
+    private readonly realmConfig: RealmConfigSource,
+  ) {}
 
   async execute(userId: string): Promise<CultivationStateOutput> {
     const character = await this.characters.findByUserId(userId);
@@ -33,7 +36,30 @@ export class GetCultivationStateUseCase {
       throw new DomainError('CHARACTER_NOT_FOUND', 'Character not found');
     }
 
-    const stage = REALMS[character.realmMajor].subStages[character.realmSub];
+    const config = this.realmConfig.get();
+    // Self-heal: if the stored stage no longer exists in the current config
+    // (e.g. an admin removed a realm/sub-stage under this character), clamp to
+    // the nearest valid stage and persist the correction. This is the read path,
+    // so it also removes the previous out-of-range 500. Uses the existing
+    // optimistic-concurrency guard; a lost race just means another request
+    // already wrote — we fall through with the clamped indices for this response.
+    const clamped = config.clampStage(character.realmMajor, character.realmSub);
+    if (clamped.realmMajor !== character.realmMajor || clamped.realmSub !== character.realmSub) {
+      character.realmMajor = clamped.realmMajor;
+      character.realmSub = clamped.realmSub;
+      await this.characters.updateWithConcurrencyGuard(character.id, character.lastUpdateAt, {
+        realmMajor: character.realmMajor,
+        realmSub: character.realmSub,
+        linhKhi: character.linhKhi,
+        lastUpdateAt: character.lastUpdateAt,
+        breakthroughFails: character.breakthroughFails,
+        punishedUntil: character.punishedUntil,
+        cultivationBuffMultiplier: character.cultivationBuffMultiplier,
+        cultivationBuffUntil: character.cultivationBuffUntil,
+        breakthroughBonusPct: character.breakthroughBonusPct,
+      });
+    }
+    const stage = config.getStage(character.realmMajor, character.realmSub);
     const now = new Date();
     // Reflect any active timed cultivation buff on the read path too, so the
     // client's polled state shows the faster accrual while the buff lasts —
@@ -52,7 +78,7 @@ export class GetCultivationStateUseCase {
     });
 
     const punished = character.punishedUntil !== null && character.punishedUntil.getTime() > now.getTime();
-    const atMax = isMaxStage(character.realmMajor, character.realmSub, MAX_REALM_MAJOR, MAX_REALM_SUB);
+    const atMax = isMaxStage(character.realmMajor, character.realmSub, config.maxRealmMajor, config.peakRealmSub(character.realmMajor));
 
     // Same inputs AttemptBreakthroughUseCase feeds computeSuccessRate, so the
     // displayed chance matches what an attempt right now would actually roll.
@@ -67,7 +93,7 @@ export class GetCultivationStateUseCase {
     return {
       realmMajor: character.realmMajor,
       realmSub: character.realmSub,
-      realmName: `${REALMS[character.realmMajor].name} - ${stage.name}`,
+      realmName: `${config.realmName(character.realmMajor)} - ${stage.name}`,
       linhKhi: currentLinhKhi,
       linhKhiRequired: stage.linhKhiRequired,
       // This is a read path: it never persists, so `canBreakthrough` only informs

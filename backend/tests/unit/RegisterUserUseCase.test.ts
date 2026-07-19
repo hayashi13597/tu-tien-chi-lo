@@ -17,7 +17,7 @@ describe('RegisterUserUseCase', () => {
 
     expect(result.username).toBe('alice');
     expect(typeof result.id).toBe('string');
-    expect(result.accessToken).toBe(`access-token-for-${result.id}`);
+    expect(result.accessToken).toBe(`access-token-for-user:${result.id}`);
     expect(result.refreshToken).toBe(`refresh-token-for-${result.id}`);
   });
 

@@ -17,6 +17,7 @@ model User {
   id           String     @id @default(uuid())
   username     String     @unique
   passwordHash String
+  role         String     @default("user") // "user" | "admin"
   createdAt    DateTime   @default(now())
   character    Character?
   inventory    InventoryItem[]
@@ -70,4 +71,20 @@ model InventoryItem {
   quantity Int    @default(0)
 
   @@unique([userId, pillId])
+}
+
+model RealmStage {
+  id                String @id @default(uuid())
+  realmMajor        Int
+  realmSub          Int
+  realmName         String
+  subStageName      String
+  linhKhiRequired   Float
+  cultivationRate   Float
+  baseSuccessRate   Float
+  pityIncrement     Float
+  maxSuccessRate    Float
+  punishmentSeconds Int
+
+  @@unique([realmMajor, realmSub])
 }

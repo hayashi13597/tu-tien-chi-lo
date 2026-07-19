@@ -8,7 +8,10 @@ export class JwtTokenService implements TokenService {
     private readonly refreshSecret: string,
   ) {}
 
-  signAccessToken(userId: string): string {
+  signAccessToken(userId: string, role: string): string {
+    // role travels in the access token (15m) so requireAdmin can authorize
+    // without a DB lookup per request.
+    //
     // jti (a random per-token id) is required, not cosmetic: jwt.sign() is a
     // deterministic HMAC over { userId, iat, exp } + secret, and iat/exp only
     // have second-level granularity. Two calls for the same userId within the
@@ -24,15 +27,16 @@ export class JwtTokenService implements TokenService {
     // were ever accidentally violated (e.g. both secrets set to the same
     // value in a deploy config), the typ claim still stops a token minted
     // for one purpose from verifying as the other.
-    return jwt.sign({ userId, jti: randomUUID(), typ: 'access' }, this.accessSecret, { expiresIn: '15m' });
+    return jwt.sign({ userId, role, jti: randomUUID(), typ: 'access' }, this.accessSecret, { expiresIn: '15m' });
   }
 
-  verifyAccessToken(token: string): { userId: string } {
-    const payload = jwt.verify(token, this.accessSecret) as { userId: string; typ?: string; [key: string]: unknown };
+  verifyAccessToken(token: string): { userId: string; role: string } {
+    const payload = jwt.verify(token, this.accessSecret) as { userId: string; role?: string; typ?: string; [key: string]: unknown };
     if (payload.typ !== 'access') {
       throw new Error('Token is not an access token');
     }
-    return { userId: payload.userId };
+    // Tokens minted before roles existed have no role claim; treat them as "user".
+    return { userId: payload.userId, role: payload.role ?? 'user' };
   }
 
   signRefreshToken(userId: string): string {

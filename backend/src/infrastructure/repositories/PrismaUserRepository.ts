@@ -9,6 +9,10 @@ export class PrismaUserRepository implements UserRepository {
     return this.client.user.findUnique({ where: { username } });
   }
 
+  async findById(id: string): Promise<UserRecord | null> {
+    return this.client.user.findUnique({ where: { id } });
+  }
+
   async create(input: { username: string; passwordHash: string }): Promise<UserRecord> {
     // Nested create makes User + its default Character one atomic write,
     // matching spec section 7 ("register creates User + Character mặc định").

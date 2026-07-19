@@ -1,7 +1,7 @@
 import { CharacterRepository } from '../domain/ports/CharacterRepository';
 import { PillRepository } from '../domain/ports/PillRepository';
 import { DomainError } from '../domain/errors';
-import { REALMS, MAX_REALM_MAJOR, MAX_REALM_SUB } from '../domain/config/realms';
+import { RealmConfigSource } from '../domain/ports/RealmConfigSource';
 import { computeLinhKhi } from '../domain/cultivation/cultivation.calc';
 import { isMaxStage, computeSuccessRate } from '../domain/breakthrough/breakthrough.calc';
 import { applyPillEffect } from '../domain/pills/pill.calc';
@@ -11,6 +11,7 @@ export class ConsumePillUseCase {
   constructor(
     private readonly characters: CharacterRepository,
     private readonly pills: PillRepository,
+    private readonly realmConfig: RealmConfigSource,
   ) {}
 
   async execute(userId: string, pillId: string): Promise<CultivationStateOutput> {
@@ -23,9 +24,10 @@ export class ConsumePillUseCase {
       throw new DomainError('PILL_NOT_FOUND', 'Pill not found');
     }
 
-    const stage = REALMS[character.realmMajor].subStages[character.realmSub];
+    const config = this.realmConfig.get();
+    const stage = config.getStage(character.realmMajor, character.realmSub);
     const now = new Date();
-    const atMax = isMaxStage(character.realmMajor, character.realmSub, MAX_REALM_MAJOR, MAX_REALM_SUB);
+    const atMax = isMaxStage(character.realmMajor, character.realmSub, config.maxRealmMajor, config.peakRealmSub(character.realmMajor));
     const punished = character.punishedUntil !== null && character.punishedUntil.getTime() > now.getTime();
 
     // Applicability guards (before spending the pill): a pill that can't do
@@ -82,13 +84,13 @@ export class ConsumePillUseCase {
     }
 
     // Return the fresh cultivation state (same shape GET /cultivation/state uses).
-    const newStage = REALMS[updated.realmMajor].subStages[updated.realmSub];
-    const newAtMax = isMaxStage(updated.realmMajor, updated.realmSub, MAX_REALM_MAJOR, MAX_REALM_SUB);
+    const newStage = config.getStage(updated.realmMajor, updated.realmSub);
+    const newAtMax = isMaxStage(updated.realmMajor, updated.realmSub, config.maxRealmMajor, config.peakRealmSub(updated.realmMajor));
     const newPunished = updated.punishedUntil !== null && updated.punishedUntil.getTime() > now.getTime();
     return {
       realmMajor: updated.realmMajor,
       realmSub: updated.realmSub,
-      realmName: `${REALMS[updated.realmMajor].name} - ${newStage.name}`,
+      realmName: `${config.realmName(updated.realmMajor)} - ${newStage.name}`,
       linhKhi: updated.linhKhi,
       linhKhiRequired: newStage.linhKhiRequired,
       canBreakthrough: !newAtMax && !newPunished && updated.linhKhi >= newStage.linhKhiRequired,

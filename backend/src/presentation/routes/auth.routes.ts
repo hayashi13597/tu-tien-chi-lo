@@ -56,7 +56,7 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
       if (!refreshToken) {
         throw new DomainError('INVALID_REFRESH_TOKEN', 'Missing refresh token');
       }
-      const result = deps.refreshAccessTokenUseCase.execute(refreshToken);
+      const result = await deps.refreshAccessTokenUseCase.execute(refreshToken);
       setAuthCookies(res, result.token, result.refreshToken);
       res.status(200).json({ token: result.token });
     } catch (err) {

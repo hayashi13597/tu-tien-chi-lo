@@ -6,6 +6,8 @@ import { prisma as defaultPrismaClient } from './infrastructure/db/prisma';
 import { PrismaUserRepository } from './infrastructure/repositories/PrismaUserRepository';
 import { PrismaCharacterRepository } from './infrastructure/repositories/PrismaCharacterRepository';
 import { PrismaPillRepository } from './infrastructure/repositories/PrismaPillRepository';
+import { PrismaRealmConfigRepository } from './infrastructure/repositories/PrismaRealmConfigRepository';
+import { RealmConfigProvider } from './infrastructure/config/RealmConfigProvider';
 import { BcryptPasswordHasher } from './infrastructure/auth/BcryptPasswordHasher';
 import { JwtTokenService } from './infrastructure/auth/JwtTokenService';
 import { MathRandomSource } from './infrastructure/random/MathRandomSource';
@@ -17,9 +19,11 @@ import { GetCultivationStateUseCase } from './application/GetCultivationStateUse
 import { AttemptBreakthroughUseCase } from './application/AttemptBreakthroughUseCase';
 import { GetInventoryUseCase } from './application/GetInventoryUseCase';
 import { ConsumePillUseCase } from './application/ConsumePillUseCase';
+import { UpdateRealmConfigUseCase } from './application/UpdateRealmConfigUseCase';
 import { createAuthRouter } from './presentation/routes/auth.routes';
 import { createCultivationRouter } from './presentation/routes/cultivation.routes';
 import { createPillsRouter } from './presentation/routes/pills.routes';
+import { createAdminRouter } from './presentation/routes/admin.routes';
 import { createRequireAuth } from './presentation/middleware/auth';
 import { errorHandler } from './presentation/middleware/errorHandler';
 
@@ -37,6 +41,8 @@ export function createApp(overrides: AppOverrides = {}) {
   const userRepository = new PrismaUserRepository(client);
   const characterRepository = new PrismaCharacterRepository(client);
   const pillRepository = new PrismaPillRepository(client);
+  const realmConfigRepository = new PrismaRealmConfigRepository(client);
+  const realmConfigProvider = new RealmConfigProvider(realmConfigRepository);
   const passwordHasher = new BcryptPasswordHasher();
 
   const jwtSecret = process.env.JWT_SECRET as string;
@@ -52,11 +58,12 @@ export function createApp(overrides: AppOverrides = {}) {
 
   const registerUserUseCase = new RegisterUserUseCase(userRepository, passwordHasher, tokenService, pillRepository);
   const loginUserUseCase = new LoginUserUseCase(userRepository, passwordHasher, tokenService);
-  const refreshAccessTokenUseCase = new RefreshAccessTokenUseCase(tokenService);
-  const getCultivationStateUseCase = new GetCultivationStateUseCase(characterRepository);
-  const attemptBreakthroughUseCase = new AttemptBreakthroughUseCase(characterRepository, randomSource);
+  const refreshAccessTokenUseCase = new RefreshAccessTokenUseCase(tokenService, userRepository);
+  const getCultivationStateUseCase = new GetCultivationStateUseCase(characterRepository, realmConfigProvider);
+  const attemptBreakthroughUseCase = new AttemptBreakthroughUseCase(characterRepository, randomSource, realmConfigProvider);
   const getInventoryUseCase = new GetInventoryUseCase(pillRepository);
-  const consumePillUseCase = new ConsumePillUseCase(characterRepository, pillRepository);
+  const consumePillUseCase = new ConsumePillUseCase(characterRepository, pillRepository, realmConfigProvider);
+  const updateRealmConfigUseCase = new UpdateRealmConfigUseCase(realmConfigRepository);
 
   const requireAuth = createRequireAuth(tokenService);
 
@@ -67,6 +74,13 @@ export function createApp(overrides: AppOverrides = {}) {
 
   app.get('/health', (_req, res) => {
     res.status(200).json({ status: 'ok' });
+  });
+
+  // Ensure the realm config is loaded (once) before handling a request. First
+  // request pays the one-time DB read; subsequent ones are a no-op. Kept out of
+  // /health above so a health check never blocks on the DB.
+  app.use((_req, _res, next) => {
+    realmConfigProvider.ensureLoaded().then(() => next()).catch(next);
   });
 
   app.use(
@@ -80,6 +94,10 @@ export function createApp(overrides: AppOverrides = {}) {
   app.use(
     '/pills',
     createPillsRouter({ getInventoryUseCase, consumePillUseCase, requireAuth }),
+  );
+  app.use(
+    '/admin',
+    createAdminRouter({ updateRealmConfigUseCase, realmConfigProvider, requireAuth }),
   );
 
   app.use(errorHandler);

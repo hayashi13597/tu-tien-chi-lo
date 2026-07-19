@@ -31,7 +31,7 @@ export class LoginUserUseCase {
       throw new DomainError('INVALID_CREDENTIALS', 'Invalid username or password');
     }
 
-    const token = this.tokenService.signAccessToken(user.id);
+    const token = this.tokenService.signAccessToken(user.id, user.role);
     const refreshToken = this.tokenService.signRefreshToken(user.id);
     return { token, refreshToken };
   }

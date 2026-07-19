@@ -15,6 +15,12 @@ function buildTestApp() {
   app.get('/boom-unknown-code', () => {
     throw new DomainError('SOMETHING_NEW', 'Not yet mapped');
   });
+  app.get('/boom-forbidden', () => {
+    throw new DomainError('FORBIDDEN', 'Admin privileges required');
+  });
+  app.get('/boom-invalid-realm-config', () => {
+    throw new DomainError('INVALID_REALM_CONFIG', 'bad config');
+  });
   app.get('/boom-unexpected', () => {
     throw new Error('unexpected');
   });
@@ -41,6 +47,18 @@ describe('errorHandler', () => {
     const res = await request(buildTestApp()).get('/boom-unknown-code');
     expect(res.status).toBe(500);
     expect(res.body.error.code).toBe('SOMETHING_NEW');
+  });
+
+  it('maps FORBIDDEN to 403', async () => {
+    const res = await request(buildTestApp()).get('/boom-forbidden');
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({ error: { code: 'FORBIDDEN', message: 'Admin privileges required' } });
+  });
+
+  it('maps INVALID_REALM_CONFIG to 400', async () => {
+    const res = await request(buildTestApp()).get('/boom-invalid-realm-config');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('INVALID_REALM_CONFIG');
   });
 
   it('formats a non-DomainError as a 500 INTERNAL_ERROR', async () => {

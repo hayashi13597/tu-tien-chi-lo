@@ -17,6 +17,8 @@ const STATUS_BY_CODE: Record<string, number> = {
   PILL_NOT_FOUND: 404,
   PILL_OUT_OF_STOCK: 409,
   PILL_NOT_APPLICABLE: 400,
+  FORBIDDEN: 403,
+  INVALID_REALM_CONFIG: 400,
 };
 
 export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction) {

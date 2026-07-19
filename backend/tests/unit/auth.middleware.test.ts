@@ -33,22 +33,22 @@ describe('requireAuth middleware', () => {
   });
 
   it('allows requests with a valid Authorization header and attaches userId (existing header-only callers keep working)', async () => {
-    const token = new FakeTokenService().signAccessToken('user-123');
+    const token = new FakeTokenService().signAccessToken('user-123', 'user');
     const res = await request(buildTestApp()).get('/protected').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
     expect(res.body.userId).toBe('user-123');
   });
 
   it('allows requests with a valid access_token cookie and attaches userId', async () => {
-    const token = new FakeTokenService().signAccessToken('user-456');
+    const token = new FakeTokenService().signAccessToken('user-456', 'user');
     const res = await request(buildTestApp()).get('/protected').set('Cookie', `access_token=${token}`);
     expect(res.status).toBe(200);
     expect(res.body.userId).toBe('user-456');
   });
 
   it('prefers the cookie over the header when both are present and resolve to different users', async () => {
-    const cookieToken = new FakeTokenService().signAccessToken('user-from-cookie');
-    const headerToken = new FakeTokenService().signAccessToken('user-from-header');
+    const cookieToken = new FakeTokenService().signAccessToken('user-from-cookie', 'user');
+    const headerToken = new FakeTokenService().signAccessToken('user-from-header', 'user');
     const res = await request(buildTestApp())
       .get('/protected')
       .set('Cookie', `access_token=${cookieToken}`)

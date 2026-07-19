@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { AttemptBreakthroughUseCase } from '../../src/application/AttemptBreakthroughUseCase';
 import { InMemoryCharacterRepository } from '../fakes/InMemoryCharacterRepository';
 import { FixedRandomSource } from '../fakes/FixedRandomSource';
+import { StaticRealmConfigSource } from '../fakes/StaticRealmConfigSource';
 import { CharacterRecord } from '../../src/domain/entities/Character';
 
 function makeCharacter(overrides: Partial<CharacterRecord> = {}): CharacterRecord {
@@ -24,14 +25,14 @@ function makeCharacter(overrides: Partial<CharacterRecord> = {}): CharacterRecor
 
 describe('AttemptBreakthroughUseCase', () => {
   it('rejects an unknown user with CHARACTER_NOT_FOUND', async () => {
-    const useCase = new AttemptBreakthroughUseCase(new InMemoryCharacterRepository(), new FixedRandomSource(0));
+    const useCase = new AttemptBreakthroughUseCase(new InMemoryCharacterRepository(), new FixedRandomSource(0), new StaticRealmConfigSource());
     await expect(useCase.execute('nobody')).rejects.toMatchObject({ code: 'CHARACTER_NOT_FOUND' });
   });
 
   it('rejects with INSUFFICIENT_LINH_KHI when below the requirement, but still persists accrued linh khi', async () => {
     const characters = new InMemoryCharacterRepository();
     characters.seed(makeCharacter({ linhKhi: 10 }));
-    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0));
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0), new StaticRealmConfigSource());
 
     await expect(useCase.execute('user-1')).rejects.toMatchObject({ code: 'INSUFFICIENT_LINH_KHI' });
 
@@ -55,7 +56,7 @@ describe('AttemptBreakthroughUseCase', () => {
       updateCalls += 1;
       return originalUpdate(id, expectedLastUpdateAt, data);
     };
-    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0));
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0), new StaticRealmConfigSource());
 
     await expect(useCase.execute('user-1')).rejects.toMatchObject({ code: 'PUNISHED' });
 
@@ -76,7 +77,7 @@ describe('AttemptBreakthroughUseCase', () => {
       updateCalls += 1;
       return originalUpdate(id, expectedLastUpdateAt, data);
     };
-    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0));
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0), new StaticRealmConfigSource());
 
     await expect(useCase.execute('user-1')).rejects.toMatchObject({ code: 'MAX_STAGE_REACHED' });
 
@@ -93,7 +94,7 @@ describe('AttemptBreakthroughUseCase', () => {
     // Phàm Nhân - Sơ requires 100 linh khi; seed exactly 150 so 50 carries over.
     characters.seed(makeCharacter({ linhKhi: 150, breakthroughFails: 2 }));
     // randomValue 0 always beats any positive success rate (rollSuccess: randomValue*100 < rate).
-    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0));
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0), new StaticRealmConfigSource());
 
     const result = await useCase.execute('user-1');
 
@@ -109,7 +110,7 @@ describe('AttemptBreakthroughUseCase', () => {
     const characters = new InMemoryCharacterRepository();
     characters.seed(makeCharacter({ linhKhi: 150, breakthroughFails: 0 }));
     // randomValue 0.999 beats no realistic success rate (< 99.9%), forcing failure.
-    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0.999));
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0.999), new StaticRealmConfigSource());
 
     const result = await useCase.execute('user-1');
 
@@ -124,7 +125,7 @@ describe('AttemptBreakthroughUseCase', () => {
   it('rolls over realmMajor when breaking through from Viên Mãn (peak substage 4)', async () => {
     const characters = new InMemoryCharacterRepository();
     characters.seed(makeCharacter({ realmMajor: 0, realmSub: 4, linhKhi: 500 }));
-    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0));
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0), new StaticRealmConfigSource());
 
     const result = await useCase.execute('user-1');
 
@@ -135,7 +136,7 @@ describe('AttemptBreakthroughUseCase', () => {
   it('throws CONCURRENT_MODIFICATION if the character was modified between read and write', async () => {
     const characters = new InMemoryCharacterRepository();
     characters.seed(makeCharacter({ linhKhi: 150 }));
-    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0));
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0), new StaticRealmConfigSource());
 
     // Simulate another request winning the race between execute()'s read and
     // its write: intercept the fake's write method so that, on the first
@@ -174,7 +175,7 @@ describe('AttemptBreakthroughUseCase breakthrough bonus', () => {
     // Roll 0.92 → 92, above the base rate (90, so this would FAIL without the
     // bonus) but below the boosted rate (min(90+30, cap 95) = 95). Success here
     // proves the bonus actually entered the rate, not just that the roll was low.
-    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0.92));
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0.92), new StaticRealmConfigSource());
     const result = await useCase.execute('user-1');
     expect(result.success).toBe(true);
     expect(result.character.breakthroughBonusPct).toBe(0);
@@ -183,7 +184,7 @@ describe('AttemptBreakthroughUseCase breakthrough bonus', () => {
   it('resets breakthroughBonusPct to 0 on failure too', async () => {
     const characters = new InMemoryCharacterRepository();
     characters.seed(makeCharacter({ linhKhi: 150, breakthroughBonusPct: 10 }));
-    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0.999));
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0.999), new StaticRealmConfigSource());
     const result = await useCase.execute('user-1');
     expect(result.success).toBe(false);
     expect(result.character.breakthroughBonusPct).toBe(0);
@@ -192,7 +193,7 @@ describe('AttemptBreakthroughUseCase breakthrough bonus', () => {
   it('leaves breakthroughBonusPct untouched on a rejected attempt (insufficient)', async () => {
     const characters = new InMemoryCharacterRepository();
     characters.seed(makeCharacter({ linhKhi: 10, breakthroughBonusPct: 25 }));
-    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0));
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0), new StaticRealmConfigSource());
     await expect(useCase.execute('user-1')).rejects.toMatchObject({ code: 'INSUFFICIENT_LINH_KHI' });
     const saved = await characters.findByUserId('user-1');
     expect(saved?.breakthroughBonusPct).toBe(25);

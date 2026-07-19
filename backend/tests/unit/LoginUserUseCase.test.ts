@@ -19,7 +19,7 @@ describe('LoginUserUseCase', () => {
     const useCase = new LoginUserUseCase(users, passwordHasher, tokenService);
     const result = await useCase.execute({ username: 'dave', password: 'password123' });
 
-    expect(result.token).toBe(`access-token-for-${registered.id}`);
+    expect(result.token).toBe(`access-token-for-user:${registered.id}`);
     expect(result.refreshToken).toBe(`refresh-token-for-${registered.id}`);
   });
 
