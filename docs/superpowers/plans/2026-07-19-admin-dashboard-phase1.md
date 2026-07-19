@@ -676,7 +676,7 @@ and extend the admin mount:
 - [ ] **Step 5: Run tests to verify they pass, then the full backend suite**
 
 Run: `cd backend && npx vitest run tests/integration/admin.stats.test.ts && npm test`
-Expected: 2 PASS, then full suite green (171 existing + 10 new = 181) and typecheck via `npx tsc --noEmit` clean.
+Expected: 2 PASS, then full suite green (171 existing + 11 new = 182) and typecheck via `npx tsc --noEmit` clean.
 
 - [ ] **Step 6: Commit**
 
@@ -2064,7 +2064,7 @@ git commit -m "feat(frontend): add realm config editor with draft state and inli
 cd backend && docker compose up -d --build && npm test && npx tsc --noEmit
 cd ../frontend && pnpm lint && pnpm tsc --noEmit && pnpm test && pnpm build
 ```
-Expected: backend 181 tests green; frontend 41 tests (32 + 3 api + 6 validation) green, build clean. Run the backend suite twice if any single failure appears (known cross-suite seed race; two consecutive clean runs = stable).
+Expected: backend 182 tests green; frontend 41 tests (32 + 3 api + 6 validation) green, build clean. Run the backend suite twice if any single failure appears (known cross-suite seed race; two consecutive clean runs = stable).
 
 - [ ] **Step 2: Manual verification against Docker (spec's checklist)**
 

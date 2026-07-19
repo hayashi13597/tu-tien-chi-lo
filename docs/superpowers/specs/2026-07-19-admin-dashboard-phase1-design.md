@@ -24,7 +24,7 @@ Two endpoints; no new tables, no migrations.
 
 Returns `{ id, username, role }`. `id` and `role` come from the verified access token (no DB read for them); `username` needs one `users.findById`. Thin use case:
 
-```
+```typescript
 GetCurrentUserUseCase(users: UserRepository)
   execute({ userId, role }): Promise<{ id, username, role }>
 ```
@@ -45,7 +45,7 @@ If the user no longer exists (deleted but token still valid) → `DomainError('U
 ```
 
 - New domain port `StatsRepository`:
-  ```
+  ```typescript
   interface StatsRepository {
     countUsers(): Promise<number>
     countAdmins(): Promise<number>
@@ -53,7 +53,7 @@ If the user no longer exists (deleted but token still valid) → `DomainError('U
     countPunished(now: Date): Promise<number>
   }
   ```
-- `PrismaStatsRepository`: `user.count()`, `user.count({ where: { role: 'admin' } })`, `character.groupBy(['realmMajor'])`, `character.count({ where: { punishmentUntil: { gt: now } } })`.
+- `PrismaStatsRepository`: `user.count()`, `user.count({ where: { role: 'admin' } })`, `character.groupBy(['realmMajor'])`, `character.count({ where: { punishedUntil: { gt: now } } })`.
 - `GetAdminStatsUseCase(stats: StatsRepository, realmConfig: RealmConfigSource)` maps `realmMajor → realmName` via the cached `RealmConfigSet`; a realm no longer present in config (admin deleted it while characters still sit there) renders as `"Realm #N"` instead of throwing.
 - `realmDistribution` is sorted by `realmMajor` ascending.
 - No new domain error codes for stats — 401/403 are handled by middleware.
@@ -66,7 +66,7 @@ If the user no longer exists (deleted but token still valid) → `DomainError('U
 
 ### Routes
 
-```
+```text
 src/app/admin/
   layout.tsx      — guard + admin shell (header with nav + "← Về game", minimal static styling)
   page.tsx        — stats overview (default /admin page)
@@ -102,7 +102,7 @@ The guard is client-side UX only — **real security is the backend's `requireAu
 - Accordion: one collapsible section per realm; header shows realm name + sub-stage count.
 - Inside: a sub-stage table with a text input for `subStageName` and number inputs for the six tunables; a text input for the realm `name`.
 - Add/remove realm and add/remove sub-stage buttons (free structural editing, mirroring the backend contract).
-- **Draft state:** edits are local until "Lưu tất cả" sends one full-replace PUT. "Hoàn tác" resets the draft to the last server copy. Leaving the page with unsaved changes triggers a confirm (`beforeunload` + guard on in-app nav links).
+- **Draft state:** edits are local until "Lưu tất cả" sends one full-replace PUT. "Hoàn tác" resets the draft to the last server copy. Closing or reloading the tab with unsaved changes triggers a confirm (`beforeunload`); in-app navigation is not intercepted (Next App Router has no route-guard API).
 - **Client validation before PUT** (mirrors backend invariants): ≥1 realm; each realm ≥1 sub-stage; names non-empty; `linhKhiRequired`/`cultivationRate` > 0; rates within 0–100; `punishmentSeconds` ≥ 0 integer; `linhKhiRequired` strictly increasing **within each realm** (cross-realm resets are legal). Invalid fields get a red outline + message; Save is disabled while invalid.
 - Server 400 (`INVALID_REALM_CONFIG`) → red banner with the server message, draft preserved.
 - After a successful save, the draft is re-synced from the response/refetch.

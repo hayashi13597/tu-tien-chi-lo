@@ -34,6 +34,9 @@ export default function AdminRealmsPage() {
   const [openRealms, setOpenRealms] = useState<Set<number>>(new Set([0]));
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // While a save is in flight, every draft-mutating control is disabled —
+  // an edit made mid-save would be silently clobbered when the response
+  // re-syncs the draft from the server's accepted copy.
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const router = useRouter();
@@ -119,11 +122,23 @@ export default function AdminRealmsPage() {
       return d;
     });
 
-  const removeRealm = (ri: number) =>
+  const removeRealm = (ri: number) => {
     updateDraft((d) => {
       d.splice(ri, 1);
       return d;
     });
+    // Expansion state is keyed by index, so realms after the removed one
+    // shift down by one — remap the set or their open/closed state would
+    // attach to the wrong realm.
+    setOpenRealms((s) => {
+      const next = new Set<number>();
+      for (const i of s) {
+        if (i < ri) next.add(i);
+        else if (i > ri) next.add(i - 1);
+      }
+      return next;
+    });
+  };
 
   const addSubStage = (ri: number) =>
     updateDraft((d) => {
@@ -203,7 +218,12 @@ export default function AdminRealmsPage() {
     <section>
       <div className="admin-toolbar">
         <h2>Cấu hình cảnh giới</h2>
-        <button type="button" className="admin-btn" onClick={addRealm}>
+        <button
+          type="button"
+          className="admin-btn"
+          onClick={addRealm}
+          disabled={saving}
+        >
           + Thêm cảnh giới
         </button>
         <button
@@ -266,6 +286,7 @@ export default function AdminRealmsPage() {
                     style={{ maxWidth: 260 }}
                     value={realm.name}
                     onChange={(e) => setRealmName(ri, e.target.value)}
+                    disabled={saving}
                   />
                 </label>
                 {realmNameError && (
@@ -297,10 +318,12 @@ export default function AdminRealmsPage() {
                           <td>
                             <input
                               className={`admin-input${findError(errors, ri, si, "name") ? " invalid" : ""}`}
+                              aria-label={`Tên — tiểu cảnh giới #${si}, cảnh giới #${ri}`}
                               value={sub.name}
                               onChange={(e) =>
                                 setSubField(ri, si, "name", e.target.value)
                               }
+                              disabled={saving}
                             />
                             {findError(errors, ri, si, "name") && (
                               <div className="admin-field-error">
@@ -316,10 +339,12 @@ export default function AdminRealmsPage() {
                                 <input
                                   type="number"
                                   className={`admin-input${err ? " invalid" : ""}`}
+                                  aria-label={`${f.label} — tiểu cảnh giới #${si}, cảnh giới #${ri}`}
                                   value={Number.isNaN(value) ? "" : value}
                                   onChange={(e) =>
                                     setSubField(ri, si, f.key, e.target.value)
                                   }
+                                  disabled={saving}
                                 />
                                 {err && (
                                   <div className="admin-field-error">
@@ -333,7 +358,9 @@ export default function AdminRealmsPage() {
                             <button
                               type="button"
                               className="admin-btn"
+                              aria-label={`Xóa tiểu cảnh giới #${si} của cảnh giới #${ri}`}
                               onClick={() => removeSubStage(ri, si)}
+                              disabled={saving}
                             >
                               Xóa
                             </button>
@@ -349,6 +376,7 @@ export default function AdminRealmsPage() {
                     type="button"
                     className="admin-btn"
                     onClick={() => addSubStage(ri)}
+                    disabled={saving}
                   >
                     + Thêm tiểu cảnh giới
                   </button>
@@ -356,6 +384,7 @@ export default function AdminRealmsPage() {
                     type="button"
                     className="admin-btn"
                     onClick={() => removeRealm(ri)}
+                    disabled={saving}
                   >
                     Xóa cảnh giới này
                   </button>
