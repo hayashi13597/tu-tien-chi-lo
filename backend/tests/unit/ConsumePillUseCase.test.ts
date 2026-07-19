@@ -113,4 +113,14 @@ describe('ConsumePillUseCase', () => {
     const inv = await pills.listInventory('user-1');
     expect(inv.find((e) => e.pill.id === 'a')?.quantity).toBe(1);
   });
+
+  it('rejects an inactive pill with PILL_NOT_FOUND (indistinguishable from missing)', async () => {
+    const { pills, useCase } = setup();
+    pills.seedPill(pill('off', { effectKind: 'linhKhi', amount: 100, active: false }));
+    pills.setQuantity('user-1', 'off', 3);
+    await expect(useCase.execute('user-1', 'off'))
+      .rejects.toMatchObject({ code: 'PILL_NOT_FOUND' });
+    // The unit was NOT spent — the guard fires before decrementOne.
+    await expect(useCase.execute('user-1', 'off')).rejects.toMatchObject({ code: 'PILL_NOT_FOUND' });
+  });
 });
