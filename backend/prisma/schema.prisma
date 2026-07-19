@@ -59,6 +59,12 @@ model Pill {
   durationSec Int?
   bonusPct    Float?
   desc        String
+  // Soft-disable: an inactive pill is hidden from player inventories and cannot
+  // be consumed, but InventoryItem rows survive — re-enabling restores holdings.
+  active      Boolean         @default(true)
+  // Quantity granted to a newly registered user (0 = not part of the starter kit).
+  // Replaces the old hardcoded STARTER_INVENTORY constant.
+  starterQuantity Int         @default(0)
   inventory   InventoryItem[]
 }
 

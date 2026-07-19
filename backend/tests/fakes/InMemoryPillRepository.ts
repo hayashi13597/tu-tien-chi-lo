@@ -16,7 +16,7 @@ export class InMemoryPillRepository implements PillRepository {
    *  seedStarterInventory — mirrors production where the FK guarantees defs. */
   seedStarterDefinitions(): void {
     for (const { pillId } of STARTER_INVENTORY) {
-      this.seedPill({ id: pillId, name: pillId, glyph: 'x', rarity: 0, effectKind: 'linhKhi', amount: 0, multiplier: null, durationSec: null, bonusPct: null, desc: '' });
+      this.seedPill({ id: pillId, name: pillId, glyph: 'x', rarity: 0, effectKind: 'linhKhi', amount: 0, multiplier: null, durationSec: null, bonusPct: null, desc: '', active: true, starterQuantity: 0 });
     }
   }
 

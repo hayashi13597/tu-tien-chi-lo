@@ -31,4 +31,16 @@ describe('pills schema + seed', () => {
     await prisma.character.delete({ where: { id: c.id } });
     await prisma.user.delete({ where: { id: user.id } });
   });
+
+  it('seeds active + starterQuantity on every pill (old STARTER_INVENTORY values)', async () => {
+    const expected: Record<string, number> = {
+      'hoi-khi-dan': 5, 'tu-linh-dan': 3, 'cuu-chuyen-kim-dan': 1, 'tinh-tam-dan': 2,
+      'ngung-than-dan': 1, 'pha-canh-dan': 2, 'thien-cang-dan': 1, 'giai-phat-dan': 2,
+    };
+    for (const [id, qty] of Object.entries(expected)) {
+      const p = await prisma.pill.findUnique({ where: { id } });
+      expect(p?.active).toBe(true);
+      expect(p?.starterQuantity).toBe(qty);
+    }
+  });
 });

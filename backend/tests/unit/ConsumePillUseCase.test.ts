@@ -14,7 +14,7 @@ function makeCharacter(over: Partial<CharacterRecord> = {}): CharacterRecord {
   };
 }
 function pill(id: string, over: Partial<PillRecord>): PillRecord {
-  return { id, name: id, glyph: 'x', rarity: 0, effectKind: 'linhKhi', amount: null, multiplier: null, durationSec: null, bonusPct: null, desc: '', ...over };
+  return { id, name: id, glyph: 'x', rarity: 0, effectKind: 'linhKhi', amount: null, multiplier: null, durationSec: null, bonusPct: null, desc: '', active: true, starterQuantity: 0, ...over };
 }
 function setup(charOver: Partial<CharacterRecord> = {}) {
   const characters = new InMemoryCharacterRepository();

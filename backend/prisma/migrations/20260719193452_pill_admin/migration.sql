@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Pill" ADD COLUMN     "active" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN     "starterQuantity" INTEGER NOT NULL DEFAULT 0;

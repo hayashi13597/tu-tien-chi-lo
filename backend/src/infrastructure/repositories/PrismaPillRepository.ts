@@ -7,7 +7,7 @@ import { PillRecord, InventoryEntry, PillEffectKind } from '../../domain/pills/p
 function toPillRecord(row: {
   id: string; name: string; glyph: string; rarity: number; effectKind: string;
   amount: number | null; multiplier: number | null; durationSec: number | null;
-  bonusPct: number | null; desc: string;
+  bonusPct: number | null; desc: string; active: boolean; starterQuantity: number;
 }): PillRecord {
   return { ...row, effectKind: row.effectKind as PillEffectKind };
 }
