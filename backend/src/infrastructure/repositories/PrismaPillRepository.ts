@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { PillRepository, STARTER_INVENTORY } from '../../domain/ports/PillRepository';
+import { PillRepository } from '../../domain/ports/PillRepository';
 import { PillRecord, InventoryEntry, PillEffectKind } from '../../domain/pills/pill';
 
 // Prisma stores effectKind as a plain string column; narrow it back to the
@@ -20,9 +20,29 @@ export class PrismaPillRepository implements PillRepository {
     return row ? toPillRecord(row) : null;
   }
 
+  async listAll(): Promise<PillRecord[]> {
+    const rows = await this.client.pill.findMany({ orderBy: [{ rarity: 'asc' }, { id: 'asc' }] });
+    return rows.map(toPillRecord);
+  }
+
+  async create(pill: PillRecord): Promise<void> {
+    await this.client.pill.create({ data: pill });
+  }
+
+  async update(pill: PillRecord): Promise<boolean> {
+    // Full-row overwrite keyed by id; updateMany returns count so we can report
+    // a missing id without a separate existence read.
+    const { id, ...data } = pill;
+    const result = await this.client.pill.updateMany({ where: { id }, data });
+    return result.count === 1;
+  }
+
   async listInventory(userId: string): Promise<InventoryEntry[]> {
+    // Relation filter drops inactive pills: an admin-disabled pill vanishes from
+    // the player's bag while its InventoryItem row (quantity) is preserved, so
+    // re-enabling restores the holding.
     const items = await this.client.inventoryItem.findMany({
-      where: { userId, quantity: { gt: 0 } },
+      where: { userId, quantity: { gt: 0 }, pill: { active: true } },
       include: { pill: true },
     });
     return items.map((it) => ({ pill: toPillRecord(it.pill), quantity: it.quantity }));
@@ -49,8 +69,15 @@ export class PrismaPillRepository implements PillRepository {
   }
 
   async seedStarterInventory(userId: string): Promise<void> {
+    // Starter kit is now DB-driven: every active pill with a positive
+    // starterQuantity, granted at that quantity. Admins tune the new-user grant
+    // by editing the pill catalog — no code constant to keep in sync.
+    const starters = await this.client.pill.findMany({
+      where: { active: true, starterQuantity: { gt: 0 } },
+      select: { id: true, starterQuantity: true },
+    });
     await this.client.inventoryItem.createMany({
-      data: STARTER_INVENTORY.map((s) => ({ userId, pillId: s.pillId, quantity: s.quantity })),
+      data: starters.map((s) => ({ userId, pillId: s.id, quantity: s.starterQuantity })),
       skipDuplicates: true,
     });
   }
