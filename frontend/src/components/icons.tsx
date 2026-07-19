@@ -79,3 +79,14 @@ export function CauldronIcon(props: IconProps) {
     </svg>
   );
 }
+
+// Admin shield used on the Quản trị menu item.
+export function ShieldIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <title>Quản trị</title>
+      <path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z" />
+      <path d="M9.5 12l2 2 3.5-4" />
+    </svg>
+  );
+}
