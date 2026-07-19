@@ -100,3 +100,21 @@ export interface PillInventoryItem {
   desc: string;
   quantity: number;
 }
+
+// Full pill definition as the admin catalog editor sees it (GET/POST/PUT
+// /admin/pills). Unlike PillInventoryItem, this carries the admin-only
+// fields: active (soft-disable) and starterQuantity (new-player grant).
+export interface AdminPillDTO {
+  id: string;
+  name: string;
+  glyph: string;
+  rarity: PillRarity;
+  effectKind: PillEffectKind;
+  amount: number | null;
+  multiplier: number | null;
+  durationSec: number | null;
+  bonusPct: number | null;
+  desc: string;
+  active: boolean;
+  starterQuantity: number;
+}

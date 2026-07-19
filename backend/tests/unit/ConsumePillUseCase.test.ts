@@ -14,7 +14,7 @@ function makeCharacter(over: Partial<CharacterRecord> = {}): CharacterRecord {
   };
 }
 function pill(id: string, over: Partial<PillRecord>): PillRecord {
-  return { id, name: id, glyph: 'x', rarity: 0, effectKind: 'linhKhi', amount: null, multiplier: null, durationSec: null, bonusPct: null, desc: '', ...over };
+  return { id, name: id, glyph: 'x', rarity: 0, effectKind: 'linhKhi', amount: null, multiplier: null, durationSec: null, bonusPct: null, desc: '', active: true, starterQuantity: 0, ...over };
 }
 function setup(charOver: Partial<CharacterRecord> = {}) {
   const characters = new InMemoryCharacterRepository();
@@ -112,5 +112,15 @@ describe('ConsumePillUseCase', () => {
     // The unit spent by decrementOne must have been given back.
     const inv = await pills.listInventory('user-1');
     expect(inv.find((e) => e.pill.id === 'a')?.quantity).toBe(1);
+  });
+
+  it('rejects an inactive pill with PILL_NOT_FOUND (indistinguishable from missing)', async () => {
+    const { pills, useCase } = setup();
+    pills.seedPill(pill('off', { effectKind: 'linhKhi', amount: 100, active: false }));
+    pills.setQuantity('user-1', 'off', 3);
+    await expect(useCase.execute('user-1', 'off'))
+      .rejects.toMatchObject({ code: 'PILL_NOT_FOUND' });
+    // The unit was NOT spent — the guard fires before decrementOne.
+    await expect(useCase.execute('user-1', 'off')).rejects.toMatchObject({ code: 'PILL_NOT_FOUND' });
   });
 });

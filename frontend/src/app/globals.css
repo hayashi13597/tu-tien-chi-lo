@@ -1569,3 +1569,93 @@ body {
 .admin-realm-table-wrap {
   overflow-x: auto;
 }
+
+/* ---- Admin pill catalog editor ---- */
+.admin-pill-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.admin-pill-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.admin-pill-card.inactive {
+  opacity: 0.6;
+}
+
+.admin-pill-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: none;
+  border: none;
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  min-height: 44px;
+}
+
+.admin-pill-glyph {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.admin-pill-name {
+  font-weight: 600;
+}
+
+.admin-pill-rarity,
+.admin-pill-stat,
+.admin-pill-starter {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.admin-pill-off {
+  margin-left: auto;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--red);
+  color: #f6b8b8;
+}
+
+.admin-pill-form {
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.admin-pill-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-3);
+}
+
+.admin-pill-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.admin-pill-desc {
+  grid-column: 1 / -1;
+}
+
+/* Beats the .admin-pill-form-grid label column layout via specificity (no
+   !important): the active toggle is a single checkbox + text row. */
+.admin-pill-form-grid label.admin-pill-active {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: center;
+}

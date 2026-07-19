@@ -14,6 +14,12 @@ beforeEach(async () => {
   await prisma.realmStage.deleteMany();
 });
 afterAll(async () => {
+  // Restore the seeded config so later suites see the standard 12×5 data —
+  // this file's tests replace RealmStage with tiny fixtures, and suites like
+  // cultivation.breakthrough assume the real balance (same convention as
+  // admin.routes.test.ts).
+  const { execSync } = await import('node:child_process');
+  execSync('npm run db:seed', { cwd: process.cwd(), stdio: 'ignore' });
   await prisma.$disconnect();
 });
 

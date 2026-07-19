@@ -23,3 +23,27 @@ export const updateRealmsSchema = z.object({
 });
 
 export type UpdateRealmsInput = z.infer<typeof updateRealmsSchema>;
+
+// Pill bodies for POST/PUT /admin/pills. Shape/type/range checks live here;
+// the per-effectKind coherence rules (which stat fields must be set vs null)
+// live in domain validatePillDefinition — zod can't express them cleanly.
+const pillBodySchema = z.object({
+  name: z.string().min(1),
+  glyph: z.string().min(1),
+  rarity: z.number().int().min(0).max(4),
+  effectKind: z.enum(['linhKhi', 'cultivationBuff', 'breakthroughBoost', 'clearPunishment']),
+  amount: z.number().nullable(),
+  multiplier: z.number().nullable(),
+  durationSec: z.number().int().nullable(),
+  bonusPct: z.number().nullable(),
+  desc: z.string().min(1),
+  active: z.boolean(),
+  starterQuantity: z.number().int().min(0),
+});
+
+// POST carries the id (kebab-case slug, immutable afterwards); PUT takes it
+// from the URL, so the body schema deliberately has no id field.
+export const createPillSchema = pillBodySchema.extend({
+  id: z.string().min(1).regex(/^[a-z0-9-]+$/, 'id must be a kebab-case slug (a-z, 0-9, -)'),
+});
+export const updatePillSchema = pillBodySchema;

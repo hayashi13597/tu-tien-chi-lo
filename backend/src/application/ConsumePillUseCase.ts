@@ -23,6 +23,12 @@ export class ConsumePillUseCase {
     if (!pill) {
       throw new DomainError('PILL_NOT_FOUND', 'Pill not found');
     }
+    // A disabled pill is indistinguishable from a nonexistent one to players —
+    // same code, no catalog information leaks. Fires before decrementOne, so
+    // the unit is never spent.
+    if (!pill.active) {
+      throw new DomainError('PILL_NOT_FOUND', 'Pill not found');
+    }
 
     const config = this.realmConfig.get();
     const stage = config.getStage(character.realmMajor, character.realmSub);

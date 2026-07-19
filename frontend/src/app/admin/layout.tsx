@@ -47,6 +47,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           >
             Cảnh giới
           </Link>
+          <Link
+            href="/admin/pills"
+            aria-current={pathname === "/admin/pills" ? "page" : undefined}
+          >
+            Đan dược
+          </Link>
           <Link href="/">← Về game</Link>
         </nav>
       </header>

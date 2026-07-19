@@ -1,5 +1,19 @@
-import { PillRepository, STARTER_INVENTORY } from '../../src/domain/ports/PillRepository';
+import { PillRepository } from '../../src/domain/ports/PillRepository';
 import { PillRecord, InventoryEntry } from '../../src/domain/pills/pill';
+
+// Default catalog the fake seeds via seedStarterDefinitions — mirrors the
+// production seed's ids + starter quantities so DB-driven starter logic is
+// exercised without a real database.
+const DEFAULT_STARTERS: Array<{ pillId: string; quantity: number }> = [
+  { pillId: 'hoi-khi-dan', quantity: 5 },
+  { pillId: 'tu-linh-dan', quantity: 3 },
+  { pillId: 'cuu-chuyen-kim-dan', quantity: 1 },
+  { pillId: 'tinh-tam-dan', quantity: 2 },
+  { pillId: 'ngung-than-dan', quantity: 1 },
+  { pillId: 'pha-canh-dan', quantity: 2 },
+  { pillId: 'thien-cang-dan', quantity: 1 },
+  { pillId: 'giai-phat-dan', quantity: 2 },
+];
 
 export class InMemoryPillRepository implements PillRepository {
   private pills = new Map<string, PillRecord>();
@@ -11,12 +25,12 @@ export class InMemoryPillRepository implements PillRepository {
     this.pills.set(pill.id, pill);
   }
 
-  /** Test helper: register minimal definitions for every starter pill, so that
-   *  listInventory (which joins on a known definition) returns them after
-   *  seedStarterInventory — mirrors production where the FK guarantees defs. */
+  /** Test helper: register minimal definitions for every starter pill (active,
+   *  with a starterQuantity) so seedStarterInventory grants them — mirrors
+   *  production where the DB catalog drives the starter kit. */
   seedStarterDefinitions(): void {
-    for (const { pillId } of STARTER_INVENTORY) {
-      this.seedPill({ id: pillId, name: pillId, glyph: 'x', rarity: 0, effectKind: 'linhKhi', amount: 0, multiplier: null, durationSec: null, bonusPct: null, desc: '' });
+    for (const { pillId, quantity } of DEFAULT_STARTERS) {
+      this.seedPill({ id: pillId, name: pillId, glyph: 'x', rarity: 0, effectKind: 'linhKhi', amount: 0, multiplier: null, durationSec: null, bonusPct: null, desc: '', active: true, starterQuantity: quantity });
     }
   }
 
@@ -29,13 +43,28 @@ export class InMemoryPillRepository implements PillRepository {
     return this.pills.get(pillId) ?? null;
   }
 
+  async listAll(): Promise<PillRecord[]> {
+    return [...this.pills.values()];
+  }
+
+  async create(pill: PillRecord): Promise<void> {
+    this.pills.set(pill.id, pill);
+  }
+
+  async update(pill: PillRecord): Promise<boolean> {
+    if (!this.pills.has(pill.id)) return false;
+    this.pills.set(pill.id, pill);
+    return true;
+  }
+
   async listInventory(userId: string): Promise<InventoryEntry[]> {
     const out: InventoryEntry[] = [];
     for (const [key, quantity] of this.inv.entries()) {
       const [uid, pillId] = key.split(':');
       if (uid !== userId || quantity <= 0) continue;
       const pill = this.pills.get(pillId);
-      if (pill) out.push({ pill, quantity });
+      // Hide inactive pills, matching the Prisma relation filter.
+      if (pill && pill.active) out.push({ pill, quantity });
     }
     return out;
   }
@@ -54,8 +83,11 @@ export class InMemoryPillRepository implements PillRepository {
   }
 
   async seedStarterInventory(userId: string): Promise<void> {
-    for (const { pillId, quantity } of STARTER_INVENTORY) {
-      this.inv.set(`${userId}:${pillId}`, quantity);
+    // DB-driven: grant every active pill with starterQuantity > 0.
+    for (const pill of this.pills.values()) {
+      if (pill.active && pill.starterQuantity > 0) {
+        this.inv.set(`${userId}:${pill.id}`, pill.starterQuantity);
+      }
     }
   }
 }

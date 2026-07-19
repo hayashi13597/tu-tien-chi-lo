@@ -4,7 +4,7 @@ import { InMemoryPillRepository } from '../fakes/InMemoryPillRepository';
 import { PillRecord } from '../../src/domain/pills/pill';
 
 function pill(id: string, over: Partial<PillRecord> = {}): PillRecord {
-  return { id, name: id, glyph: 'x', rarity: 0, effectKind: 'linhKhi', amount: 10, multiplier: null, durationSec: null, bonusPct: null, desc: 'd', ...over };
+  return { id, name: id, glyph: 'x', rarity: 0, effectKind: 'linhKhi', amount: 10, multiplier: null, durationSec: null, bonusPct: null, desc: 'd', active: true, starterQuantity: 0, ...over };
 }
 
 describe('GetInventoryUseCase', () => {

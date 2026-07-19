@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { apiFetch } from "./api";
+import type { AdminPillDTO } from "./types";
 
 function jsonResponse(status: number, body: unknown) {
   return {
@@ -198,5 +199,63 @@ describe("admin api", () => {
     await expect(updateAdminRealms([])).rejects.toThrow(
       "linhKhiRequired must strictly increase",
     );
+  });
+});
+
+describe("admin pill api", () => {
+  const samplePill: AdminPillDTO = {
+    id: "test-dan",
+    name: "Test Đan",
+    glyph: "试",
+    rarity: 1,
+    effectKind: "linhKhi",
+    amount: 25,
+    multiplier: null,
+    durationSec: null,
+    bonusPct: null,
+    desc: "d",
+    active: true,
+    starterQuantity: 0,
+  };
+
+  it("fetchAdminPills GETs /admin/pills", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, { pills: [samplePill] }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { fetchAdminPills } = await import("./api");
+    const data = await fetchAdminPills();
+    expect(data.pills[0].id).toBe("test-dan");
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/admin/pills");
+  });
+
+  it("createAdminPill POSTs the full pill including id", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, samplePill),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { createAdminPill } = await import("./api");
+    await createAdminPill(samplePill);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain("/admin/pills");
+    expect(init?.method).toBe("POST");
+    expect(JSON.parse(init?.body as string).id).toBe("test-dan");
+  });
+
+  it("updateAdminPill PUTs to /admin/pills/:id without id in the body", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, samplePill),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { updateAdminPill } = await import("./api");
+    const { id, ...body } = samplePill;
+    await updateAdminPill(id, body);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain("/admin/pills/test-dan");
+    expect(init?.method).toBe("PUT");
+    expect(JSON.parse(init?.body as string).id).toBeUndefined();
   });
 });

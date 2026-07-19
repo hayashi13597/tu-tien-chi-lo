@@ -24,6 +24,12 @@ function buildTestApp() {
   app.get('/boom-user-not-found', () => {
     throw new DomainError('USER_NOT_FOUND', 'User no longer exists');
   });
+  app.get('/boom-invalid-pill-config', () => {
+    throw new DomainError('INVALID_PILL_CONFIG', 'bad pill');
+  });
+  app.get('/boom-pill-id-taken', () => {
+    throw new DomainError('PILL_ID_TAKEN', 'id already exists');
+  });
   app.get('/boom-unexpected', () => {
     throw new Error('unexpected');
   });
@@ -68,6 +74,18 @@ describe('errorHandler', () => {
     const res = await request(buildTestApp()).get('/boom-user-not-found');
     expect(res.status).toBe(401);
     expect(res.body).toEqual({ error: { code: 'USER_NOT_FOUND', message: 'User no longer exists' } });
+  });
+
+  it('maps INVALID_PILL_CONFIG to 400', async () => {
+    const res = await request(buildTestApp()).get('/boom-invalid-pill-config');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('INVALID_PILL_CONFIG');
+  });
+
+  it('maps PILL_ID_TAKEN to 409', async () => {
+    const res = await request(buildTestApp()).get('/boom-pill-id-taken');
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe('PILL_ID_TAKEN');
   });
 
   it('formats a non-DomainError as a 500 INTERNAL_ERROR', async () => {

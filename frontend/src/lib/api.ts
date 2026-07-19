@@ -1,4 +1,5 @@
 import type {
+  AdminPillDTO,
   AdminStats,
   ApiError,
   CultivationState,
@@ -107,6 +108,30 @@ export function updateAdminRealms(
   return apiFetch<{ realms: RealmConfigDTO[] }>("/admin/realms", {
     method: "PUT",
     body: JSON.stringify({ realms }),
+  });
+}
+
+// GET /admin/pills — the full catalog, inactive pills included.
+export function fetchAdminPills(): Promise<{ pills: AdminPillDTO[] }> {
+  return apiFetch<{ pills: AdminPillDTO[] }>("/admin/pills");
+}
+
+// POST /admin/pills — create a pill (id chosen once here, immutable after).
+export function createAdminPill(pill: AdminPillDTO): Promise<AdminPillDTO> {
+  return apiFetch<AdminPillDTO>("/admin/pills", {
+    method: "POST",
+    body: JSON.stringify(pill),
+  });
+}
+
+// PUT /admin/pills/:id — full-row update; the id travels in the URL only.
+export function updateAdminPill(
+  id: string,
+  body: Omit<AdminPillDTO, "id">,
+): Promise<AdminPillDTO> {
+  return apiFetch<AdminPillDTO>(`/admin/pills/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
   });
 }
 
