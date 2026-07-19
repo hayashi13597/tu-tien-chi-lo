@@ -109,7 +109,7 @@ export function createApp(overrides: AppOverrides = {}) {
   );
   app.use(
     '/admin',
-    createAdminRouter({ updateRealmConfigUseCase, getAdminStatsUseCase, listPillsAdminUseCase, createPillUseCase, updatePillUseCase, realmConfigProvider, requireAuth }),
+    createAdminRouter({ updateRealmConfigUseCase, getAdminStatsUseCase, listPillsAdminUseCase, createPillUseCase, updatePillUseCase, realmConfigSource: realmConfigProvider, realmConfigReloader: realmConfigProvider, requireAuth }),
   );
 
   app.use(errorHandler);
