@@ -349,6 +349,18 @@ export default function AdminPillsPage() {
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirtyOpen]);
 
+  // Changing which form is open unmounts the current one, discarding its
+  // draft — confirm first when that draft has unsaved edits.
+  const requestOpen = (next: string | null) => {
+    if (
+      dirtyOpen &&
+      !window.confirm("Biểu mẫu đang mở có thay đổi chưa lưu. Bỏ thay đổi?")
+    ) {
+      return;
+    }
+    setOpenId(next);
+  };
+
   const onSaved = (saved: AdminPillDTO) => {
     setPills((prev) => {
       if (!prev) return prev;
@@ -379,7 +391,7 @@ export default function AdminPillsPage() {
         <button
           type="button"
           className="admin-btn admin-btn-primary"
-          onClick={() => setOpenId("new")}
+          onClick={() => requestOpen("new")}
           disabled={openId === "new"}
         >
           Thêm đan dược
@@ -410,7 +422,7 @@ export default function AdminPillsPage() {
               <button
                 type="button"
                 className="admin-pill-head"
-                onClick={() => setOpenId(open ? null : pill.id)}
+                onClick={() => requestOpen(open ? null : pill.id)}
                 aria-expanded={open}
               >
                 <span

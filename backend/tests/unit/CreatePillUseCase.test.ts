@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { CreatePillUseCase } from '../../src/application/CreatePillUseCase';
 import { InMemoryPillRepository } from '../fakes/InMemoryPillRepository';
 import { PillRecord } from '../../src/domain/pills/pill';
-import { DomainError } from '../../src/domain/errors';
 
 function pill(id: string, over: Partial<PillRecord> = {}): PillRecord {
   return { id, name: id, glyph: 'x', rarity: 0, effectKind: 'linhKhi', amount: 10, multiplier: null, durationSec: null, bonusPct: null, desc: 'd', active: true, starterQuantity: 0, ...over };
@@ -26,7 +25,7 @@ describe('CreatePillUseCase', () => {
   it('rejects an invalid definition with INVALID_PILL_CONFIG and does not persist', async () => {
     const pills = new InMemoryPillRepository();
     await expect(new CreatePillUseCase(pills).execute(pill('bad', { amount: null })))
-      .rejects.toBeInstanceOf(DomainError);
+      .rejects.toMatchObject({ code: 'INVALID_PILL_CONFIG' });
     expect(await pills.findById('bad')).toBeNull();
   });
 });
