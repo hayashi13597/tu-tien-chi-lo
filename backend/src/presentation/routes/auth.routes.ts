@@ -1,15 +1,19 @@
-import { Router } from 'express';
+import { Router, RequestHandler } from 'express';
 import { registerSchema, loginSchema } from '../schemas/auth.schemas';
 import { RegisterUserUseCase } from '../../application/RegisterUserUseCase';
 import { LoginUserUseCase } from '../../application/LoginUserUseCase';
 import { RefreshAccessTokenUseCase } from '../../application/RefreshAccessTokenUseCase';
+import { GetCurrentUserUseCase } from '../../application/GetCurrentUserUseCase';
 import { DomainError } from '../../domain/errors';
 import { setAuthCookies, clearAuthCookies } from '../cookies';
+import { AuthedRequest } from '../middleware/auth';
 
 export interface AuthRouterDeps {
   registerUserUseCase: RegisterUserUseCase;
   loginUserUseCase: LoginUserUseCase;
   refreshAccessTokenUseCase: RefreshAccessTokenUseCase;
+  getCurrentUserUseCase: GetCurrentUserUseCase;
+  requireAuth: RequestHandler;
 }
 
 export function createAuthRouter(deps: AuthRouterDeps): Router {
@@ -71,6 +75,21 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
   router.post('/logout', (_req, res) => {
     clearAuthCookies(res);
     res.status(200).json({ message: 'Logged out' });
+  });
+
+  // Who am I? Used by the frontend to gate /admin and show admin-only menu
+  // items. requireAuth is applied per-route: the other /auth endpoints must
+  // stay reachable without a session.
+  router.get('/me', deps.requireAuth, async (req: AuthedRequest, res, next) => {
+    try {
+      const result = await deps.getCurrentUserUseCase.execute({
+        userId: req.userId as string,
+        role: req.role ?? 'user',
+      });
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
   });
 
   return router;

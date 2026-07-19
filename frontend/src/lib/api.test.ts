@@ -132,3 +132,71 @@ describe("pill api", () => {
     await expect(consumePill("x")).rejects.toThrow("Hết hàng");
   });
 });
+
+describe("admin api", () => {
+  it("fetchMe GETs /auth/me", async () => {
+    const me = { id: "u1", username: "alice", role: "admin" };
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, me),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { fetchMe } = await import("./api");
+
+    const data = await fetchMe();
+
+    expect(data).toEqual(me);
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/auth/me");
+  });
+
+  it("updateAdminRealms PUTs the realms wrapped in { realms }", async () => {
+    const realms = [
+      {
+        name: "Phàm Nhân",
+        subStages: [
+          {
+            name: "Sơ Kỳ",
+            linhKhiRequired: 100,
+            cultivationRate: 1,
+            baseSuccessRate: 90,
+            pityIncrement: 10,
+            maxSuccessRate: 95,
+            punishmentSeconds: 300,
+          },
+        ],
+      },
+    ];
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, { realms }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { updateAdminRealms } = await import("./api");
+
+    const data = await updateAdminRealms(realms);
+
+    expect(data).toEqual({ realms });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain("/admin/realms");
+    expect(init?.method).toBe("PUT");
+    expect(JSON.parse(init?.body as string)).toEqual({ realms });
+  });
+
+  it("admin fetches surface the server error message on failure", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(400, {
+          error: {
+            code: "INVALID_REALM_CONFIG",
+            message: "linhKhiRequired must strictly increase",
+          },
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { updateAdminRealms } = await import("./api");
+
+    await expect(updateAdminRealms([])).rejects.toThrow(
+      "linhKhiRequired must strictly increase",
+    );
+  });
+});

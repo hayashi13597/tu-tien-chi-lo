@@ -1,4 +1,11 @@
-import type { ApiError, CultivationState, PillInventoryItem } from "./types";
+import type {
+  AdminStats,
+  ApiError,
+  CultivationState,
+  Me,
+  PillInventoryItem,
+  RealmConfigDTO,
+} from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:5000";
 
@@ -75,6 +82,31 @@ export function consumePill(pillId: string): Promise<CultivationState> {
   return apiFetch<CultivationState>("/pills/consume", {
     method: "POST",
     body: JSON.stringify({ pillId }),
+  });
+}
+
+// GET /auth/me — who is logged in (id, username, role from the access token).
+export function fetchMe(): Promise<Me> {
+  return apiFetch<Me>("/auth/me");
+}
+
+// GET /admin/stats — aggregate counts for the admin overview page.
+export function fetchAdminStats(): Promise<AdminStats> {
+  return apiFetch<AdminStats>("/admin/stats");
+}
+
+// GET /admin/realms — the full live realm config.
+export function fetchAdminRealms(): Promise<{ realms: RealmConfigDTO[] }> {
+  return apiFetch<{ realms: RealmConfigDTO[] }>("/admin/realms");
+}
+
+// PUT /admin/realms — full replace; the backend validates and live-reloads.
+export function updateAdminRealms(
+  realms: RealmConfigDTO[],
+): Promise<{ realms: RealmConfigDTO[] }> {
+  return apiFetch<{ realms: RealmConfigDTO[] }>("/admin/realms", {
+    method: "PUT",
+    body: JSON.stringify({ realms }),
   });
 }
 

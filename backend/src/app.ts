@@ -7,6 +7,7 @@ import { PrismaUserRepository } from './infrastructure/repositories/PrismaUserRe
 import { PrismaCharacterRepository } from './infrastructure/repositories/PrismaCharacterRepository';
 import { PrismaPillRepository } from './infrastructure/repositories/PrismaPillRepository';
 import { PrismaRealmConfigRepository } from './infrastructure/repositories/PrismaRealmConfigRepository';
+import { PrismaStatsRepository } from './infrastructure/repositories/PrismaStatsRepository';
 import { RealmConfigProvider } from './infrastructure/config/RealmConfigProvider';
 import { BcryptPasswordHasher } from './infrastructure/auth/BcryptPasswordHasher';
 import { JwtTokenService } from './infrastructure/auth/JwtTokenService';
@@ -20,6 +21,8 @@ import { AttemptBreakthroughUseCase } from './application/AttemptBreakthroughUse
 import { GetInventoryUseCase } from './application/GetInventoryUseCase';
 import { ConsumePillUseCase } from './application/ConsumePillUseCase';
 import { UpdateRealmConfigUseCase } from './application/UpdateRealmConfigUseCase';
+import { GetCurrentUserUseCase } from './application/GetCurrentUserUseCase';
+import { GetAdminStatsUseCase } from './application/GetAdminStatsUseCase';
 import { createAuthRouter } from './presentation/routes/auth.routes';
 import { createCultivationRouter } from './presentation/routes/cultivation.routes';
 import { createPillsRouter } from './presentation/routes/pills.routes';
@@ -43,6 +46,7 @@ export function createApp(overrides: AppOverrides = {}) {
   const pillRepository = new PrismaPillRepository(client);
   const realmConfigRepository = new PrismaRealmConfigRepository(client);
   const realmConfigProvider = new RealmConfigProvider(realmConfigRepository);
+  const statsRepository = new PrismaStatsRepository(client);
   const passwordHasher = new BcryptPasswordHasher();
 
   const jwtSecret = process.env.JWT_SECRET as string;
@@ -64,6 +68,8 @@ export function createApp(overrides: AppOverrides = {}) {
   const getInventoryUseCase = new GetInventoryUseCase(pillRepository);
   const consumePillUseCase = new ConsumePillUseCase(characterRepository, pillRepository, realmConfigProvider);
   const updateRealmConfigUseCase = new UpdateRealmConfigUseCase(realmConfigRepository);
+  const getCurrentUserUseCase = new GetCurrentUserUseCase(userRepository);
+  const getAdminStatsUseCase = new GetAdminStatsUseCase(statsRepository, realmConfigProvider);
 
   const requireAuth = createRequireAuth(tokenService);
 
@@ -85,7 +91,7 @@ export function createApp(overrides: AppOverrides = {}) {
 
   app.use(
     '/auth',
-    createAuthRouter({ registerUserUseCase, loginUserUseCase, refreshAccessTokenUseCase }),
+    createAuthRouter({ registerUserUseCase, loginUserUseCase, refreshAccessTokenUseCase, getCurrentUserUseCase, requireAuth }),
   );
   app.use(
     '/cultivation',
@@ -97,7 +103,7 @@ export function createApp(overrides: AppOverrides = {}) {
   );
   app.use(
     '/admin',
-    createAdminRouter({ updateRealmConfigUseCase, realmConfigProvider, requireAuth }),
+    createAdminRouter({ updateRealmConfigUseCase, getAdminStatsUseCase, realmConfigProvider, requireAuth }),
   );
 
   app.use(errorHandler);

@@ -1,12 +1,15 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   CauldronIcon,
   CloseIcon,
   LogoutIcon,
   MenuIcon,
+  ShieldIcon,
 } from "@/components/icons";
+import { useAuth } from "@/lib/auth-context";
 
 interface HeaderMenuProps {
   onOpenPills: () => void;
@@ -22,6 +25,9 @@ export function HeaderMenu({ onOpenPills, onLogout }: HeaderMenuProps) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownId = useId();
+  const { me } = useAuth();
+  const router = useRouter();
+  const isAdmin = me?.role === "admin";
 
   const close = useCallback(() => setOpen(false), []);
 
@@ -30,6 +36,11 @@ export function HeaderMenu({ onOpenPills, onLogout }: HeaderMenuProps) {
     close();
     onOpenPills();
   }, [close, onOpenPills]);
+
+  const handleAdmin = useCallback(() => {
+    close();
+    router.push("/admin");
+  }, [close, router]);
 
   const handleLogout = useCallback(() => {
     close();
@@ -63,6 +74,12 @@ export function HeaderMenu({ onOpenPills, onLogout }: HeaderMenuProps) {
           <CauldronIcon />
           <span>Đan Phòng</span>
         </button>
+        {isAdmin && (
+          <button type="button" className="header-action" onClick={handleAdmin}>
+            <ShieldIcon />
+            <span>Quản trị</span>
+          </button>
+        )}
         <button type="button" className="header-action" onClick={onLogout}>
           <LogoutIcon />
           <span>Đăng xuất</span>
@@ -93,6 +110,17 @@ export function HeaderMenu({ onOpenPills, onLogout }: HeaderMenuProps) {
               <CauldronIcon />
               <span>Đan Phòng</span>
             </button>
+            {isAdmin && (
+              <button
+                type="button"
+                role="menuitem"
+                className="header-menu-item"
+                onClick={handleAdmin}
+              >
+                <ShieldIcon />
+                <span>Quản trị</span>
+              </button>
+            )}
             <button
               type="button"
               role="menuitem"

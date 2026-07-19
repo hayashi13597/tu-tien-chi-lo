@@ -15,6 +15,40 @@ export interface CultivationState {
   breakthroughSuccessRate: number;
 }
 
+export interface Me {
+  id: string;
+  username: string;
+  role: string;
+}
+
+export interface RealmDistributionEntry {
+  realmMajor: number;
+  realmName: string;
+  count: number;
+}
+
+export interface AdminStats {
+  totalUsers: number;
+  totalAdmins: number;
+  realmDistribution: RealmDistributionEntry[];
+  punishedCount: number;
+}
+
+export interface SubStageConfigDTO {
+  name: string;
+  linhKhiRequired: number;
+  cultivationRate: number;
+  baseSuccessRate: number;
+  pityIncrement: number;
+  maxSuccessRate: number;
+  punishmentSeconds: number;
+}
+
+export interface RealmConfigDTO {
+  name: string;
+  subStages: SubStageConfigDTO[];
+}
+
 export interface BreakthroughResult {
   success: boolean;
   character: {
