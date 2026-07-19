@@ -31,6 +31,13 @@ export class ConsumePillUseCase {
     }
 
     const config = this.realmConfig.get();
+    // Self-heal an out-of-range stage (e.g. an admin removed a realm/sub-stage
+    // under this character) before reading it — an out-of-range index would make
+    // getStage return undefined and throw. Clamp to the nearest valid stage; the
+    // persist below writes character.realmMajor/realmSub, so the correction sticks.
+    const clamped = config.clampStage(character.realmMajor, character.realmSub);
+    character.realmMajor = clamped.realmMajor;
+    character.realmSub = clamped.realmSub;
     const stage = config.getStage(character.realmMajor, character.realmSub);
     const now = new Date();
     const atMax = isMaxStage(character.realmMajor, character.realmSub, config.maxRealmMajor, config.peakRealmSub(character.realmMajor));

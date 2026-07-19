@@ -5,7 +5,8 @@ import { GetAdminStatsUseCase } from '../../application/GetAdminStatsUseCase';
 import { ListPillsAdminUseCase } from '../../application/ListPillsAdminUseCase';
 import { CreatePillUseCase } from '../../application/CreatePillUseCase';
 import { UpdatePillUseCase } from '../../application/UpdatePillUseCase';
-import { RealmConfigProvider } from '../../infrastructure/config/RealmConfigProvider';
+import { RealmConfigSource } from '../../domain/ports/RealmConfigSource';
+import { RealmConfigReloader } from '../../domain/ports/RealmConfigReloader';
 import { requireAdmin } from '../middleware/requireAdmin';
 import { DomainError } from '../../domain/errors';
 
@@ -15,7 +16,10 @@ export interface AdminRouterDeps {
   listPillsAdminUseCase: ListPillsAdminUseCase;
   createPillUseCase: CreatePillUseCase;
   updatePillUseCase: UpdatePillUseCase;
-  realmConfigProvider: RealmConfigProvider;
+  // Domain ports, not the concrete provider: reads the current config to serve
+  // GET /realms, and invalidates the cache after PUT /realms.
+  realmConfigSource: RealmConfigSource;
+  realmConfigReloader: RealmConfigReloader;
   requireAuth: RequestHandler;
 }
 
@@ -27,7 +31,7 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
 
   router.get('/realms', (_req, res) => {
     // Serve the nested config from the in-memory provider (already loaded).
-    res.status(200).json({ realms: deps.realmConfigProvider.get().toRealms() });
+    res.status(200).json({ realms: deps.realmConfigSource.get().toRealms() });
   });
 
   router.put('/realms', async (req, res, next) => {
@@ -38,7 +42,7 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
       }
       const saved = await deps.updateRealmConfigUseCase.execute(parsed.data.realms);
       // Reload the cache so the new config is live for every subsequent request.
-      await deps.realmConfigProvider.reload();
+      await deps.realmConfigReloader.reload();
       res.status(200).json({ realms: saved });
     } catch (err) {
       next(err);
