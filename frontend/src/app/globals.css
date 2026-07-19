@@ -1381,3 +1381,191 @@ body {
   font-size: 0.75rem;
   color: var(--gold);
 }
+
+/* ===== Admin dashboard (static, table-first — no canvas, no GSAP) ===== */
+.admin-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  color: var(--gold);
+  font-size: 1.1rem;
+}
+
+.admin-shell {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-title {
+  font-size: 1.4rem;
+  color: var(--gold);
+}
+
+.admin-nav {
+  display: flex;
+  gap: var(--space-5);
+}
+
+.admin-nav a {
+  color: var(--fg);
+  text-decoration: none;
+  padding: var(--space-2) 2px;
+  border-bottom: 2px solid transparent;
+}
+
+.admin-nav a[aria-current="page"] {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+
+.admin-main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--space-6);
+}
+
+.admin-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.admin-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+  background: var(--surface-2);
+}
+
+.admin-card .value {
+  font-size: 2rem;
+  color: var(--gold);
+}
+
+.admin-card .label {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-bar {
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, var(--gold), var(--gold-deep));
+  min-width: 2px;
+}
+
+.admin-error {
+  border: 1px solid var(--border-bright);
+  background: rgba(239, 68, 68, 0.12);
+  color: #f6b8b8;
+  border-radius: var(--radius-sm);
+  padding: var(--space-4);
+  margin: var(--space-3) 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.admin-btn {
+  border: 1px solid var(--border-bright);
+  background: transparent;
+  color: var(--fg);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+}
+
+.admin-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.admin-btn-primary {
+  background: rgba(251, 191, 36, 0.2);
+  color: var(--gold);
+}
+
+.admin-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-4);
+}
+
+/* Realm editor */
+.admin-realm {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: var(--space-4);
+  overflow: hidden;
+}
+
+.admin-realm-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-2);
+  border: none;
+  color: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.admin-realm-body {
+  padding: var(--space-3) var(--space-4) var(--space-4);
+}
+
+.admin-input {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--fg);
+  padding: var(--space-2);
+  width: 100%;
+  min-width: 70px;
+}
+
+.admin-input.invalid {
+  border-color: var(--red);
+}
+
+.admin-field-error {
+  color: #f6b8b8;
+  font-size: 0.78rem;
+  margin-top: 3px;
+}
+
+.admin-realm-table-wrap {
+  overflow-x: auto;
+}
