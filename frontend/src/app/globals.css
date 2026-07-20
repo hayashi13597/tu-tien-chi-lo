@@ -1630,7 +1630,7 @@ body {
 }
 
 .admin-error {
-  border: 1px solid var(--border-bright);
+  border: 1px solid var(--red);
   background: rgba(239, 68, 68, 0.12);
   color: #f6b8b8;
   border-radius: var(--radius-sm);
@@ -1644,11 +1644,21 @@ body {
 
 .admin-btn {
   border: 1px solid var(--border-bright);
-  background: transparent;
+  background: var(--surface-2);
   color: var(--fg);
   border-radius: var(--radius-sm);
   padding: var(--space-2) var(--space-4);
+  min-height: 40px;
   cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.admin-btn:hover:not(:disabled) {
+  border-color: var(--gold);
+  background: rgba(251, 191, 36, 0.08);
 }
 
 .admin-btn:disabled {
@@ -1659,6 +1669,12 @@ body {
 .admin-btn-primary {
   background: rgba(251, 191, 36, 0.2);
   color: var(--gold);
+  border-color: var(--border-bright);
+}
+
+.admin-btn-primary:hover:not(:disabled) {
+  background: rgba(251, 191, 36, 0.3);
+  box-shadow: 0 0 14px var(--gold-glow);
 }
 
 .admin-toolbar {
@@ -1675,6 +1691,9 @@ body {
   border-radius: var(--radius);
   margin-bottom: var(--space-4);
   overflow: hidden;
+  background: linear-gradient(135deg, var(--surface), var(--surface-2));
+  backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-panel);
 }
 
 .admin-realm-head {
@@ -1684,16 +1703,30 @@ body {
   justify-content: space-between;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
-  background: var(--surface-2);
+  min-height: 44px;
+  background: transparent;
   border: none;
   color: inherit;
   font-size: 1rem;
   cursor: pointer;
   text-align: left;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.admin-realm-head:hover {
+  background: rgba(251, 191, 36, 0.06);
+}
+
+/* The last span in the head is the ▾/▸ chevron — tint it gold so the
+   expand/collapse affordance reads clearly against the glass card. */
+.admin-realm-head > span:last-child {
+  color: var(--gold);
+  transition: transform var(--dur) var(--ease-out);
 }
 
 .admin-realm-body {
   padding: var(--space-3) var(--space-4) var(--space-4);
+  border-top: 1px solid var(--border);
 }
 
 .admin-input {
@@ -1704,6 +1737,11 @@ body {
   padding: var(--space-2);
   width: 100%;
   min-width: 70px;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.admin-input:hover:not(:disabled) {
+  border-color: var(--border-bright);
 }
 
 .admin-input.invalid {
