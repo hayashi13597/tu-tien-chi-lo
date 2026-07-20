@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { AlertIcon, ChartIcon, ShieldIcon } from "@/components/icons";
 import { fetchAdminStats } from "@/lib/api";
 import type { AdminStats } from "@/lib/types";
 
@@ -69,15 +70,24 @@ export default function AdminStatsPage() {
       {stats && (
         <>
           <div className="admin-cards">
-            <div className="admin-card">
+            <div className="admin-card admin-card--jade">
+              <span className="admin-card-icon">
+                <ChartIcon width={22} height={22} />
+              </span>
               <div className="value">{stats.totalUsers}</div>
               <div className="label">Tổng người chơi</div>
             </div>
-            <div className="admin-card">
+            <div className="admin-card admin-card--gold">
+              <span className="admin-card-icon">
+                <ShieldIcon width={22} height={22} />
+              </span>
               <div className="value">{stats.totalAdmins}</div>
               <div className="label">Quản trị viên</div>
             </div>
-            <div className="admin-card">
+            <div className="admin-card admin-card--red">
+              <span className="admin-card-icon">
+                <AlertIcon width={22} height={22} />
+              </span>
               <div className="value">{stats.punishedCount}</div>
               <div className="label">Đang chịu phạt</div>
             </div>
@@ -98,10 +108,18 @@ export default function AdminStatsPage() {
                   <td>{r.realmName}</td>
                   <td>{r.count}</td>
                   <td>
-                    <div
-                      className="admin-bar"
-                      style={{ width: `${(r.count / maxCount) * 100}%` }}
-                    />
+                    <div className="admin-bar-cell">
+                      <div
+                        className="admin-bar"
+                        style={{ width: `${(r.count / maxCount) * 100}%` }}
+                      />
+                      <span className="admin-bar-pct">
+                        {stats.totalUsers > 0
+                          ? Math.round((r.count / stats.totalUsers) * 100)
+                          : 0}
+                        %
+                      </span>
+                    </div>
                   </td>
                 </tr>
               ))}
