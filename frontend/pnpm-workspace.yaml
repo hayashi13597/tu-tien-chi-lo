@@ -3,3 +3,7 @@ allowBuilds:
   sharp: true
 ignoredBuiltDependencies:
   - unrs-resolver
+# next@16.2.10 pins postcss 8.4.31, which has GHSA-qx2v-qp2m-jg93 (XSS via
+# unescaped </style> in CSS stringify). Force the patched line until Next bumps it.
+overrides:
+  "postcss@<8.5.10": ">=8.5.10"
