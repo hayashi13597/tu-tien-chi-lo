@@ -7,11 +7,19 @@ describe('createApp startup validation', () => {
   const originalCorsOrigin = process.env.CORS_ORIGIN;
   const originalNodeEnv = process.env.NODE_ENV;
 
+  // Restore each captured var to its exact original: assigning `process.env.X =
+  // undefined` would coerce to the string "undefined", so an originally-unset
+  // var must be deleted, not assigned.
+  const restore = (key: string, value: string | undefined) => {
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  };
+
   afterEach(() => {
-    process.env.JWT_SECRET = originalSecret;
-    process.env.JWT_REFRESH_SECRET = originalRefreshSecret;
-    process.env.CORS_ORIGIN = originalCorsOrigin;
-    process.env.NODE_ENV = originalNodeEnv;
+    restore('JWT_SECRET', originalSecret);
+    restore('JWT_REFRESH_SECRET', originalRefreshSecret);
+    restore('CORS_ORIGIN', originalCorsOrigin);
+    restore('NODE_ENV', originalNodeEnv);
   });
 
   it('throws at startup if JWT_SECRET and JWT_REFRESH_SECRET are set to the same value', () => {
@@ -26,6 +34,13 @@ describe('createApp startup validation', () => {
     process.env.JWT_REFRESH_SECRET = 'refresh-secret';
 
     expect(() => createApp()).not.toThrow();
+  });
+
+  it('throws at startup if only one JWT secret is set (would sign with an undefined key)', () => {
+    process.env.JWT_SECRET = 'access-secret';
+    delete process.env.JWT_REFRESH_SECRET;
+
+    expect(() => createApp()).toThrow('JWT_SECRET and JWT_REFRESH_SECRET must both be set');
   });
 
   it('throws at startup if CORS_ORIGIN is unset (would otherwise reflect any origin with credentials)', () => {

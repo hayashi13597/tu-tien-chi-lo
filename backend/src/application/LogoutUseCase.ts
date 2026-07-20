@@ -16,11 +16,17 @@ export class LogoutUseCase {
   // surfacing them.
   async execute(refreshToken: string | undefined): Promise<void> {
     if (!refreshToken) return;
+    // Only the token *validation* is best-effort: a missing/invalid/expired
+    // token has nothing to revoke, so a failure here is a legitimate no-op.
+    // The DB write stays OUTSIDE this catch — an infrastructure failure
+    // (DB down, etc.) must propagate to the caller, not be silently swallowed
+    // as if logout-everywhere had succeeded.
+    let userId: string;
     try {
-      const { userId } = this.tokenService.verifyRefreshToken(refreshToken);
-      await this.users.incrementTokenVersion(userId);
+      ({ userId } = this.tokenService.verifyRefreshToken(refreshToken));
     } catch {
-      // Invalid/expired token, or a user that no longer exists — nothing to do.
+      return;
     }
+    await this.users.incrementTokenVersion(userId);
   }
 }

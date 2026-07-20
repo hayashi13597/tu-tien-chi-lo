@@ -32,4 +32,20 @@ describe('LogoutUseCase', () => {
       new LogoutUseCase(new FakeTokenService(), users).execute('garbage-token'),
     ).resolves.toBeUndefined();
   });
+
+  it('propagates an infrastructure failure from the tokenVersion bump (not swallowed as success)', async () => {
+    const tokenService = new FakeTokenService();
+    const users = new InMemoryUserRepository();
+    const created = await users.create({ username: 'u', passwordHash: 'h' });
+    const refreshToken = tokenService.signRefreshToken(created.id, created.tokenVersion);
+    // A valid token identifies the user, but the DB write fails — that error
+    // must reach the caller, not be silently swallowed like an invalid token.
+    users.incrementTokenVersion = async () => {
+      throw new Error('db down');
+    };
+
+    await expect(
+      new LogoutUseCase(tokenService, users).execute(refreshToken),
+    ).rejects.toThrow('db down');
+  });
 });

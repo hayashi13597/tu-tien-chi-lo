@@ -56,6 +56,13 @@ export function createApp(overrides: AppOverrides = {}) {
 
   const jwtSecret = process.env.JWT_SECRET as string;
   const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET as string;
+  // A missing/empty secret would let JwtTokenService sign tokens with an
+  // undefined key. The equality check below only catches the both-missing case
+  // (undefined === undefined); a single missing secret slips through it because
+  // the two values then differ. Reject either being unset before that check.
+  if (!jwtSecret || !jwtRefreshSecret) {
+    throw new Error('JWT_SECRET and JWT_REFRESH_SECRET must both be set');
+  }
   // JwtTokenService's access/refresh isolation is only cryptographically real
   // if these two secrets actually differ (see JwtTokenService's typ-claim
   // backstop for the same concern at the token level) — fail fast at startup
