@@ -1,0 +1,60 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: game
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: tu_tien_chi_lo
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    # No `ports:` — Postgres is only reachable by `api` over the internal
+    # Docker network, never exposed to the host/internet.
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://game:${DB_PASSWORD}@db:5432/tu_tien_chi_lo
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      # Same origin as the frontend (Caddy serves both under one domain), so the
+      # browser treats API calls as same-site and the sameSite=lax cookies work.
+      CORS_ORIGIN: https://lam-h.duckdns.org
+      PORT: 5000
+    depends_on:
+      - db
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Baked into the client bundle at build time. Points at Caddy's /api
+        # prefix, which is stripped and proxied to the api service.
+        NEXT_PUBLIC_API_BASE: https://lam-h.duckdns.org/api
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+      - api
+
+volumes:
+  db_data:
+  caddy_data:
+  caddy_config:

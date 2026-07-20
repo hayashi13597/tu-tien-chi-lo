@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "node:path";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -26,6 +27,14 @@ const csp = [
   .concat(";");
 
 const nextConfig: NextConfig = {
+  // Emit a self-contained server bundle (.next/standalone) so the production
+  // Docker image can run `node server.js` without the full node_modules tree.
+  output: "standalone",
+  // Pin the file-tracing root to this app. Otherwise Next walks up and infers a
+  // higher workspace root (node_modules/lockfiles exist above `frontend`),
+  // which nests standalone output under working/tu-tien-chi-lo/frontend/ and
+  // breaks the Docker COPY paths. This keeps server.js at .next/standalone/.
+  outputFileTracingRoot: path.join(__dirname),
   reactCompiler: true,
   // Don't advertise the framework/version in every response.
   poweredByHeader: false,

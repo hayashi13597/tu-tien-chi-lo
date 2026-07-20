@@ -1,0 +1,12 @@
+lam-h.duckdns.org {
+	# Backend API: strip the /api prefix before proxying so the Express routes
+	# (/auth, /cultivation, /pills, /admin, /health) match unchanged.
+	handle_path /api/* {
+		reverse_proxy api:5000
+	}
+
+	# Everything else goes to the Next.js frontend.
+	handle {
+		reverse_proxy web:3000
+	}
+}

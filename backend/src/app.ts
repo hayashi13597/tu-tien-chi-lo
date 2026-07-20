@@ -108,6 +108,12 @@ export function createApp(overrides: AppOverrides = {}) {
   const requireAuth = createRequireAuth(tokenService);
 
   const app = express();
+  // Deployed behind a single reverse proxy (Caddy), so trust exactly one hop of
+  // X-Forwarded-* headers. Without this, express-rate-limit sees the proxy's IP
+  // for every client (rate-limiting the whole world as one key) and errors on
+  // the spoofable X-Forwarded-For. "1" (not `true`) avoids trusting arbitrary
+  // forwarded chains a client could spoof.
+  app.set('trust proxy', 1);
   // Security headers first, before any route. Defaults are fine for a JSON API
   // (nsniff, frameguard, HSTS, etc.); CSP is left on but inert since we never
   // serve HTML/scripts — the header just costs a few bytes on JSON responses.

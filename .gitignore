@@ -1,0 +1,2 @@
+# Production secrets consumed by docker-compose.prod.yml — never commit.
+.env
