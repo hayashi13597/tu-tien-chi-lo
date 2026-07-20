@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createAdminPill, fetchAdminPills, updateAdminPill } from "@/lib/api";
 import { getRarityMeta } from "@/lib/pill-constants";
@@ -18,6 +19,11 @@ const EFFECT_KINDS: { value: PillEffectKind; label: string }[] = [
 ];
 
 const RARITIES: PillRarity[] = [0, 1, 2, 3, 4];
+
+// Human label for an effect kind, reusing the select's option list.
+function effectLabel(kind: PillEffectKind): string {
+  return EFFECT_KINDS.find((k) => k.value === kind)?.label ?? kind;
+}
 
 // Editable defaults per effect kind. Switching kinds resets the stat fields:
 // non-kind fields become null (the backend rejects orphaned values), the new
@@ -388,6 +394,9 @@ export default function AdminPillsPage() {
   const editingPill =
     openId && openId !== "new" ? pills.find((p) => p.id === openId) : null;
   const isEditing = openId !== null;
+  // Header context for the detail pane (glyph/name/rarity/effect chips).
+  const headerPill = openId === "new" ? emptyPill() : editingPill;
+  const headerMeta = headerPill ? getRarityMeta(headerPill.rarity) : null;
 
   return (
     <section>
@@ -403,66 +412,102 @@ export default function AdminPillsPage() {
         </button>
       </div>
 
-      <div className={`admin-pill-layout${isEditing ? " editing" : ""}`}>
-        <div className="admin-pill-grid">
+      <div className="admin-pill-layout">
+        {/* Master: scannable list, one row per pill, rarity-colored glyph +
+            left accent, monospace effect summary, status dot. */}
+        <div className="admin-pill-list">
           {pills.map((pill) => {
             const meta = getRarityMeta(pill.rarity);
             return (
               <button
                 key={pill.id}
                 type="button"
-                className={`admin-pill-tile${pill.active ? "" : " inactive"}`}
+                className={`admin-pill-list-item${pill.active ? "" : " inactive"}`}
                 aria-current={openId === pill.id}
+                style={{ "--rarity": meta.color } as CSSProperties}
                 onClick={() => requestOpen(openId === pill.id ? null : pill.id)}
               >
-                <div className="admin-pill-tile-top">
-                  <span
-                    className="admin-pill-glyph"
-                    style={{ color: meta.color }}
-                  >
-                    {pill.glyph}
-                  </span>
-                  <span className="admin-pill-name">{pill.name}</span>
-                </div>
                 <span
-                  className="admin-pill-rarity"
+                  className="admin-pill-list-glyph"
                   style={{ color: meta.color }}
                 >
-                  {meta.name}
+                  {pill.glyph}
                 </span>
-                <span className="admin-pill-stat">{headlineStat(pill)}</span>
-                <div className="admin-pill-tile-badges">
-                  {pill.starterQuantity > 0 && (
-                    <span className="admin-pill-starter">
-                      Tân thủ ×{pill.starterQuantity}
-                    </span>
-                  )}
-                  {!pill.active && (
-                    <span className="admin-pill-off">Đang tắt</span>
-                  )}
-                </div>
+                <span className="admin-pill-list-meta">
+                  <span className="admin-pill-list-name">{pill.name}</span>
+                  <span className="admin-pill-list-effect">
+                    {headlineStat(pill)}
+                  </span>
+                </span>
+                {pill.starterQuantity > 0 && pill.active && (
+                  <span
+                    className="admin-pill-list-dot starter"
+                    title={`Tân thủ ×${pill.starterQuantity}`}
+                  />
+                )}
+                {!pill.active && (
+                  <span className="admin-pill-list-dot off" title="Đang tắt" />
+                )}
               </button>
             );
           })}
         </div>
 
-        {isEditing && (
-          <div className="admin-pill-editor">
-            <div className="admin-pill-editor-head">
-              {openId === "new" ? "Thêm đan dược" : `Sửa: ${editingPill?.name}`}
+        {/* Detail: editor for the selected pill, or an empty prompt. */}
+        <div className="admin-pill-detail">
+          {isEditing && headerPill ? (
+            <>
+              <div className="admin-pill-detail-head">
+                <span
+                  className="admin-pill-glyph"
+                  style={{ color: headerMeta?.color }}
+                >
+                  {headerPill.glyph || "丹"}
+                </span>
+                <div className="admin-pill-detail-title">
+                  <h3>
+                    {openId === "new"
+                      ? "Thêm đan dược mới"
+                      : headerPill.name || "(chưa có tên)"}
+                  </h3>
+                  <div className="admin-pill-chips">
+                    <span
+                      className="admin-pill-rarity"
+                      style={{ color: headerMeta?.color }}
+                    >
+                      {headerMeta?.name}
+                    </span>
+                    <span className="admin-pill-effect-chip">
+                      {effectLabel(headerPill.effectKind)}
+                    </span>
+                    {headerPill.starterQuantity > 0 && (
+                      <span className="admin-pill-starter">
+                        Tân thủ ×{headerPill.starterQuantity}
+                      </span>
+                    )}
+                    {!headerPill.active && (
+                      <span className="admin-pill-off">Đang tắt</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <PillForm
+                key={openId}
+                initial={
+                  openId === "new" ? emptyPill() : (editingPill as AdminPillDTO)
+                }
+                isNew={openId === "new"}
+                onSaved={onSaved}
+                onCancel={() => setOpenId(null)}
+                onDirtyChange={setDirtyOpen}
+              />
+            </>
+          ) : (
+            <div className="admin-pill-detail-empty">
+              <p>Chọn một đan dược để chỉnh sửa, hoặc thêm đan dược mới.</p>
             </div>
-            <PillForm
-              key={openId}
-              initial={
-                openId === "new" ? emptyPill() : (editingPill as AdminPillDTO)
-              }
-              isNew={openId === "new"}
-              onSaved={onSaved}
-              onCancel={() => setOpenId(null)}
-              onDirtyChange={setDirtyOpen}
-            />
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </section>
   );
