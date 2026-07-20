@@ -1584,35 +1584,45 @@ body {
   }
 }
 
-.admin-cards {
+.admin-kpi {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: var(--space-4);
   margin-bottom: var(--space-6);
 }
 
-.admin-card {
+.admin-kpi-tile {
   position: relative;
-  overflow: hidden;
   border: 1px solid var(--border);
+  border-left: 3px solid var(--gold);
   border-radius: var(--radius);
-  padding: var(--space-5);
-  background: linear-gradient(135deg, var(--surface), var(--surface-2));
-  backdrop-filter: blur(20px);
+  background: var(--surface-elevated);
   box-shadow: var(--shadow-panel);
-  /* Stagger reveal — the nth-child delays below fan the cards in. No overshoot
-     (data UI): plain ease-out slide+fade. */
+  padding: var(--space-4) var(--space-5);
   animation: admin-card-in var(--dur) var(--ease-out) both;
 }
 
-.admin-cards .admin-card:nth-child(1) {
+.admin-kpi-tile:nth-child(1) {
   animation-delay: 0ms;
 }
-.admin-cards .admin-card:nth-child(2) {
-  animation-delay: 70ms;
+.admin-kpi-tile:nth-child(2) {
+  animation-delay: 60ms;
 }
-.admin-cards .admin-card:nth-child(3) {
-  animation-delay: 140ms;
+.admin-kpi-tile:nth-child(3) {
+  animation-delay: 120ms;
+}
+.admin-kpi-tile:nth-child(4) {
+  animation-delay: 180ms;
+}
+
+.admin-kpi-tile--jade {
+  border-left-color: var(--jade);
+}
+.admin-kpi-tile--red {
+  border-left-color: var(--red);
+}
+.admin-kpi-tile--purple {
+  border-left-color: var(--purple);
 }
 
 @keyframes admin-card-in {
@@ -1626,50 +1636,52 @@ body {
   }
 }
 
-/* Top accent hairline, tinted per card role. */
-.admin-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--gold);
-}
-.admin-card--jade::before {
-  background: var(--jade);
-}
-.admin-card--red::before {
-  background: var(--red);
+.admin-kpi-tile .value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.9rem;
+  color: var(--fg);
+  line-height: 1.1;
 }
 
-.admin-card-icon {
-  display: inline-flex;
-  color: var(--gold);
-  margin-bottom: var(--space-2);
+.admin-kpi-tile .label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-top: var(--space-2);
 }
-.admin-card--jade .admin-card-icon {
+
+.admin-kpi-tile .label svg {
+  color: var(--gold);
+}
+.admin-kpi-tile--jade .label svg {
   color: var(--jade);
 }
-.admin-card--red .admin-card-icon {
+.admin-kpi-tile--red .label svg {
   color: var(--red);
 }
-
-.admin-card .value {
-  font-size: 2rem;
-  color: var(--gold);
-  text-shadow: 0 0 12px var(--gold-glow);
-}
-.admin-card--jade .value {
-  color: var(--jade);
-  text-shadow: 0 0 12px var(--jade-glow);
-}
-.admin-card--red .value {
-  color: #f6b8b8;
-  text-shadow: none;
+.admin-kpi-tile--purple .label svg {
+  color: var(--purple);
 }
 
-.admin-card .label {
+.admin-dist-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.admin-dist-head h3 {
+  font-size: 1.05rem;
+  color: var(--fg);
+}
+
+.admin-dist-head .total {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   color: var(--muted);
   font-size: 0.9rem;
 }
@@ -1686,32 +1698,45 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
+.admin-table th {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 0.8rem;
+}
+
+.admin-table td.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
 .admin-table tbody tr {
   transition: background var(--dur-fast) var(--ease-out);
+}
+.admin-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
 }
 .admin-table tbody tr:hover {
   background: rgba(251, 191, 36, 0.06);
 }
 
 .admin-bar-cell {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
+  min-width: 120px;
 }
 
 .admin-bar {
-  height: 10px;
-  border-radius: 5px;
+  height: 8px;
+  border-radius: 4px;
   background: linear-gradient(90deg, var(--gold), var(--gold-deep));
-  box-shadow: 0 0 8px var(--gold-glow);
   min-width: 2px;
 }
 
 .admin-bar-pct {
-  flex: none;
-  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
   color: var(--muted);
-  min-width: 3ch;
   text-align: right;
 }
 
