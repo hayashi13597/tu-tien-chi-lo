@@ -30,7 +30,8 @@ model User {
 model Character {
   id                String    @id @default(uuid())
   userId            String    @unique
-  user              User      @relation(fields: [userId], references: [id])
+  // Cascade: deleting a User removes their Character automatically.
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   realmMajor        Int       @default(0)
   realmSub          Int       @default(0)
@@ -75,7 +76,8 @@ model Pill {
 model InventoryItem {
   id       String @id @default(uuid())
   userId   String
-  user     User   @relation(fields: [userId], references: [id])
+  // Cascade: deleting a User removes all their inventory rows automatically.
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   pillId   String
   pill     Pill   @relation(fields: [pillId], references: [id])
   quantity Int    @default(0)

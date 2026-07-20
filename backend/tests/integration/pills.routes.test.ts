@@ -21,20 +21,21 @@ afterAll(async () => {
 });
 
 describe('pills routes', () => {
-  it('GET /pills/inventory returns the starter inventory after register', async () => {
+  it('GET /pills/inventory is empty after register (no starter kit)', async () => {
     const agent = request.agent(app);
     await agent.post('/auth/register').send({ username: 'inv-alice', password: 'password123' });
 
     const res = await agent.get('/pills/inventory');
     expect(res.status).toBe(200);
-    expect(res.body.length).toBe(8);
-    const hoiKhi = res.body.find((p: { id: string }) => p.id === 'hoi-khi-dan');
-    expect(hoiKhi).toMatchObject({ id: 'hoi-khi-dan', quantity: 5, effectKind: 'linhKhi' });
+    expect(res.body.length).toBe(0);
   });
 
   it('POST /pills/consume applies linhKhi and decrements the stack', async () => {
     const agent = request.agent(app);
     await agent.post('/auth/register').send({ username: 'inv-bob', password: 'password123' });
+    // No starter kit — grant the pill this test consumes.
+    const bob = await prisma.user.findUnique({ where: { username: 'inv-bob' } });
+    await prisma.inventoryItem.create({ data: { userId: bob!.id, pillId: 'hoi-khi-dan', quantity: 5 } });
 
     const res = await agent.post('/pills/consume').send({ pillId: 'hoi-khi-dan' });
     expect(res.status).toBe(200);
@@ -58,6 +59,9 @@ describe('pills routes', () => {
   it('consuming a single-unit pill twice -> second is 409 PILL_OUT_OF_STOCK', async () => {
     const agent = request.agent(app);
     await agent.post('/auth/register').send({ username: 'inv-dave', password: 'password123' });
+    // No starter kit — grant a single unit so the second consume runs dry.
+    const dave = await prisma.user.findUnique({ where: { username: 'inv-dave' } });
+    await prisma.inventoryItem.create({ data: { userId: dave!.id, pillId: 'cuu-chuyen-kim-dan', quantity: 1 } });
 
     const first = await agent.post('/pills/consume').send({ pillId: 'cuu-chuyen-kim-dan' });
     expect(first.status).toBe(200);
