@@ -39,9 +39,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="admin-shell">
-      <header className="admin-header">
-        <h1 className="admin-title">Quản trị</h1>
-        <nav className="admin-nav">
+      <aside className="admin-rail">
+        <div className="admin-rail-brand">Quản trị</div>
+        <nav className="admin-rail-nav">
           <Link
             href="/admin"
             aria-current={pathname === "/admin" ? "page" : undefined}
@@ -63,9 +63,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <CauldronIcon width={18} height={18} />
             Đan dược
           </Link>
-          <Link href="/">← Về game</Link>
         </nav>
-      </header>
+        <Link className="admin-rail-back" href="/">
+          ← Về game
+        </Link>
+      </aside>
       <main className="admin-main">{children}</main>
     </div>
   );

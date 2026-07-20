@@ -51,6 +51,11 @@
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --dur-fast: 150ms;
   --dur: 250ms;
+
+  /* Monospace stack for numeric/data cells — system fonts, no web import. */
+  --font-mono:
+    ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", "JetBrains Mono",
+    Menlo, Consolas, monospace;
 }
 * {
   margin: 0;
@@ -1396,8 +1401,7 @@ body {
   padding: var(--space-5) var(--space-8);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: linear-gradient(135deg, var(--surface), var(--surface-2));
-  backdrop-filter: blur(20px);
+  background: var(--surface-elevated);
   box-shadow: var(--shadow-panel);
   animation: admin-pulse 1.4s ease-in-out infinite;
 }
@@ -1412,14 +1416,16 @@ body {
   }
 }
 
+/* Sidebar shell: fixed rail + fluid main. Flat cosmic backdrop retained but
+   dimmer than the game so it never competes with dense data. */
 .admin-shell {
   position: relative;
+  display: grid;
+  grid-template-columns: 220px 1fr;
   min-height: 100vh;
   color: var(--fg);
 }
 
-/* Subtle cosmic backdrop — lower intensity than the game's .cosmic-bg so it
-   never competes with the data. Fixed so it stays put while content scrolls. */
 .admin-shell::before {
   content: "";
   position: fixed;
@@ -1428,74 +1434,154 @@ body {
   background:
     radial-gradient(
       ellipse at 15% 10%,
-      rgba(168, 85, 247, 0.1) 0%,
-      transparent 55%
-    ),
-    radial-gradient(
-      ellipse at 85% 90%,
-      rgba(93, 217, 177, 0.07) 0%,
+      rgba(168, 85, 247, 0.08) 0%,
       transparent 55%
     ), linear-gradient(180deg, #08050f 0%, #120822 60%, #08050f 100%);
 }
 
-.admin-header {
+.admin-rail {
   position: sticky;
   top: 0;
-  z-index: 10;
+  align-self: start;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5) var(--space-3);
+  border-right: 1px solid var(--border);
+  background: var(--surface-2);
+  backdrop-filter: blur(12px);
+}
+
+.admin-rail-brand {
+  font-family: var(--font-zcool), "ZCOOL XiaoWei", serif;
+  font-size: 1.2rem;
+  color: var(--gold);
+  padding: 0 var(--space-3) var(--space-3);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--space-2);
+}
+
+.admin-rail-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-rail-nav a,
+.admin-rail-back {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  color: var(--fg-dim);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid transparent;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+
+.admin-rail-nav a:hover,
+.admin-rail-back:hover {
+  color: var(--gold);
+  background: rgba(251, 191, 36, 0.06);
+}
+
+.admin-rail-nav a[aria-current="page"] {
+  color: var(--gold);
+  background: rgba(251, 191, 36, 0.1);
+  border-left-color: var(--gold);
+}
+
+.admin-rail-back {
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  padding-top: var(--space-3);
+}
+
+.admin-main {
+  position: relative;
+  min-width: 0;
+  padding: var(--space-5) var(--space-6);
+  animation: admin-card-in var(--dur) var(--ease-out) both;
+}
+
+/* Per-page header row: title left, primary action slot right. */
+.admin-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
   flex-wrap: wrap;
-  padding: var(--space-4) var(--space-6);
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-  backdrop-filter: blur(12px);
+  margin-bottom: var(--space-5);
+}
+
+.admin-topbar h2 {
+  font-size: 1.3rem;
+  color: var(--fg);
+}
+
+/* Flat elevated data panel — replaces glass/blur cards for data areas. */
+.admin-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-elevated);
   box-shadow: var(--shadow-panel);
+  padding: var(--space-5);
 }
 
-.admin-title {
-  font-family: var(--font-zcool), "ZCOOL XiaoWei", serif;
-  font-size: 1.4rem;
-  color: var(--gold);
-  text-shadow: 0 0 12px var(--gold-glow);
+.admin-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
-.admin-nav {
-  display: flex;
-  gap: var(--space-5);
-  flex-wrap: wrap;
-}
-
-.admin-nav a {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: 44px;
-  color: var(--fg-dim);
-  text-decoration: none;
-  padding: var(--space-2) 2px;
-  border-bottom: 2px solid transparent;
-  transition:
-    color var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out);
-}
-
-.admin-nav a:hover {
-  color: var(--gold);
-}
-
-.admin-nav a[aria-current="page"] {
-  color: var(--gold);
-  border-bottom-color: var(--gold);
-  text-shadow: 0 0 10px var(--gold-glow);
-}
-
-.admin-main {
-  position: relative;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: var(--space-6);
+/* Mobile: rail collapses to a horizontal top strip of icon+label tabs. */
+@media (max-width: 768px) {
+  .admin-shell {
+    grid-template-columns: 1fr;
+  }
+  .admin-rail {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  .admin-rail-brand {
+    display: none;
+  }
+  .admin-rail-nav {
+    flex-direction: row;
+    gap: var(--space-2);
+  }
+  .admin-rail-nav a {
+    border-left: none;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+  }
+  .admin-rail-nav a[aria-current="page"] {
+    border-left-color: transparent;
+    border-bottom-color: var(--gold);
+  }
+  .admin-rail-back {
+    margin-top: 0;
+    margin-left: auto;
+    border-top: none;
+    padding-top: 0;
+    white-space: nowrap;
+  }
+  .admin-main {
+    padding: var(--space-4);
+  }
 }
 
 .admin-cards {
