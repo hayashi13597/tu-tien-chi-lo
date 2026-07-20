@@ -1941,46 +1941,83 @@ body {
   }
 }
 
-/* ---- Admin pill catalog editor ---- */
-.admin-pill-list {
+/* ---- Admin pill catalog: card grid + side editor ---- */
+.admin-pill-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+  align-items: start;
+}
+
+/* When an editor is open, split into grid | editor on desktop. */
+.admin-pill-layout.editing {
+  grid-template-columns: 1fr 360px;
+}
+
+.admin-pill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-3);
+}
+
+.admin-pill-tile {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  margin-top: var(--space-3);
-}
-
-.admin-pill-card {
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-4);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: linear-gradient(135deg, var(--surface), var(--surface-2));
-  backdrop-filter: blur(20px);
+  background: var(--surface-elevated);
   box-shadow: var(--shadow-panel);
-  overflow: hidden;
-  transition: border-color var(--dur-fast) var(--ease-out);
+  color: var(--fg);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
 }
 
-.admin-pill-card:hover {
+.admin-pill-tile:hover {
   border-color: var(--border-bright);
 }
 
-.admin-pill-card.inactive {
-  opacity: 0.6;
+.admin-pill-tile[aria-current="true"] {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold);
 }
 
-.admin-pill-head {
+.admin-pill-tile.inactive {
+  opacity: 0.55;
+}
+
+.admin-pill-tile-top {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: var(--space-3);
-  width: 100%;
+}
+
+.admin-pill-tile-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: auto;
+}
+
+.admin-pill-editor {
+  position: sticky;
+  top: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-pop);
+}
+
+.admin-pill-editor-head {
   padding: var(--space-3) var(--space-4);
-  background: none;
-  border: none;
-  color: var(--fg);
-  font: inherit;
-  cursor: pointer;
-  text-align: left;
-  min-height: 44px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  color: var(--gold);
 }
 
 .admin-pill-glyph {
@@ -2001,6 +2038,10 @@ body {
   color: var(--muted);
 }
 
+.admin-pill-stat {
+  font-family: var(--font-mono);
+}
+
 .admin-pill-starter {
   font-size: 0.75rem;
   padding: 0.15rem 0.6rem;
@@ -2010,12 +2051,20 @@ body {
 }
 
 .admin-pill-off {
-  margin-left: auto;
   font-size: 0.75rem;
   padding: 0.15rem 0.6rem;
   border-radius: 999px;
   border: 1px solid var(--red);
   color: #f6b8b8;
+}
+
+@media (max-width: 768px) {
+  .admin-pill-layout.editing {
+    grid-template-columns: 1fr;
+  }
+  .admin-pill-editor {
+    position: static;
+  }
 }
 
 .admin-pill-form {

@@ -385,53 +385,45 @@ export default function AdminPillsPage() {
     return <p>Đang tải…</p>;
   }
 
+  const editingPill =
+    openId && openId !== "new" ? pills.find((p) => p.id === openId) : null;
+  const isEditing = openId !== null;
+
   return (
-    <div>
-      <div className="admin-toolbar">
+    <section>
+      <div className="admin-topbar">
+        <h2>Đan dược ({pills.length})</h2>
         <button
           type="button"
           className="admin-btn admin-btn-primary"
           onClick={() => requestOpen("new")}
           disabled={openId === "new"}
         >
-          Thêm đan dược
+          + Thêm đan dược
         </button>
       </div>
 
-      {openId === "new" && (
-        <div className="admin-pill-card">
-          <PillForm
-            initial={emptyPill()}
-            isNew
-            onSaved={onSaved}
-            onCancel={() => setOpenId(null)}
-            onDirtyChange={setDirtyOpen}
-          />
-        </div>
-      )}
-
-      <div className="admin-pill-list">
-        {pills.map((pill) => {
-          const meta = getRarityMeta(pill.rarity);
-          const open = openId === pill.id;
-          return (
-            <div
-              key={pill.id}
-              className={`admin-pill-card${pill.active ? "" : " inactive"}`}
-            >
+      <div className={`admin-pill-layout${isEditing ? " editing" : ""}`}>
+        <div className="admin-pill-grid">
+          {pills.map((pill) => {
+            const meta = getRarityMeta(pill.rarity);
+            return (
               <button
+                key={pill.id}
                 type="button"
-                className="admin-pill-head"
-                onClick={() => requestOpen(open ? null : pill.id)}
-                aria-expanded={open}
+                className={`admin-pill-tile${pill.active ? "" : " inactive"}`}
+                aria-current={openId === pill.id}
+                onClick={() => requestOpen(openId === pill.id ? null : pill.id)}
               >
-                <span
-                  className="admin-pill-glyph"
-                  style={{ color: meta.color }}
-                >
-                  {pill.glyph}
-                </span>
-                <span className="admin-pill-name">{pill.name}</span>
+                <div className="admin-pill-tile-top">
+                  <span
+                    className="admin-pill-glyph"
+                    style={{ color: meta.color }}
+                  >
+                    {pill.glyph}
+                  </span>
+                  <span className="admin-pill-name">{pill.name}</span>
+                </div>
                 <span
                   className="admin-pill-rarity"
                   style={{ color: meta.color }}
@@ -439,28 +431,39 @@ export default function AdminPillsPage() {
                   {meta.name}
                 </span>
                 <span className="admin-pill-stat">{headlineStat(pill)}</span>
-                {pill.starterQuantity > 0 && (
-                  <span className="admin-pill-starter">
-                    Tân thủ ×{pill.starterQuantity}
-                  </span>
-                )}
-                {!pill.active && (
-                  <span className="admin-pill-off">Đang tắt</span>
-                )}
+                <div className="admin-pill-tile-badges">
+                  {pill.starterQuantity > 0 && (
+                    <span className="admin-pill-starter">
+                      Tân thủ ×{pill.starterQuantity}
+                    </span>
+                  )}
+                  {!pill.active && (
+                    <span className="admin-pill-off">Đang tắt</span>
+                  )}
+                </div>
               </button>
-              {open && (
-                <PillForm
-                  initial={pill}
-                  isNew={false}
-                  onSaved={onSaved}
-                  onCancel={() => setOpenId(null)}
-                  onDirtyChange={setDirtyOpen}
-                />
-              )}
+            );
+          })}
+        </div>
+
+        {isEditing && (
+          <div className="admin-pill-editor">
+            <div className="admin-pill-editor-head">
+              {openId === "new" ? "Thêm đan dược" : `Sửa: ${editingPill?.name}`}
             </div>
-          );
-        })}
+            <PillForm
+              key={openId}
+              initial={
+                openId === "new" ? emptyPill() : (editingPill as AdminPillDTO)
+              }
+              isNew={openId === "new"}
+              onSaved={onSaved}
+              onCancel={() => setOpenId(null)}
+              onDirtyChange={setDirtyOpen}
+            />
+          </div>
+        )}
       </div>
-    </div>
+    </section>
   );
 }
