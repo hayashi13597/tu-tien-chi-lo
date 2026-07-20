@@ -31,7 +31,7 @@ function emptyStage(): SubStageConfigDTO {
 export default function AdminRealmsPage() {
   const [server, setServer] = useState<RealmConfigDTO[] | null>(null);
   const [draft, setDraft] = useState<RealmConfigDTO[] | null>(null);
-  const [openRealms, setOpenRealms] = useState<Set<number>>(new Set([0]));
+  const [selectedRealm, setSelectedRealm] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   // While a save is in flight, every draft-mutating control is disabled —
@@ -72,7 +72,7 @@ export default function AdminRealmsPage() {
   }, [load]);
 
   // Warn on tab close / reload while edits are unsaved. In-app nav via the
-  // header links is not intercepted (Next App Router has no route-guard API);
+  // rail links is not intercepted (Next App Router has no route-guard API);
   // beforeunload covers the destructive cases.
   useEffect(() => {
     if (!dirty) return;
@@ -116,27 +116,29 @@ export default function AdminRealmsPage() {
       return d;
     });
 
-  const addRealm = () =>
+  const addRealm = () => {
     updateDraft((d) => {
       d.push({ name: "Cảnh giới mới", subStages: [emptyStage()] });
       return d;
     });
+    // Focus the newly appended realm.
+    setSelectedRealm(draft?.length ?? 0);
+  };
 
   const removeRealm = (ri: number) => {
     updateDraft((d) => {
       d.splice(ri, 1);
       return d;
     });
-    // Expansion state is keyed by index, so realms after the removed one
-    // shift down by one — remap the set or their open/closed state would
-    // attach to the wrong realm.
-    setOpenRealms((s) => {
-      const next = new Set<number>();
-      for (const i of s) {
-        if (i < ri) next.add(i);
-        else if (i > ri) next.add(i - 1);
-      }
-      return next;
+    // Selection is a single index; realms after the removed one shift down by
+    // one. Mirror the old open-set remap: drop if it was the removed realm,
+    // decrement if it was above, clamp into range.
+    setSelectedRealm((sel) => {
+      const remaining = (draft?.length ?? 1) - 1;
+      let next = sel;
+      if (sel > ri) next = sel - 1;
+      else if (sel === ri) next = Math.min(sel, remaining - 1);
+      return Math.max(0, next);
     });
   };
 
@@ -161,14 +163,6 @@ export default function AdminRealmsPage() {
     updateDraft((d) => {
       d[ri].subStages.splice(si, 1);
       return d;
-    });
-
-  const toggleRealm = (ri: number) =>
-    setOpenRealms((s) => {
-      const next = new Set(s);
-      if (next.has(ri)) next.delete(ri);
-      else next.add(ri);
-      return next;
     });
 
   const save = useCallback(async () => {
@@ -213,38 +207,38 @@ export default function AdminRealmsPage() {
   if (!draft) return <p>Đang tải cấu hình…</p>;
 
   const globalError = findError(errors, -1, null, null);
+  // Clamp selection defensively (draft can shrink out from under it).
+  const ri = Math.min(selectedRealm, draft.length - 1);
+  const realm = draft[ri];
+  const realmNameError = realm ? findError(errors, ri, null, "name") : null;
+  const noStagesError = realm ? findError(errors, ri, null, null) : null;
+
+  // A realm has a validation error if any error targets its index.
+  const realmHasError = (index: number) =>
+    errors.some((e) => e.realmIndex === index);
 
   return (
     <section>
-      <div className="admin-toolbar">
+      <div className="admin-topbar">
         <h2>Cấu hình cảnh giới</h2>
-        <button
-          type="button"
-          className="admin-btn"
-          onClick={addRealm}
-          disabled={saving}
-        >
-          + Thêm cảnh giới
-        </button>
-        <button
-          type="button"
-          className="admin-btn"
-          onClick={undo}
-          disabled={!dirty || saving}
-        >
-          Hoàn tác
-        </button>
-        <button
-          type="button"
-          className="admin-btn admin-btn-primary"
-          onClick={() => void save()}
-          disabled={!dirty || errors.length > 0 || saving}
-        >
-          {saving ? "Đang lưu…" : "Lưu tất cả"}
-        </button>
-        {savedAt && !dirty && (
-          <span>Đã lưu lúc {savedAt.toLocaleTimeString("vi-VN")}</span>
-        )}
+        <div className="admin-toolbar" style={{ margin: 0 }}>
+          <button
+            type="button"
+            className="admin-btn"
+            onClick={undo}
+            disabled={!dirty || saving}
+          >
+            Hoàn tác
+          </button>
+          <button
+            type="button"
+            className="admin-btn admin-btn-primary"
+            onClick={() => void save()}
+            disabled={!dirty || errors.length > 0 || saving}
+          >
+            {saving ? "Đang lưu…" : "Lưu tất cả"}
+          </button>
+        </div>
       </div>
 
       {saveError && (
@@ -257,143 +251,156 @@ export default function AdminRealmsPage() {
           <span>{globalError.message}</span>
         </div>
       )}
+      {savedAt && !dirty && (
+        <p style={{ color: "var(--muted)", marginBottom: "var(--space-3)" }}>
+          Đã lưu lúc {savedAt.toLocaleTimeString("vi-VN")}
+        </p>
+      )}
 
-      {draft.map((realm, ri) => {
-        const realmNameError = findError(errors, ri, null, "name");
-        const noStagesError = findError(errors, ri, null, null);
-        const open = openRealms.has(ri);
-        return (
-          // biome-ignore lint/suspicious/noArrayIndexKey: realms are an ordered, index-addressed draft — the index IS the identity the backend stores.
-          <div className="admin-realm" key={ri}>
+      <div className="admin-realm-layout">
+        <div className="admin-realm-list">
+          {draft.map((r, index) => (
             <button
+              // biome-ignore lint/suspicious/noArrayIndexKey: realms are an ordered, index-addressed draft — the index IS the identity the backend stores.
+              key={index}
               type="button"
-              className="admin-realm-head"
-              aria-expanded={open}
-              onClick={() => toggleRealm(ri)}
+              className="admin-realm-list-item"
+              aria-current={index === ri}
+              onClick={() => setSelectedRealm(index)}
+              disabled={saving}
             >
               <span>
-                #{ri} — {realm.name || "(chưa có tên)"} ·{" "}
-                {realm.subStages.length} tiểu cảnh giới
+                #{index} — {r.name || "(chưa có tên)"}
               </span>
-              <span>{open ? "▾" : "▸"}</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {realmHasError(index) && <span className="err-dot" />}
+                <span className="count">{r.subStages.length}</span>
+              </span>
             </button>
-            {open && (
-              <div className="admin-realm-body">
-                <label>
-                  Tên cảnh giới{" "}
-                  <input
-                    className={`admin-input${realmNameError ? " invalid" : ""}`}
-                    style={{ maxWidth: 260 }}
-                    value={realm.name}
-                    onChange={(e) => setRealmName(ri, e.target.value)}
-                    disabled={saving}
-                  />
-                </label>
-                {realmNameError && (
-                  <div className="admin-field-error">
-                    {realmNameError.message}
-                  </div>
-                )}
-                {noStagesError && (
-                  <div className="admin-field-error">
-                    {noStagesError.message}
-                  </div>
-                )}
-
-                <div className="admin-realm-table-wrap">
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Tên</th>
-                        {NUMERIC_FIELDS.map((f) => (
-                          <th key={f.key}>{f.label}</th>
-                        ))}
-                        <th />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {realm.subStages.map((sub, si) => (
-                        // biome-ignore lint/suspicious/noArrayIndexKey: sub-stages are index-addressed draft rows.
-                        <tr key={si}>
-                          <td>
-                            <input
-                              className={`admin-input${findError(errors, ri, si, "name") ? " invalid" : ""}`}
-                              aria-label={`Tên — tiểu cảnh giới #${si}, cảnh giới #${ri}`}
-                              value={sub.name}
-                              onChange={(e) =>
-                                setSubField(ri, si, "name", e.target.value)
-                              }
-                              disabled={saving}
-                            />
-                            {findError(errors, ri, si, "name") && (
-                              <div className="admin-field-error">
-                                {findError(errors, ri, si, "name")?.message}
-                              </div>
-                            )}
-                          </td>
-                          {NUMERIC_FIELDS.map((f) => {
-                            const err = findError(errors, ri, si, f.key);
-                            const value = sub[f.key] as number;
-                            return (
-                              <td key={f.key}>
-                                <input
-                                  type="number"
-                                  className={`admin-input${err ? " invalid" : ""}`}
-                                  aria-label={`${f.label} — tiểu cảnh giới #${si}, cảnh giới #${ri}`}
-                                  value={Number.isNaN(value) ? "" : value}
-                                  onChange={(e) =>
-                                    setSubField(ri, si, f.key, e.target.value)
-                                  }
-                                  disabled={saving}
-                                />
-                                {err && (
-                                  <div className="admin-field-error">
-                                    {err.message}
-                                  </div>
-                                )}
-                              </td>
-                            );
-                          })}
-                          <td>
-                            <button
-                              type="button"
-                              className="admin-btn"
-                              aria-label={`Xóa tiểu cảnh giới #${si} của cảnh giới #${ri}`}
-                              onClick={() => removeSubStage(ri, si)}
-                              disabled={saving}
-                            >
-                              Xóa
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="admin-toolbar" style={{ marginTop: 10 }}>
-                  <button
-                    type="button"
-                    className="admin-btn"
-                    onClick={() => addSubStage(ri)}
-                    disabled={saving}
-                  >
-                    + Thêm tiểu cảnh giới
-                  </button>
-                  <button
-                    type="button"
-                    className="admin-btn"
-                    onClick={() => removeRealm(ri)}
-                    disabled={saving}
-                  >
-                    Xóa cảnh giới này
-                  </button>
-                </div>
-              </div>
-            )}
+          ))}
+          <div className="admin-realm-list-foot">
+            <button
+              type="button"
+              className="admin-btn"
+              onClick={addRealm}
+              disabled={saving}
+            >
+              + Thêm cảnh giới
+            </button>
           </div>
-        );
-      })}
+        </div>
+
+        {realm && (
+          <div className="admin-realm-detail">
+            <div className="admin-substage-card-head">
+              <label style={{ flex: 1 }}>
+                Tên cảnh giới #{ri}
+                <input
+                  className={`admin-input${realmNameError ? " invalid" : ""}`}
+                  style={{ maxWidth: 320, marginTop: 4 }}
+                  value={realm.name}
+                  onChange={(e) => setRealmName(ri, e.target.value)}
+                  disabled={saving}
+                />
+              </label>
+              <button
+                type="button"
+                className="admin-btn"
+                onClick={() => removeRealm(ri)}
+                disabled={saving}
+              >
+                Xóa cảnh giới
+              </button>
+            </div>
+            {realmNameError && (
+              <div className="admin-field-error">{realmNameError.message}</div>
+            )}
+            {noStagesError && (
+              <div className="admin-field-error">{noStagesError.message}</div>
+            )}
+
+            {realm.subStages.map((sub, si) => {
+              const nameErr = findError(errors, ri, si, "name");
+              return (
+                // biome-ignore lint/suspicious/noArrayIndexKey: sub-stages are index-addressed draft rows.
+                <div className="admin-substage-card" key={si}>
+                  <div className="admin-substage-card-head">
+                    <label
+                      className="admin-substage-field"
+                      style={{ flex: 1, maxWidth: 260 }}
+                    >
+                      Tên tiểu cảnh giới
+                      <input
+                        className={`admin-input${nameErr ? " invalid" : ""}`}
+                        aria-label={`Tên — tiểu cảnh giới #${si}, cảnh giới #${ri}`}
+                        value={sub.name}
+                        onChange={(e) =>
+                          setSubField(ri, si, "name", e.target.value)
+                        }
+                        disabled={saving}
+                      />
+                      {nameErr && (
+                        <span className="admin-field-error">
+                          {nameErr.message}
+                        </span>
+                      )}
+                    </label>
+                    <button
+                      type="button"
+                      className="admin-btn"
+                      aria-label={`Xóa tiểu cảnh giới #${si} của cảnh giới #${ri}`}
+                      onClick={() => removeSubStage(ri, si)}
+                      disabled={saving}
+                    >
+                      Xóa
+                    </button>
+                  </div>
+                  <div className="admin-substage-grid">
+                    {NUMERIC_FIELDS.map((f) => {
+                      const err = findError(errors, ri, si, f.key);
+                      const value = sub[f.key] as number;
+                      return (
+                        <label className="admin-substage-field" key={f.key}>
+                          {f.label}
+                          <input
+                            type="number"
+                            className={`admin-input admin-num${err ? " invalid" : ""}`}
+                            aria-label={`${f.label} — tiểu cảnh giới #${si}, cảnh giới #${ri}`}
+                            value={Number.isNaN(value) ? "" : value}
+                            onChange={(e) =>
+                              setSubField(ri, si, f.key, e.target.value)
+                            }
+                            disabled={saving}
+                          />
+                          {err && (
+                            <span className="admin-field-error">
+                              {err.message}
+                            </span>
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+
+            <div
+              className="admin-toolbar"
+              style={{ marginTop: "var(--space-4)" }}
+            >
+              <button
+                type="button"
+                className="admin-btn"
+                onClick={() => addSubStage(ri)}
+                disabled={saving}
+              >
+                + Thêm tiểu cảnh giới
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

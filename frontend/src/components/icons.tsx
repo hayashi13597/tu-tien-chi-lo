@@ -90,3 +90,38 @@ export function ShieldIcon(props: IconProps) {
     </svg>
   );
 }
+
+// Bar-chart icon for the admin "Thống kê" (stats) tab.
+export function ChartIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <title>Thống kê</title>
+      <path d="M3 3v18h18" />
+      <path d="M7 15v3" />
+      <path d="M12 9v9" />
+      <path d="M17 5v13" />
+    </svg>
+  );
+}
+
+// Mountain/peak icon for the admin "Cảnh giới" (realms) tab.
+export function MountainIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <title>Cảnh giới</title>
+      <path d="M3 20h18L14 6l-3 6-2-3z" />
+    </svg>
+  );
+}
+
+// Alert/warning triangle for the "đang chịu phạt" (punished) stat.
+export function AlertIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <title>Cảnh báo</title>
+      <path d="M12 3 2 20h20z" />
+      <path d="M12 10v4" />
+      <path d="M12 17.5v.5" />
+    </svg>
+  );
+}
