@@ -4,7 +4,7 @@
 
 **Goal:** Rebuild the three admin pages (`/admin`, `/admin/realms`, `/admin/pills`) and their shared shell from the cosmic/glass game register into a calm, dense pro-dashboard/control-panel register — frontend-only, no logic changes.
 
-**Architecture:** Presentational + layout reshape only. `admin/layout.tsx` becomes a sidebar-rail shell; each page reshapes its JSX into new containers (KPI strip + distribution panel; realms master/detail; pill card-grid + editor panel) while keeping every existing state machine, validation, and guard behavior byte-for-byte. Nearly all real change is in the `.admin-*` block of `frontend/src/app/globals.css`.
+**Architecture:** Presentational + layout reshape only. `admin/layout.tsx` becomes a sidebar-rail shell; each page reshapes its JSX into new containers (KPI strip + distribution panel; realms master/detail; pill card-grid + editor panel) while preserving every existing state machine, validation, and guard behavior. The one intentional exception is the realms selection model: the accordion's `openRealms: Set<number>` (multiple realms expandable at once) becomes a single `selectedRealm: number` (one realm shown in the detail pane) — the same index-remap-on-removal logic is kept. Nearly all real change is in the `.admin-*` block of `frontend/src/app/globals.css`.
 
 **Tech Stack:** Next.js 16 App Router, React 19, Tailwind 4 (design tokens in `globals.css`), Biome (lint), Vitest (existing pure-logic tests only). Package manager: `pnpm`. All commands run from `frontend/`.
 
@@ -99,10 +99,12 @@ Ordering rationale: Task 1 establishes the shell + shared classes (`.admin-topba
   z-index: -1;
   background:
     radial-gradient(
+      /* Low-alpha (0.08) purple accent — deliberately dimmer than any --purple*
+         token so it never competes with dense data; no token exists at this alpha. */
       ellipse at 15% 10%,
       rgba(168, 85, 247, 0.08) 0%,
       transparent 55%
-    ), linear-gradient(180deg, #08050f 0%, #120822 60%, #08050f 100%);
+    ), linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 60%, var(--bg) 100%);
 }
 
 .admin-rail {

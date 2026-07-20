@@ -319,68 +319,71 @@ export default function AdminRealmsPage() {
               <div className="admin-field-error">{noStagesError.message}</div>
             )}
 
-            {realm.subStages.map((sub, si) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: sub-stages are index-addressed draft rows.
-              <div className="admin-substage-card" key={si}>
-                <div className="admin-substage-card-head">
-                  <label
-                    className="admin-substage-field"
-                    style={{ flex: 1, maxWidth: 260 }}
-                  >
-                    Tên tiểu cảnh giới
-                    <input
-                      className={`admin-input${findError(errors, ri, si, "name") ? " invalid" : ""}`}
-                      aria-label={`Tên — tiểu cảnh giới #${si}, cảnh giới #${ri}`}
-                      value={sub.name}
-                      onChange={(e) =>
-                        setSubField(ri, si, "name", e.target.value)
-                      }
+            {realm.subStages.map((sub, si) => {
+              const nameErr = findError(errors, ri, si, "name");
+              return (
+                // biome-ignore lint/suspicious/noArrayIndexKey: sub-stages are index-addressed draft rows.
+                <div className="admin-substage-card" key={si}>
+                  <div className="admin-substage-card-head">
+                    <label
+                      className="admin-substage-field"
+                      style={{ flex: 1, maxWidth: 260 }}
+                    >
+                      Tên tiểu cảnh giới
+                      <input
+                        className={`admin-input${nameErr ? " invalid" : ""}`}
+                        aria-label={`Tên — tiểu cảnh giới #${si}, cảnh giới #${ri}`}
+                        value={sub.name}
+                        onChange={(e) =>
+                          setSubField(ri, si, "name", e.target.value)
+                        }
+                        disabled={saving}
+                      />
+                      {nameErr && (
+                        <span className="admin-field-error">
+                          {nameErr.message}
+                        </span>
+                      )}
+                    </label>
+                    <button
+                      type="button"
+                      className="admin-btn"
+                      aria-label={`Xóa tiểu cảnh giới #${si} của cảnh giới #${ri}`}
+                      onClick={() => removeSubStage(ri, si)}
                       disabled={saving}
-                    />
-                    {findError(errors, ri, si, "name") && (
-                      <span className="admin-field-error">
-                        {findError(errors, ri, si, "name")?.message}
-                      </span>
-                    )}
-                  </label>
-                  <button
-                    type="button"
-                    className="admin-btn"
-                    aria-label={`Xóa tiểu cảnh giới #${si} của cảnh giới #${ri}`}
-                    onClick={() => removeSubStage(ri, si)}
-                    disabled={saving}
-                  >
-                    Xóa
-                  </button>
+                    >
+                      Xóa
+                    </button>
+                  </div>
+                  <div className="admin-substage-grid">
+                    {NUMERIC_FIELDS.map((f) => {
+                      const err = findError(errors, ri, si, f.key);
+                      const value = sub[f.key] as number;
+                      return (
+                        <label className="admin-substage-field" key={f.key}>
+                          {f.label}
+                          <input
+                            type="number"
+                            className={`admin-input admin-num${err ? " invalid" : ""}`}
+                            aria-label={`${f.label} — tiểu cảnh giới #${si}, cảnh giới #${ri}`}
+                            value={Number.isNaN(value) ? "" : value}
+                            onChange={(e) =>
+                              setSubField(ri, si, f.key, e.target.value)
+                            }
+                            disabled={saving}
+                          />
+                          {err && (
+                            <span className="admin-field-error">
+                              {err.message}
+                            </span>
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="admin-substage-grid">
-                  {NUMERIC_FIELDS.map((f) => {
-                    const err = findError(errors, ri, si, f.key);
-                    const value = sub[f.key] as number;
-                    return (
-                      <label className="admin-substage-field" key={f.key}>
-                        {f.label}
-                        <input
-                          type="number"
-                          className={`admin-input admin-num${err ? " invalid" : ""}`}
-                          aria-label={`${f.label} — tiểu cảnh giới #${si}, cảnh giới #${ri}`}
-                          value={Number.isNaN(value) ? "" : value}
-                          onChange={(e) =>
-                            setSubField(ri, si, f.key, e.target.value)
-                          }
-                          disabled={saving}
-                        />
-                        {err && (
-                          <span className="admin-field-error">
-                            {err.message}
-                          </span>
-                        )}
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+              );
+            })}
 
             <div
               className="admin-toolbar"

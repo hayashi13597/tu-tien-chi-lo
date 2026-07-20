@@ -99,9 +99,10 @@ State machine, validation, and save flow are unchanged; only the presentation an
 selection model change.
 
 - **Master (left list)**: every realm as a selectable row — `#index`, name, sub-stage count,
-  and an error dot when that realm has validation errors. "+ Thêm cảnh giới" at top;
-  "Hoàn tác" / "Lưu tất cả" (disabled per existing rules: not dirty, has errors, or saving) +
-  dirty/saved-timestamp indicator pinned at the bottom of the rail. A global/top-level
+  and an error dot when that realm has validation errors. "+ Thêm cảnh giới" pinned at the
+  bottom of the list. "Hoàn tác" / "Lưu tất cả" (disabled per existing rules: not dirty, has
+  errors, or saving) + the dirty/saved-timestamp indicator live in the page **topbar** (title
+  left, actions right), consistent with the other admin pages. A global/top-level
   validation error (e.g. "≥1 realm") shows above the list.
 - **Detail (right pane)**: the selected realm — name field (with inline error), a "Xóa cảnh
   giới" action, then **one card per sub-stage**. Each card: the sub-stage name field + the 6
