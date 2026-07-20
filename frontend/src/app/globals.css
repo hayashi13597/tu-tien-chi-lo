@@ -1768,8 +1768,16 @@ body {
 
 .admin-pill-card {
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--surface), var(--surface-2));
+  backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-panel);
+  overflow: hidden;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.admin-pill-card:hover {
+  border-color: var(--border-bright);
 }
 
 .admin-pill-card.inactive {
@@ -1793,8 +1801,11 @@ body {
 }
 
 .admin-pill-glyph {
-  font-size: 1.4rem;
+  font-size: 1.6rem;
   line-height: 1;
+  /* Rarity color is applied inline from getRarityMeta; add a soft glow in the
+     same hue via currentColor so higher-rarity glyphs read as more radiant. */
+  filter: drop-shadow(0 0 6px currentColor);
 }
 
 .admin-pill-name {
@@ -1802,16 +1813,23 @@ body {
 }
 
 .admin-pill-rarity,
-.admin-pill-stat,
-.admin-pill-starter {
+.admin-pill-stat {
   font-size: 0.85rem;
   color: var(--muted);
+}
+
+.admin-pill-starter {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--jade);
+  color: var(--jade);
 }
 
 .admin-pill-off {
   margin-left: auto;
   font-size: 0.75rem;
-  padding: 0.15rem 0.5rem;
+  padding: 0.15rem 0.6rem;
   border-radius: 999px;
   border: 1px solid var(--red);
   color: #f6b8b8;
