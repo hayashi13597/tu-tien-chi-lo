@@ -19,8 +19,9 @@ export class RefreshAccessTokenUseCase {
   // store — a refresh token's only route to invalidation is expiring naturally.
   async execute(refreshToken: string): Promise<RefreshAccessTokenOutput> {
     let userId: string;
+    let tokenVersion: number;
     try {
-      ({ userId } = this.tokenService.verifyRefreshToken(refreshToken));
+      ({ userId, tokenVersion } = this.tokenService.verifyRefreshToken(refreshToken));
     } catch {
       throw new DomainError('INVALID_REFRESH_TOKEN', 'Invalid or expired refresh token');
     }
@@ -32,8 +33,15 @@ export class RefreshAccessTokenUseCase {
       throw new DomainError('INVALID_REFRESH_TOKEN', 'User no longer exists');
     }
 
+    // Revocation check: a logout bumps user.tokenVersion, so any refresh token
+    // signed before that (carrying an older version) is now rejected — this is
+    // what makes logout-everywhere actually invalidate stolen/old tokens.
+    if (tokenVersion !== user.tokenVersion) {
+      throw new DomainError('INVALID_REFRESH_TOKEN', 'Refresh token has been revoked');
+    }
+
     const token = this.tokenService.signAccessToken(user.id, user.role);
-    const newRefreshToken = this.tokenService.signRefreshToken(user.id);
+    const newRefreshToken = this.tokenService.signRefreshToken(user.id, user.tokenVersion);
     return { token, refreshToken: newRefreshToken };
   }
 }

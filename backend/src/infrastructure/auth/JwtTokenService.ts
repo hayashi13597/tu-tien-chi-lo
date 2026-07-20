@@ -31,7 +31,11 @@ export class JwtTokenService implements TokenService {
   }
 
   verifyAccessToken(token: string): { userId: string; role: string } {
-    const payload = jwt.verify(token, this.accessSecret) as { userId: string; role?: string; typ?: string; [key: string]: unknown };
+    // Pin the algorithm: jwt.sign() defaults to HS256 (HMAC), so verification
+    // must only accept HS256. Without this, jsonwebtoken accepts any algorithm
+    // the token's header declares — the classic alg-confusion foot-gun (e.g. a
+    // token could try to smuggle a different alg past a symmetric-secret check).
+    const payload = jwt.verify(token, this.accessSecret, { algorithms: ['HS256'] }) as { userId: string; role?: string; typ?: string; [key: string]: unknown };
     if (payload.typ !== 'access') {
       throw new Error('Token is not an access token');
     }
@@ -39,8 +43,11 @@ export class JwtTokenService implements TokenService {
     return { userId: payload.userId, role: payload.role ?? 'user' };
   }
 
-  signRefreshToken(userId: string): string {
-    return jwt.sign({ userId, jti: randomUUID(), typ: 'refresh' }, this.refreshSecret, { expiresIn: '7d' });
+  signRefreshToken(userId: string, tokenVersion: number): string {
+    // tokenVersion is the revocation lever: RefreshAccessTokenUseCase compares
+    // it against the user's current stored version and rejects the token once
+    // logout has bumped that counter (see UserRepository.incrementTokenVersion).
+    return jwt.sign({ userId, tokenVersion, jti: randomUUID(), typ: 'refresh' }, this.refreshSecret, { expiresIn: '7d' });
   }
 
   // Verifies exclusively against refreshSecret — a token signed with
@@ -52,11 +59,14 @@ export class JwtTokenService implements TokenService {
   // below is the same defense-in-depth backstop described in
   // signAccessToken, for the case where the two secrets are misconfigured
   // to be identical.
-  verifyRefreshToken(token: string): { userId: string } {
-    const payload = jwt.verify(token, this.refreshSecret) as { userId: string; typ?: string; [key: string]: unknown };
+  verifyRefreshToken(token: string): { userId: string; tokenVersion: number } {
+    // Same HS256 pin as verifyAccessToken — see the note there.
+    const payload = jwt.verify(token, this.refreshSecret, { algorithms: ['HS256'] }) as { userId: string; tokenVersion?: number; typ?: string; [key: string]: unknown };
     if (payload.typ !== 'refresh') {
       throw new Error('Token is not a refresh token');
     }
-    return { userId: payload.userId };
+    // Tokens minted before tokenVersion existed have no claim; treat as 0 so a
+    // legacy token still validates against a fresh user (whose version is 0).
+    return { userId: payload.userId, tokenVersion: payload.tokenVersion ?? 0 };
   }
 }

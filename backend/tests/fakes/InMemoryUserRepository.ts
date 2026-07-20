@@ -22,10 +22,19 @@ export class InMemoryUserRepository implements UserRepository {
       username: input.username,
       passwordHash: input.passwordHash,
       role: 'user',
+      tokenVersion: 0,
       createdAt: new Date(),
     };
     this.usersById.set(user.id, user);
     return user;
+  }
+
+  async incrementTokenVersion(id: string): Promise<number> {
+    const user = this.usersById.get(id);
+    if (!user) throw new Error(`user ${id} not found`);
+    const next = user.tokenVersion + 1;
+    this.usersById.set(id, { ...user, tokenVersion: next });
+    return next;
   }
 
   /** Test helper — not part of the port — to promote a seeded user. */

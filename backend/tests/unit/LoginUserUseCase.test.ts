@@ -20,7 +20,7 @@ describe('LoginUserUseCase', () => {
     const result = await useCase.execute({ username: 'dave', password: 'password123' });
 
     expect(result.token).toBe(`access-token-for-user:${registered.id}`);
-    expect(result.refreshToken).toBe(`refresh-token-for-${registered.id}`);
+    expect(result.refreshToken).toBe(`refresh-token-for-${registered.id}:v0`);
   });
 
   it('rejects an unknown username with INVALID_CREDENTIALS', async () => {

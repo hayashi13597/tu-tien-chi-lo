@@ -32,7 +32,7 @@ export class LoginUserUseCase {
     }
 
     const token = this.tokenService.signAccessToken(user.id, user.role);
-    const refreshToken = this.tokenService.signRefreshToken(user.id);
+    const refreshToken = this.tokenService.signRefreshToken(user.id, user.tokenVersion);
     return { token, refreshToken };
   }
 }

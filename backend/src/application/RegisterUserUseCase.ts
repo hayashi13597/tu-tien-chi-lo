@@ -42,7 +42,7 @@ export class RegisterUserUseCase {
     // round trip. The route decides what to expose in the JSON body — see
     // the Global Constraints note on never echoing the raw result object.
     const accessToken = this.tokenService.signAccessToken(user.id, user.role);
-    const refreshToken = this.tokenService.signRefreshToken(user.id);
+    const refreshToken = this.tokenService.signRefreshToken(user.id, user.tokenVersion);
 
     return { id: user.id, username: user.username, accessToken, refreshToken };
   }

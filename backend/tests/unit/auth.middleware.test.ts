@@ -58,7 +58,7 @@ describe('requireAuth middleware', () => {
   });
 
   it('rejects a refresh token presented as the access_token cookie with 401', () => {
-    const refreshToken = new FakeTokenService().signRefreshToken('user-123');
+    const refreshToken = new FakeTokenService().signRefreshToken('user-123', 0);
     return request(buildTestApp())
       .get('/protected')
       .set('Cookie', `access_token=${refreshToken}`)
