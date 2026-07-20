@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import jwt from 'jsonwebtoken';
 import { JwtTokenService } from '../../src/infrastructure/auth/JwtTokenService';
 
 describe('JwtTokenService', () => {
@@ -26,19 +27,29 @@ describe('JwtTokenService', () => {
       const service = new JwtTokenService('access-secret', 'refresh-secret');
       expect(() => service.verifyAccessToken('not-a-real-token')).toThrow();
     });
+
+    it('rejects an unsigned ("alg":"none") token even when the payload looks valid', () => {
+      // alg-confusion guard: pinning algorithms to HS256 means a token that
+      // declares alg:none (no signature) must not be accepted.
+      const service = new JwtTokenService('access-secret', 'refresh-secret');
+      const noneToken = jwt.sign({ userId: 'user-123', role: 'admin', typ: 'access' }, '', {
+        algorithm: 'none',
+      });
+      expect(() => service.verifyAccessToken(noneToken)).toThrow();
+    });
   });
 
   describe('refresh tokens', () => {
-    it('signs a refresh token that verifies back to the same userId', () => {
+    it('signs a refresh token that verifies back to the same userId and tokenVersion', () => {
       const service = new JwtTokenService('access-secret', 'refresh-secret');
-      const token = service.signRefreshToken('user-123');
-      expect(service.verifyRefreshToken(token)).toEqual({ userId: 'user-123' });
+      const token = service.signRefreshToken('user-123', 3);
+      expect(service.verifyRefreshToken(token)).toEqual({ userId: 'user-123', tokenVersion: 3 });
     });
 
     it('throws when verifying a refresh token signed with a different refresh secret', () => {
       const signer = new JwtTokenService('access-secret', 'refresh-secret-a');
       const verifier = new JwtTokenService('access-secret', 'refresh-secret-b');
-      const token = signer.signRefreshToken('user-123');
+      const token = signer.signRefreshToken('user-123', 0);
       expect(() => verifier.verifyRefreshToken(token)).toThrow();
     });
   });
@@ -46,7 +57,7 @@ describe('JwtTokenService', () => {
   describe('secret isolation between token kinds', () => {
     it('rejects a refresh token presented to verifyAccessToken when secrets differ', () => {
       const service = new JwtTokenService('access-secret', 'refresh-secret');
-      const refreshToken = service.signRefreshToken('user-123');
+      const refreshToken = service.signRefreshToken('user-123', 0);
       expect(() => service.verifyAccessToken(refreshToken)).toThrow();
     });
 
@@ -68,7 +79,7 @@ describe('JwtTokenService', () => {
 
     it('rejects a refresh token presented to verifyAccessToken even if both secrets happen to be identical (typ backstop)', () => {
       const service = new JwtTokenService('same-secret', 'same-secret');
-      const refreshToken = service.signRefreshToken('user-123');
+      const refreshToken = service.signRefreshToken('user-123', 0);
       expect(() => service.verifyAccessToken(refreshToken)).toThrow();
     });
   });
@@ -88,8 +99,8 @@ describe('JwtTokenService', () => {
 
     it('signs two different refresh tokens for the same userId, even issued in the same instant', () => {
       const service = new JwtTokenService('access-secret', 'refresh-secret');
-      const first = service.signRefreshToken('user-123');
-      const second = service.signRefreshToken('user-123');
+      const first = service.signRefreshToken('user-123', 0);
+      const second = service.signRefreshToken('user-123', 0);
       expect(first).not.toBe(second);
     });
   });
@@ -104,7 +115,7 @@ describe('JwtTokenService', () => {
 
     it('signs a refresh token with a 7-day expiry', () => {
       const service = new JwtTokenService('access-secret', 'refresh-secret');
-      const token = service.signRefreshToken('user-123');
+      const token = service.signRefreshToken('user-123', 0);
       const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
       expect(payload.exp - payload.iat).toBe(7 * 24 * 60 * 60);
     });

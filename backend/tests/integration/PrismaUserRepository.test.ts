@@ -31,4 +31,17 @@ describe('PrismaUserRepository', () => {
   it('returns null for an unknown username', async () => {
     expect(await repository.findByUsername('nobody')).toBeNull();
   });
+
+  it('starts a new user at tokenVersion 0 and increments it atomically', async () => {
+    const created = await repository.create({ username: 'alice', passwordHash: 'hashed' });
+    expect(created.tokenVersion).toBe(0);
+
+    const afterFirst = await repository.incrementTokenVersion(created.id);
+    expect(afterFirst).toBe(1);
+    const afterSecond = await repository.incrementTokenVersion(created.id);
+    expect(afterSecond).toBe(2);
+
+    const reread = await repository.findById(created.id);
+    expect(reread?.tokenVersion).toBe(2);
+  });
 });

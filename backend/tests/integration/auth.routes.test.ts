@@ -136,4 +136,21 @@ describe('POST /auth/logout', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ message: 'Logged out' });
   });
+
+  it('revokes a stolen refresh token server-side: replaying the pre-logout token after logout is rejected', async () => {
+    const agent = request.agent(app);
+    const registerRes = await agent.post('/auth/register').send({ username: 'jade', password: 'password123' });
+    // Capture the raw refresh cookie value as an attacker who copied it would.
+    const stolenRefreshCookie = findCookie(registerRes, 'refresh_token')!.split(';')[0];
+
+    // The legitimate user logs out (bumping their tokenVersion server-side).
+    await agent.post('/auth/logout');
+
+    // The stolen token is presented on a brand-new request (its own cookie jar),
+    // so this does NOT rely on the logout having cleared the victim's jar — it
+    // proves the token itself no longer validates.
+    const replayRes = await request(app).post('/auth/refresh').set('Cookie', stolenRefreshCookie);
+    expect(replayRes.status).toBe(401);
+    expect(replayRes.body.error.code).toBe('INVALID_REFRESH_TOKEN');
+  });
 });

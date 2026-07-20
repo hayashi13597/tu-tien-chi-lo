@@ -14,3 +14,16 @@ describe('CORS', () => {
     await prisma.$disconnect();
   });
 });
+
+describe('security headers (helmet)', () => {
+  it('sets helmet defaults such as X-Content-Type-Options: nosniff', async () => {
+    const app = createApp();
+    const res = await request(app).get('/health');
+
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
+    // helmet removes the framework-fingerprinting X-Powered-By header.
+    expect(res.headers['x-powered-by']).toBeUndefined();
+
+    await prisma.$disconnect();
+  });
+});

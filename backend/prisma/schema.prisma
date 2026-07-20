@@ -18,6 +18,10 @@ model User {
   username     String     @unique
   passwordHash String
   role         String     @default("user") // "user" | "admin"
+  // Bumped on logout to revoke every outstanding refresh token for this user
+  // (logout-everywhere). A refresh token carries the tokenVersion it was signed
+  // with; RefreshAccessTokenUseCase rejects it once this counter has moved on.
+  tokenVersion Int        @default(0)
   createdAt    DateTime   @default(now())
   character    Character?
   inventory    InventoryItem[]

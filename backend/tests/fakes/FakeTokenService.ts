@@ -14,14 +14,16 @@ export class FakeTokenService implements TokenService {
     return { userId, role };
   }
 
-  signRefreshToken(userId: string): string {
-    return `refresh-token-for-${userId}`;
+  signRefreshToken(userId: string, tokenVersion: number): string {
+    return `refresh-token-for-${userId}:v${tokenVersion}`;
   }
 
-  verifyRefreshToken(token: string): { userId: string } {
+  verifyRefreshToken(token: string): { userId: string; tokenVersion: number } {
     if (!token.startsWith('refresh-token-for-')) {
       throw new Error('invalid token');
     }
-    return { userId: token.replace('refresh-token-for-', '') };
+    const body = token.replace('refresh-token-for-', '');
+    const [userId, versionPart] = body.split(':v');
+    return { userId, tokenVersion: Number(versionPart) };
   }
 }

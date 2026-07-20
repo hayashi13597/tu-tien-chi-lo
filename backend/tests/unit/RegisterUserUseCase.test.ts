@@ -18,7 +18,7 @@ describe('RegisterUserUseCase', () => {
     expect(result.username).toBe('alice');
     expect(typeof result.id).toBe('string');
     expect(result.accessToken).toBe(`access-token-for-user:${result.id}`);
-    expect(result.refreshToken).toBe(`refresh-token-for-${result.id}`);
+    expect(result.refreshToken).toBe(`refresh-token-for-${result.id}:v0`);
   });
 
   it('rejects a duplicate username with USERNAME_TAKEN', async () => {

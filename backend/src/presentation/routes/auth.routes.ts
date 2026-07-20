@@ -4,22 +4,28 @@ import { RegisterUserUseCase } from '../../application/RegisterUserUseCase';
 import { LoginUserUseCase } from '../../application/LoginUserUseCase';
 import { RefreshAccessTokenUseCase } from '../../application/RefreshAccessTokenUseCase';
 import { GetCurrentUserUseCase } from '../../application/GetCurrentUserUseCase';
+import { LogoutUseCase } from '../../application/LogoutUseCase';
 import { DomainError } from '../../domain/errors';
 import { setAuthCookies, clearAuthCookies } from '../cookies';
 import { AuthedRequest } from '../middleware/auth';
+import { authRateLimiter } from '../middleware/rateLimit';
 
 export interface AuthRouterDeps {
   registerUserUseCase: RegisterUserUseCase;
   loginUserUseCase: LoginUserUseCase;
   refreshAccessTokenUseCase: RefreshAccessTokenUseCase;
   getCurrentUserUseCase: GetCurrentUserUseCase;
+  logoutUseCase: LogoutUseCase;
   requireAuth: RequestHandler;
 }
 
 export function createAuthRouter(deps: AuthRouterDeps): Router {
   const router = Router();
 
-  router.post('/register', async (req, res, next) => {
+  // Rate-limit the unauthenticated, attackable endpoints only. /me is behind
+  // requireAuth and gets polled by the frontend, /logout is idempotent — neither
+  // is a brute-force surface, so both stay off the limiter.
+  router.post('/register', authRateLimiter, async (req, res, next) => {
     try {
       const parsed = registerSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -36,7 +42,7 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
     }
   });
 
-  router.post('/login', async (req, res, next) => {
+  router.post('/login', authRateLimiter, async (req, res, next) => {
     try {
       const parsed = loginSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -52,7 +58,7 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
     }
   });
 
-  router.post('/refresh', async (req, res, next) => {
+  router.post('/refresh', authRateLimiter, async (req, res, next) => {
     try {
       // Cookie only, no header fallback: the whole point of this endpoint is
       // to work once the access token has already expired.
@@ -68,13 +74,19 @@ export function createAuthRouter(deps: AuthRouterDeps): Router {
     }
   });
 
-  // No use case, no auth, no DB read: logout has zero business logic (it's
-  // idempotent and always succeeds, whether or not the caller had a session),
-  // so it's handled directly here rather than through an application-layer
-  // indirection with nothing to orchestrate.
-  router.post('/logout', (_req, res) => {
-    clearAuthCookies(res);
-    res.status(200).json({ message: 'Logged out' });
+  // No auth required and always succeeds (idempotent), so it stays a thin route.
+  // It DOES have one side effect via the use case: if a valid refresh_token
+  // cookie is present, the user's tokenVersion is bumped so every outstanding
+  // refresh token is revoked (logout-everywhere). Cookies are cleared and 200
+  // returned regardless of whether that revocation had anything to act on.
+  router.post('/logout', async (req, res, next) => {
+    try {
+      await deps.logoutUseCase.execute(req.cookies?.refresh_token as string | undefined);
+      clearAuthCookies(res);
+      res.status(200).json({ message: 'Logged out' });
+    } catch (err) {
+      next(err);
+    }
   });
 
   // Who am I? Used by the frontend to gate /admin and show admin-only menu

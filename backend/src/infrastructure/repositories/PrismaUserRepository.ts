@@ -24,4 +24,14 @@ export class PrismaUserRepository implements UserRepository {
       },
     });
   }
+
+  async incrementTokenVersion(id: string): Promise<number> {
+    // Atomic DB-side increment (not read-modify-write) so concurrent logouts
+    // can't clobber each other. Returns the new version.
+    const updated = await this.client.user.update({
+      where: { id },
+      data: { tokenVersion: { increment: 1 } },
+    });
+    return updated.tokenVersion;
+  }
 }
