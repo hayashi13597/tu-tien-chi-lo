@@ -1392,13 +1392,56 @@ body {
   font-size: 1.1rem;
 }
 
+.admin-skeleton {
+  padding: var(--space-5) var(--space-8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--surface), var(--surface-2));
+  backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-panel);
+  animation: admin-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes admin-pulse {
+  0%,
+  100% {
+    opacity: 0.65;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 .admin-shell {
+  position: relative;
   min-height: 100vh;
-  background: var(--bg);
   color: var(--fg);
 }
 
+/* Subtle cosmic backdrop — lower intensity than the game's .cosmic-bg so it
+   never competes with the data. Fixed so it stays put while content scrolls. */
+.admin-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(
+      ellipse at 15% 10%,
+      rgba(168, 85, 247, 0.1) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse at 85% 90%,
+      rgba(93, 217, 177, 0.07) 0%,
+      transparent 55%
+    ), linear-gradient(180deg, #08050f 0%, #120822 60%, #08050f 100%);
+}
+
 .admin-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1406,31 +1449,50 @@ body {
   flex-wrap: wrap;
   padding: var(--space-4) var(--space-6);
   border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-panel);
 }
 
 .admin-title {
+  font-family: var(--font-zcool), "ZCOOL XiaoWei", serif;
   font-size: 1.4rem;
   color: var(--gold);
+  text-shadow: 0 0 12px var(--gold-glow);
 }
 
 .admin-nav {
   display: flex;
   gap: var(--space-5);
+  flex-wrap: wrap;
 }
 
 .admin-nav a {
-  color: var(--fg);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  color: var(--fg-dim);
   text-decoration: none;
   padding: var(--space-2) 2px;
   border-bottom: 2px solid transparent;
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+
+.admin-nav a:hover {
+  color: var(--gold);
 }
 
 .admin-nav a[aria-current="page"] {
   color: var(--gold);
   border-bottom-color: var(--gold);
+  text-shadow: 0 0 10px var(--gold-glow);
 }
 
 .admin-main {
+  position: relative;
   max-width: 1100px;
   margin: 0 auto;
   padding: var(--space-6);
