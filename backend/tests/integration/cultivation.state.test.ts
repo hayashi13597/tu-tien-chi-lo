@@ -69,6 +69,14 @@ describe('GET /cultivation/state', () => {
   it('reflects a consumed cultivation buff and boost in the state', async () => {
     const agent = request.agent(app);
     await agent.post('/auth/register').send({ username: 'buff-active', password: 'password123' });
+    // Starter inventory is empty, so grant the pills this test consumes directly.
+    const user = await prisma.user.findUnique({ where: { username: 'buff-active' } });
+    await prisma.inventoryItem.createMany({
+      data: [
+        { userId: user!.id, pillId: 'tinh-tam-dan', quantity: 1 },
+        { userId: user!.id, pillId: 'pha-canh-dan', quantity: 1 },
+      ],
+    });
     await agent.post('/pills/consume').send({ pillId: 'tinh-tam-dan' }); // ×1.5, 120s
     await agent.post('/pills/consume').send({ pillId: 'pha-canh-dan' }); // +15%
     const res = await agent.get('/cultivation/state');

@@ -24,13 +24,18 @@ describe('PrismaPillRepository', () => {
     await prisma.$disconnect();
   });
 
-  it('seeds starter inventory and lists it', async () => {
+  it('seeds starter inventory from pills with a positive starterQuantity', async () => {
+    // No seeded pill grants a starter quantity anymore, so add one for this test.
+    await prisma.pill.upsert({
+      where: { id: 'test-starter-list' },
+      create: { id: 'test-starter-list', name: 'S', glyph: 's', rarity: 0, effectKind: 'linhKhi', amount: 1, desc: 'd', active: true, starterQuantity: 5 },
+      update: { active: true, starterQuantity: 5 },
+    });
     const userId = await makeUser();
     await repo.seedStarterInventory(userId);
     const inv = await repo.listInventory(userId);
-    expect(inv.length).toBe(8);
-    const hoiKhi = inv.find((e) => e.pill.id === 'hoi-khi-dan');
-    expect(hoiKhi?.quantity).toBe(5);
+    const granted = inv.find((e) => e.pill.id === 'test-starter-list');
+    expect(granted?.quantity).toBe(5);
   });
 
   it('decrementOne succeeds while quantity > 0 and fails at 0', async () => {
@@ -105,7 +110,7 @@ describe('PrismaPillRepository', () => {
     const rows = await prisma.inventoryItem.findMany({ where: { userId } });
     const byPill = new Map(rows.map((r) => [r.pillId, r.quantity]));
     expect(byPill.get('test-starter')).toBe(7);      // custom starter granted
-    expect(byPill.get('hoi-khi-dan')).toBe(5);        // seeded starters still granted
+    expect(byPill.has('hoi-khi-dan')).toBe(false);    // seeded pills grant nothing (starterQuantity 0)
     expect(byPill.has('test-starter-off')).toBe(false); // inactive: not granted
   });
 });

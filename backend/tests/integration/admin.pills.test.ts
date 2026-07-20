@@ -156,7 +156,7 @@ describe('/admin/pills', () => {
     const playerToken = await registerAndLogin('carol');
     const inv = await request(app).get('/pills/inventory').set('Authorization', `Bearer ${playerToken}`);
     expect(inv.body.find((p: { id: string }) => p.id === 'test-starter')?.quantity).toBe(7);
-    // The classic seeded starters are still granted too.
-    expect(inv.body.find((p: { id: string }) => p.id === 'hoi-khi-dan')?.quantity).toBe(5);
+    // Seeded pills grant nothing now (starterQuantity 0) — only admin-set starters appear.
+    expect(inv.body.find((p: { id: string }) => p.id === 'hoi-khi-dan')).toBeUndefined();
   });
 });
