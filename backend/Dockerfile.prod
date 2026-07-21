@@ -2,7 +2,7 @@
 # via `npm run start` (node dist/server.js) — unlike the dev Dockerfile which
 # runs `tsx watch`. openssl is required for Prisma's engine on Alpine (see the
 # note in the dev Dockerfile / schema.prisma binaryTargets).
-FROM node:20-alpine
+FROM node:24-alpine
 RUN apk add --no-cache openssl
 WORKDIR /app
 COPY package*.json ./

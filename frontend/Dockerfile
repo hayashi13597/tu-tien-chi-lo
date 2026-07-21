@@ -2,7 +2,7 @@
 # NOTE: NEXT_PUBLIC_API_BASE is inlined into the client bundle at BUILD time,
 # so it must be passed as a build arg (not a runtime env). Rebuild the image if
 # the API URL changes.
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 # Pin pnpm to match the repo (pnpm-workspace.yaml uses v10+ `allowBuilds`);
 # corepack's bundled version can be too old to parse it.
 RUN corepack enable && corepack prepare pnpm@11.7.0 --activate
@@ -15,7 +15,7 @@ ENV NEXT_PUBLIC_API_BASE=$NEXT_PUBLIC_API_BASE
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build
 
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
