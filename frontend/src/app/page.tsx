@@ -136,7 +136,7 @@ export default function Home() {
                 ? `Buff kích hoạt: ${item.name}`
                 : item.effectKind === "breakthroughBoost"
                   ? `+${item.bonusPct}% đột phá`
-                  : "Trạng thái trừng phạt đã được gỡ";
+                  : "Đã hồi phục khỏi trọng thương";
           addToast(
             "Dùng Đan",
             msg,
@@ -164,7 +164,7 @@ export default function Home() {
         return { disabled: true, reason: "Đã đạt cực cảnh" };
       }
       if (kind === "clearPunishment" && punishmentRemaining === null) {
-        return { disabled: true, reason: "Không bị trừng phạt" };
+        return { disabled: true, reason: "Không bị trọng thương" };
       }
       return { disabled: false };
     },
@@ -210,7 +210,7 @@ export default function Home() {
       setPhase("failure");
       addToast(
         "Độ Kiếp Thất Bại",
-        "Tổn thất linh khí, cần tu luyện lại",
+        "Độ kiếp thất bại, bạn đã bị trọng thương",
         "danger",
       );
       setTimeout(() => setPhase("idle"), 1500);
