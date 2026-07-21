@@ -25,6 +25,7 @@ model User {
   createdAt    DateTime   @default(now())
   character    Character?
   inventory    InventoryItem[]
+  redemptions  Redemption[]
 }
 
 model Character {
@@ -71,6 +72,7 @@ model Pill {
   // Replaces the old hardcoded STARTER_INVENTORY constant.
   starterQuantity Int         @default(0)
   inventory   InventoryItem[]
+  redeemRewards RedeemCodeReward[]
 }
 
 model InventoryItem {
@@ -99,4 +101,38 @@ model RealmStage {
   punishmentSeconds Int
 
   @@unique([realmMajor, realmSub])
+}
+
+model RedeemCode {
+  id             String   @id @default(uuid())
+  code           String   @unique
+  active         Boolean  @default(true)
+  maxRedemptions Int
+  redeemedCount  Int      @default(0)
+  expiresAt      DateTime?
+  createdAt      DateTime @default(now())
+  rewards        RedeemCodeReward[]
+  redemptions    Redemption[]
+}
+
+model RedeemCodeReward {
+  id       String     @id @default(uuid())
+  codeId   String
+  code     RedeemCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  pillId   String
+  pill     Pill       @relation(fields: [pillId], references: [id])
+  quantity Int
+
+  @@unique([codeId, pillId])
+}
+
+model Redemption {
+  id         String     @id @default(uuid())
+  codeId     String
+  code       RedeemCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  redeemedAt DateTime   @default(now())
+
+  @@unique([codeId, userId])
 }

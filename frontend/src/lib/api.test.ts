@@ -259,3 +259,58 @@ describe("admin pill api", () => {
     expect(JSON.parse(init?.body as string).id).toBeUndefined();
   });
 });
+
+describe("redeem api", () => {
+  it("redeemCode POSTs the code and returns rewards", async () => {
+    const result = {
+      rewards: [{ pillId: "p1", name: "Pill", glyph: "x", quantity: 3 }],
+    };
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, result),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { redeemCode } = await import("./api");
+    const data = await redeemCode("TEST2026");
+    expect(data.rewards[0].pillId).toBe("p1");
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain("/redeem");
+    expect(init?.method).toBe("POST");
+    expect(JSON.parse(init?.body as string)).toEqual({ code: "TEST2026" });
+  });
+
+  it("fetchAdminCodes GETs /admin/codes", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, { codes: [] }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { fetchAdminCodes } = await import("./api");
+    const data = await fetchAdminCodes();
+    expect(data.codes).toEqual([]);
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/admin/codes");
+  });
+
+  it("updateAdminCode PUTs to /admin/codes/:id without id/code/redeemedCount in body", async () => {
+    const body = {
+      active: true,
+      maxRedemptions: 5,
+      expiresAt: null,
+      rewards: [],
+    };
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, { id: "c1", code: "X", redeemedCount: 0, ...body }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { updateAdminCode } = await import("./api");
+    await updateAdminCode("c1", body);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain("/admin/codes/c1");
+    expect(init?.method).toBe("PUT");
+    const parsed = JSON.parse(init?.body as string);
+    expect(parsed.id).toBeUndefined();
+    expect(parsed.code).toBeUndefined();
+    expect(parsed.redeemedCount).toBeUndefined();
+  });
+});

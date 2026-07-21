@@ -1,5 +1,5 @@
-import type { NextConfig } from "next";
 import path from "node:path";
+import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV === "development";
 

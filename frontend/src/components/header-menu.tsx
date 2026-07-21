@@ -5,6 +5,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   CauldronIcon,
   CloseIcon,
+  GiftIcon,
   LogoutIcon,
   MenuIcon,
   ShieldIcon,
@@ -13,6 +14,7 @@ import { useAuth } from "@/lib/auth-context";
 
 interface HeaderMenuProps {
   onOpenPills: () => void;
+  onOpenRedeem: () => void;
   onLogout: () => void;
 }
 
@@ -21,7 +23,11 @@ interface HeaderMenuProps {
 // header readable. Desktop vs mobile is a pure CSS-media decision (see
 // globals.css) so this stays SSR-safe — no window measurement, no hydration
 // mismatch. The dropdown is only interactive on mobile where it's visible.
-export function HeaderMenu({ onOpenPills, onLogout }: HeaderMenuProps) {
+export function HeaderMenu({
+  onOpenPills,
+  onOpenRedeem,
+  onLogout,
+}: HeaderMenuProps) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownId = useId();
@@ -36,6 +42,11 @@ export function HeaderMenu({ onOpenPills, onLogout }: HeaderMenuProps) {
     close();
     onOpenPills();
   }, [close, onOpenPills]);
+
+  const handleRedeem = useCallback(() => {
+    close();
+    onOpenRedeem();
+  }, [close, onOpenRedeem]);
 
   const handleAdmin = useCallback(() => {
     close();
@@ -74,6 +85,10 @@ export function HeaderMenu({ onOpenPills, onLogout }: HeaderMenuProps) {
           <CauldronIcon />
           <span>Đan Phòng</span>
         </button>
+        <button type="button" className="header-action" onClick={onOpenRedeem}>
+          <GiftIcon />
+          <span>Nhập Code</span>
+        </button>
         {isAdmin && (
           <button type="button" className="header-action" onClick={handleAdmin}>
             <ShieldIcon />
@@ -109,6 +124,15 @@ export function HeaderMenu({ onOpenPills, onLogout }: HeaderMenuProps) {
             >
               <CauldronIcon />
               <span>Đan Phòng</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className="header-menu-item"
+              onClick={handleRedeem}
+            >
+              <GiftIcon />
+              <span>Nhập Code</span>
             </button>
             {isAdmin && (
               <button

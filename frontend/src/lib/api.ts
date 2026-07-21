@@ -1,11 +1,13 @@
 import type {
   AdminPillDTO,
+  AdminRedeemCodeDTO,
   AdminStats,
   ApiError,
   CultivationState,
   Me,
   PillInventoryItem,
   RealmConfigDTO,
+  RedeemResult,
 } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:5000";
@@ -130,6 +132,40 @@ export function updateAdminPill(
   body: Omit<AdminPillDTO, "id">,
 ): Promise<AdminPillDTO> {
   return apiFetch<AdminPillDTO>(`/admin/pills/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+}
+
+// POST /redeem — player exchanges a code for pills.
+export function redeemCode(code: string): Promise<RedeemResult> {
+  return apiFetch<RedeemResult>("/redeem", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+}
+
+// GET /admin/codes — full catalog including inactive.
+export function fetchAdminCodes(): Promise<{ codes: AdminRedeemCodeDTO[] }> {
+  return apiFetch<{ codes: AdminRedeemCodeDTO[] }>("/admin/codes");
+}
+
+// POST /admin/codes — create a new code.
+export function createAdminCode(
+  body: Omit<AdminRedeemCodeDTO, "redeemedCount">,
+): Promise<AdminRedeemCodeDTO> {
+  return apiFetch<AdminRedeemCodeDTO>("/admin/codes", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+// PUT /admin/codes/:id — full-row update; id and code travel in URL/existing record only.
+export function updateAdminCode(
+  id: string,
+  body: Omit<AdminRedeemCodeDTO, "id" | "code" | "redeemedCount">,
+): Promise<AdminRedeemCodeDTO> {
+  return apiFetch<AdminRedeemCodeDTO>(`/admin/codes/${id}`, {
     method: "PUT",
     body: JSON.stringify(body),
   });
