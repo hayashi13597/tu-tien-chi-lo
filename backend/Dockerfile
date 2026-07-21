@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:24-alpine
 WORKDIR /app
 # Prisma's runtime OpenSSL-version detection (used to pick the right query
 # engine binary) needs the `openssl` CLI present; without it, on newer Alpine
