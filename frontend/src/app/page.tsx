@@ -18,6 +18,7 @@ import {
 } from "@/components/particle-canvas";
 import { PillModal } from "@/components/pill-modal";
 import { RealmPath } from "@/components/realm-path";
+import { RedeemModal } from "@/components/redeem-modal";
 import { StatsPanel } from "@/components/stats-panel";
 import { ToastContainer } from "@/components/toast-container";
 import { useCultivationState } from "@/hooks/use-cultivation-state";
@@ -27,7 +28,11 @@ import { useAuth } from "@/lib/auth-context";
 import { formatSeconds } from "@/lib/format";
 import { getRarityMeta } from "@/lib/pill-constants";
 import { getRealmMeta, getSubStageName } from "@/lib/realm-constants";
-import type { BreakthroughResult, PillEffectKind } from "@/lib/types";
+import type {
+  BreakthroughResult,
+  PillEffectKind,
+  RedeemResult,
+} from "@/lib/types";
 
 export default function Home() {
   const { isAuthenticated, isLoading, logout } = useAuth();
@@ -49,6 +54,7 @@ export default function Home() {
   const { toasts, addToast, removeToast } = useToast();
   const [phase, setPhase] = useState<BreakthroughPhase>("idle");
   const [pillModalOpen, setPillModalOpen] = useState(false);
+  const [redeemModalOpen, setRedeemModalOpen] = useState(false);
   const {
     inventory,
     loading: inventoryLoading,
@@ -165,6 +171,19 @@ export default function Home() {
     [state, punishmentRemaining],
   );
 
+  const handleRedeemSuccess = useCallback(
+    (result: RedeemResult) => {
+      particleRef.current?.spawnBurst("#ffd76a", 40);
+      addToast(
+        "Đổi Code Thành Công",
+        result.rewards.map((r) => `${r.name} ×${r.quantity}`).join(", "),
+        "success",
+      );
+      refetch();
+    },
+    [addToast, refetch],
+  );
+
   // Called when the tribulation animation finishes: resolve the stashed result.
   const handleTribulationComplete = useCallback(() => {
     const result = breakthroughResultRef.current;
@@ -251,6 +270,7 @@ export default function Home() {
         <div className="cultivator-info">
           <HeaderMenu
             onOpenPills={() => setPillModalOpen(true)}
+            onOpenRedeem={() => setRedeemModalOpen(true)}
             onLogout={handleLogout}
           />
         </div>
@@ -333,6 +353,12 @@ export default function Home() {
         onClose={() => setPillModalOpen(false)}
         onUse={handleUsePill}
         isDisabled={isPillDisabled}
+      />
+
+      <RedeemModal
+        open={redeemModalOpen}
+        onClose={() => setRedeemModalOpen(false)}
+        onSuccess={handleRedeemSuccess}
       />
     </>
   );

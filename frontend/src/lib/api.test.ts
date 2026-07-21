@@ -262,8 +262,13 @@ describe("admin pill api", () => {
 
 describe("redeem api", () => {
   it("redeemCode POSTs the code and returns rewards", async () => {
-    const result = { rewards: [{ pillId: "p1", name: "Pill", glyph: "x", quantity: 3 }] };
-    const fetchMock = vi.fn(async () => jsonResponse(200, result));
+    const result = {
+      rewards: [{ pillId: "p1", name: "Pill", glyph: "x", quantity: 3 }],
+    };
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, result),
+    );
     vi.stubGlobal("fetch", fetchMock);
     const { redeemCode } = await import("./api");
     const data = await redeemCode("TEST2026");
@@ -275,7 +280,10 @@ describe("redeem api", () => {
   });
 
   it("fetchAdminCodes GETs /admin/codes", async () => {
-    const fetchMock = vi.fn(async () => jsonResponse(200, { codes: [] }));
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, { codes: [] }),
+    );
     vi.stubGlobal("fetch", fetchMock);
     const { fetchAdminCodes } = await import("./api");
     const data = await fetchAdminCodes();
@@ -284,8 +292,16 @@ describe("redeem api", () => {
   });
 
   it("updateAdminCode PUTs to /admin/codes/:id without id/code/redeemedCount in body", async () => {
-    const body = { active: true, maxRedemptions: 5, expiresAt: null, rewards: [] };
-    const fetchMock = vi.fn(async () => jsonResponse(200, { id: "c1", code: "X", redeemedCount: 0, ...body }));
+    const body = {
+      active: true,
+      maxRedemptions: 5,
+      expiresAt: null,
+      rewards: [],
+    };
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, { id: "c1", code: "X", redeemedCount: 0, ...body }),
+    );
     vi.stubGlobal("fetch", fetchMock);
     const { updateAdminCode } = await import("./api");
     await updateAdminCode("c1", body);
