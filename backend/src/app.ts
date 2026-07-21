@@ -9,6 +9,7 @@ import { PrismaCharacterRepository } from './infrastructure/repositories/PrismaC
 import { PrismaPillRepository } from './infrastructure/repositories/PrismaPillRepository';
 import { PrismaRealmConfigRepository } from './infrastructure/repositories/PrismaRealmConfigRepository';
 import { PrismaStatsRepository } from './infrastructure/repositories/PrismaStatsRepository';
+import { PrismaRedeemCodeRepository } from './infrastructure/repositories/PrismaRedeemCodeRepository';
 import { RealmConfigProvider } from './infrastructure/config/RealmConfigProvider';
 import { BcryptPasswordHasher } from './infrastructure/auth/BcryptPasswordHasher';
 import { JwtTokenService } from './infrastructure/auth/JwtTokenService';
@@ -28,10 +29,15 @@ import { CreatePillUseCase } from './application/CreatePillUseCase';
 import { UpdatePillUseCase } from './application/UpdatePillUseCase';
 import { GetCurrentUserUseCase } from './application/GetCurrentUserUseCase';
 import { GetAdminStatsUseCase } from './application/GetAdminStatsUseCase';
+import { RedeemCodeUseCase } from './application/RedeemCodeUseCase';
+import { ListRedeemCodesUseCase } from './application/ListRedeemCodesUseCase';
+import { CreateRedeemCodeUseCase } from './application/CreateRedeemCodeUseCase';
+import { UpdateRedeemCodeUseCase } from './application/UpdateRedeemCodeUseCase';
 import { createAuthRouter } from './presentation/routes/auth.routes';
 import { createCultivationRouter } from './presentation/routes/cultivation.routes';
 import { createPillsRouter } from './presentation/routes/pills.routes';
 import { createAdminRouter } from './presentation/routes/admin.routes';
+import { createRedeemRouter } from './presentation/routes/redeem.routes';
 import { createRequireAuth } from './presentation/middleware/auth';
 import { errorHandler } from './presentation/middleware/errorHandler';
 
@@ -52,6 +58,7 @@ export function createApp(overrides: AppOverrides = {}) {
   const realmConfigRepository = new PrismaRealmConfigRepository(client);
   const realmConfigProvider = new RealmConfigProvider(realmConfigRepository);
   const statsRepository = new PrismaStatsRepository(client);
+  const redeemCodeRepository = new PrismaRedeemCodeRepository(client);
   const passwordHasher = new BcryptPasswordHasher();
 
   const jwtSecret = process.env.JWT_SECRET as string;
@@ -104,6 +111,10 @@ export function createApp(overrides: AppOverrides = {}) {
   const updatePillUseCase = new UpdatePillUseCase(pillRepository);
   const getCurrentUserUseCase = new GetCurrentUserUseCase(userRepository);
   const getAdminStatsUseCase = new GetAdminStatsUseCase(statsRepository, realmConfigProvider);
+  const redeemCodeUseCase = new RedeemCodeUseCase(redeemCodeRepository, pillRepository);
+  const listRedeemCodesUseCase = new ListRedeemCodesUseCase(redeemCodeRepository);
+  const createRedeemCodeUseCase = new CreateRedeemCodeUseCase(redeemCodeRepository);
+  const updateRedeemCodeUseCase = new UpdateRedeemCodeUseCase(redeemCodeRepository);
 
   const requireAuth = createRequireAuth(tokenService);
 
@@ -145,9 +156,10 @@ export function createApp(overrides: AppOverrides = {}) {
     '/pills',
     createPillsRouter({ getInventoryUseCase, consumePillUseCase, requireAuth }),
   );
+  app.use('/redeem', createRedeemRouter({ redeemCodeUseCase, requireAuth }));
   app.use(
     '/admin',
-    createAdminRouter({ updateRealmConfigUseCase, getAdminStatsUseCase, listPillsAdminUseCase, createPillUseCase, updatePillUseCase, realmConfigSource: realmConfigProvider, realmConfigReloader: realmConfigProvider, requireAuth }),
+    createAdminRouter({ updateRealmConfigUseCase, getAdminStatsUseCase, listPillsAdminUseCase, createPillUseCase, updatePillUseCase, realmConfigSource: realmConfigProvider, realmConfigReloader: realmConfigProvider, listRedeemCodesUseCase, createRedeemCodeUseCase, updateRedeemCodeUseCase, requireAuth }),
   );
 
   app.use(errorHandler);

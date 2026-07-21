@@ -22,6 +22,13 @@ const STATUS_BY_CODE: Record<string, number> = {
   INVALID_PILL_CONFIG: 400,
   PILL_ID_TAKEN: 409,
   USER_NOT_FOUND: 401,
+  REDEEM_CODE_NOT_FOUND: 404,
+  REDEEM_CODE_INACTIVE: 400,
+  REDEEM_CODE_EXPIRED: 400,
+  REDEEM_CODE_ALREADY_USED: 409,
+  REDEEM_CODE_EXHAUSTED: 409,
+  REDEEM_CODE_TAKEN: 409,
+  INVALID_REDEEM_CODE: 400,
 };
 
 export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction) {

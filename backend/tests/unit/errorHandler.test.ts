@@ -30,6 +30,15 @@ function buildTestApp() {
   app.get('/boom-pill-id-taken', () => {
     throw new DomainError('PILL_ID_TAKEN', 'id already exists');
   });
+  app.get('/boom-redeem-not-found', () => {
+    throw new DomainError('REDEEM_CODE_NOT_FOUND', 'not found');
+  });
+  app.get('/boom-redeem-already-used', () => {
+    throw new DomainError('REDEEM_CODE_ALREADY_USED', 'already used');
+  });
+  app.get('/boom-invalid-redeem-code', () => {
+    throw new DomainError('INVALID_REDEEM_CODE', 'bad config');
+  });
   app.get('/boom-unexpected', () => {
     throw new Error('unexpected');
   });
@@ -86,6 +95,24 @@ describe('errorHandler', () => {
     const res = await request(buildTestApp()).get('/boom-pill-id-taken');
     expect(res.status).toBe(409);
     expect(res.body.error.code).toBe('PILL_ID_TAKEN');
+  });
+
+  it('maps REDEEM_CODE_NOT_FOUND to 404', async () => {
+    const res = await request(buildTestApp()).get('/boom-redeem-not-found');
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('REDEEM_CODE_NOT_FOUND');
+  });
+
+  it('maps REDEEM_CODE_ALREADY_USED to 409', async () => {
+    const res = await request(buildTestApp()).get('/boom-redeem-already-used');
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe('REDEEM_CODE_ALREADY_USED');
+  });
+
+  it('maps INVALID_REDEEM_CODE to 400', async () => {
+    const res = await request(buildTestApp()).get('/boom-invalid-redeem-code');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('INVALID_REDEEM_CODE');
   });
 
   it('formats a non-DomainError as a 500 INTERNAL_ERROR', async () => {
