@@ -1360,6 +1360,9 @@ body {
 .pill-qty {
   font-size: 0.8rem;
   color: var(--muted);
+  /* Push qty + use button to the card bottom so the "Dùng" buttons stay
+     aligned across cards even when descriptions have different lengths. */
+  margin-top: auto;
 }
 .pill-use-btn {
   margin-top: var(--space-2);
@@ -1379,6 +1382,27 @@ body {
 .pill-use-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+/* Align every row (orb, name, rarity, desc, qty, use button) across all cards
+   in a grid band: each card spans 6 rows of .pill-grid and subgrids them, so
+   the tallest desc/name dictates the shared row height for every card. The
+   flexbox layout above (with .pill-qty margin-top: auto) stays as the fallback
+   for browsers without subgrid support. */
+@supports (grid-template-rows: subgrid) {
+  .pill-card {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: subgrid;
+    grid-row: span 6;
+    justify-items: center;
+    row-gap: var(--space-2);
+  }
+  .pill-qty {
+    margin-top: 0;
+  }
+  .pill-use-btn {
+    margin-top: 0;
+  }
 }
 .pill-empty {
   text-align: center;
