@@ -88,7 +88,7 @@ export function StatsPanel({
           <span className="stat-value gold">Cực cảnh</span>
         ) : punishmentRemaining !== null ? (
           <span className="stat-value danger">
-            Bị phạt ({formatSeconds(punishmentRemaining)})
+            Trọng thương ({formatSeconds(punishmentRemaining)})
           </span>
         ) : state.canBreakthrough ? (
           <span className="stat-value jade">Sẵn sàng đột phá</span>

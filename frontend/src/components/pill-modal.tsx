@@ -94,7 +94,7 @@ export function PillModal({
       />
       <div ref={panelRef} className="pill-panel">
         <div className="pill-panel-title">
-          <span>Đan Phòng · 丹房</span>
+          <span>Đan Phòng</span>
           <button type="button" className="pill-close" onClick={onClose}>
             Đóng
           </button>

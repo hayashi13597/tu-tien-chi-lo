@@ -44,7 +44,7 @@ export function BreakthroughButton({
   let label = "Đột Phá Cảnh Giới";
   if (isMaxStage) label = "Đã Đạt Cực Cảnh";
   else if (punishedRemaining !== null)
-    label = `Bị Phạt (${formatSeconds(punishedRemaining)})`;
+    label = `Trọng Thương (${formatSeconds(punishedRemaining)})`;
   else if (!canBreakthrough) label = "Linh Khí Chưa Đủ";
   else if (attempting || busy) label = "Đang Đột Phá...";
 
@@ -74,7 +74,10 @@ export function BreakthroughButton({
     <div className="actions">
       <button
         type="button"
-        className="btn btn-danger"
+        // `.punished` keeps the "Trọng Thương" label legible: the button is disabled
+        // (dimmed to 0.4), which on the purple base made the text vanish — the
+        // class restores full opacity with a red fill while still disabled.
+        className={`btn btn-danger${punishedRemaining !== null ? " punished" : ""}`}
         onClick={handleClick}
         disabled={disabled}
       >

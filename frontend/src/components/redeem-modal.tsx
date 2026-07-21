@@ -68,7 +68,7 @@ export function RedeemModal({ open, onClose, onSuccess }: RedeemModalProps) {
       />
       <div ref={panelRef} className="pill-panel" style={{ maxWidth: 420 }}>
         <div className="pill-panel-title">
-          <span>Nhập Code · 兑换码</span>
+          <span>Nhập Code</span>
           <button type="button" className="pill-close" onClick={onClose}>
             Đóng
           </button>
