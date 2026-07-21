@@ -118,3 +118,24 @@ export interface AdminPillDTO {
   active: boolean;
   starterQuantity: number;
 }
+
+export interface RedeemRewardDTO {
+  pillId: string;
+  name: string;
+  glyph: string;
+  quantity: number;
+}
+
+export interface RedeemResult {
+  rewards: RedeemRewardDTO[];
+}
+
+export interface AdminRedeemCodeDTO {
+  id: string;
+  code: string;
+  active: boolean;
+  maxRedemptions: number;
+  redeemedCount: number;
+  expiresAt: string | null; // ISO 8601 or null
+  rewards: Array<{ pillId: string; quantity: number }>;
+}
