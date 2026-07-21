@@ -2172,26 +2172,510 @@ body {
   align-items: center;
 }
 
-/* Redeem-code rewards editor: a titled block of pill+quantity+remove rows. */
-.admin-code-rewards {
-  margin-top: var(--space-3);
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+/* ==== Redeem code: voucher ledger (master/detail, own identity) ==== */
+.admin-code-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: var(--space-5);
+  align-items: start;
 }
 
-.admin-code-rewards h4 {
-  margin: 0;
-  font-size: 0.9rem;
+.admin-code-list {
+  position: sticky;
+  top: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: calc(100vh - 2 * var(--space-4));
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.admin-code-list-empty {
   color: var(--muted);
+  font-size: 0.85rem;
+  padding: var(--space-4);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+/* A voucher ticket: code + status, capacity gauge, counts + expiry. */
+.admin-code-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-3);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.admin-code-row:hover {
+  border-color: var(--border-bright);
+  background: rgba(251, 191, 36, 0.05);
+}
+
+.admin-code-row[aria-current="true"] {
+  border-color: var(--gold);
+  box-shadow:
+    inset 3px 0 0 var(--gold),
+    0 0 14px var(--gold-glow);
+}
+
+.admin-code-row.inactive {
+  opacity: 0.72;
+}
+
+.admin-code-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+/* The code string is the hero — tabular mono, wide tracking, gold. */
+.admin-code-string {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-code-string--lg {
+  font-size: 1.5rem;
+  letter-spacing: 0.12em;
+}
+
+/* Status pill — the one blocking reason, colour-coded. */
+.admin-code-status {
+  flex: none;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+
+.admin-code-status--active {
+  color: var(--jade);
+}
+.admin-code-status--exhausted {
+  color: var(--gold);
+}
+.admin-code-status--expired {
+  color: #f6b8b8;
+}
+.admin-code-status--off {
+  color: var(--muted);
+}
+
+/* Capacity gauge — the signature element. Small caps render as a punch-voucher
+   pip tally (one slot per redemption); large caps fall back to a smooth bar. */
+.admin-code-meter {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.admin-code-meter--lg {
+  height: 8px;
+  border-radius: 4px;
+}
+
+.admin-code-meter-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--jade);
+  min-width: 2px;
+  transition: width var(--dur) var(--ease-out);
+}
+
+.admin-code-meter-fill.exhausted {
+  background: linear-gradient(90deg, var(--gold), var(--gold-deep));
+}
+
+.admin-code-meter-fill.dim {
+  background: var(--muted-dim);
+}
+
+/* Pip tally: one slot per redemption, filled = punched. Slots flex to fill the
+   row so a 2-cap and a 10-cap both span the full width and stay comparable. */
+.admin-code-pips {
+  display: flex;
+  gap: 3px;
+}
+
+.admin-code-pip {
+  flex: 1 1 0;
+  height: 6px;
+  border-radius: 2px;
+  /* Empty slot: a faint outlined ticket stub awaiting a punch. */
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+  transition: background var(--dur) var(--ease-out);
+}
+
+.admin-code-pips--lg .admin-code-pip {
+  height: 10px;
+  border-radius: 3px;
+}
+
+.admin-code-pip.filled {
+  background: var(--jade);
+  box-shadow: 0 0 5px var(--jade-glow);
+}
+
+.admin-code-pip.filled.exhausted {
+  background: var(--gold);
+  box-shadow: 0 0 5px var(--gold-glow);
+}
+
+.admin-code-pip.filled.dim {
+  background: var(--muted-dim);
+  box-shadow: none;
+}
+
+.admin-code-row-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* Detail pane — a status-tinted top hairline mirrors the KPI-tile accent
+   language so the selected voucher's state reads at a glance. */
+.admin-code-detail {
+  position: relative;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--border-bright);
+  border-radius: var(--radius);
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-panel);
+  padding: var(--space-6);
+}
+
+.admin-code-detail--active {
+  border-top-color: var(--jade);
+}
+.admin-code-detail--exhausted {
+  border-top-color: var(--gold);
+}
+.admin-code-detail--expired {
+  border-top-color: var(--red);
+}
+.admin-code-detail--off {
+  border-top-color: var(--muted-dim);
+}
+
+.admin-code-detail-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-bottom: var(--space-5);
+  margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-code-detail-title {
+  font-size: 1.2rem;
+  color: var(--fg);
+}
+
+.admin-code-detail-id {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.admin-code-gauge {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.admin-code-gauge-label {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.admin-code-detail-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ===== Redeem code form: dedicated, sectioned layout (not the pill grid) ===== */
+.admin-code-form {
+  padding-top: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* Each block (basic info, rewards) is a titled section with a hairline head so
+   the form reads as discrete groups instead of one undifferentiated grid. */
+.admin-code-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.admin-code-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-code-section-title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.admin-code-section-hint {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* Two-column responsive field grid, wider min than the pill grid so datetime
+   and number inputs don't get squeezed into 3-4 ragged columns. */
+.admin-code-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-5);
+}
+
+.admin-code-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.admin-code-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--fg-dim);
+}
+
+.admin-req {
+  color: var(--gold);
+}
+
+.admin-code-hint {
+  font-size: 0.74rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+/* Custom on/off switch — a live control, visually distinct from the plain
+   browser checkbox the rest of the admin still uses. */
+.admin-code-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+/* Hide the native checkbox but keep it in the a11y/focus tree (drives .track). */
+.admin-code-toggle-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.admin-code-switch {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 22px;
+  margin-top: 1px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border);
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+
+/* The knob. */
+.admin-code-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+
+.admin-code-toggle-input:checked + .admin-code-switch {
+  background: rgba(93, 217, 177, 0.25);
+  border-color: var(--jade);
+}
+
+.admin-code-toggle-input:checked + .admin-code-switch::after {
+  transform: translateX(18px);
+  background: var(--jade);
+}
+
+.admin-code-toggle-input:focus-visible + .admin-code-switch {
+  box-shadow: 0 0 0 3px var(--jade-glow);
+}
+
+.admin-code-toggle-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.admin-code-toggle-title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--fg);
+}
+
+/* Rewards editor: titled block of glyph + pill-select + qty + remove rows. */
+.admin-code-reward-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.admin-code-rewards-empty {
+  font-size: 0.82rem;
+  color: var(--muted);
+  padding: var(--space-4);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  text-align: center;
 }
 
 .admin-code-reward-row {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-3);
   align-items: center;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  transition: border-color var(--dur-fast) var(--ease-out);
 }
 
-.admin-code-reward-row .admin-input:first-of-type {
+.admin-code-reward-row:hover {
+  border-color: var(--border-bright);
+}
+
+/* The reward's own glyph in its rarity colour — makes the row scannable. */
+.admin-code-reward-glyph {
+  flex: none;
+  width: 2rem;
+  text-align: center;
+  font-size: 1.3rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 5px currentColor);
+}
+
+.admin-code-reward-select {
   flex: 1;
+  min-width: 0;
+}
+
+/* "× N" quantity cluster so the number reads as a multiplier, not a stray box. */
+.admin-code-reward-qty-wrap {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.admin-code-reward-times {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.admin-code-reward-qty {
+  width: 72px;
+}
+
+/* Icon-only remove button — square, danger-tinted on hover. */
+.admin-code-reward-remove {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  padding: 0;
+  color: var(--muted);
+}
+
+.admin-code-reward-remove:hover:not(:disabled) {
+  border-color: var(--red);
+  background: rgba(239, 68, 68, 0.12);
+  color: #f6b8b8;
+}
+
+.admin-code-add-reward {
+  align-self: flex-start;
+  margin-top: var(--space-1);
+}
+
+/* Footer actions sit on their own hairline-topped row, clearly ending the form. */
+.admin-code-form-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 768px) {
+  .admin-code-layout {
+    grid-template-columns: 1fr;
+  }
+  .admin-code-list {
+    position: static;
+    max-height: none;
+  }
 }

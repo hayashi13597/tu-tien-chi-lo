@@ -1,17 +1,92 @@
 "use client";
 
-import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { CloseIcon } from "@/components/icons";
 import {
   createAdminCode,
   fetchAdminCodes,
   fetchAdminPills,
   updateAdminCode,
 } from "@/lib/api";
+import { getRarityMeta } from "@/lib/pill-constants";
 import { findRedeemError, validateRedeemDraft } from "@/lib/redeem-validation";
 import type { AdminPillDTO, AdminRedeemCodeDTO } from "@/lib/types";
 
 type CodeDraft = Omit<AdminRedeemCodeDTO, "redeemedCount">;
+
+// The single blocking reason a player would hit, in precedence order: an admin
+// switch-off wins over a passed expiry wins over a hit cap; otherwise live.
+type CodeStatus = "off" | "expired" | "exhausted" | "active";
+
+const STATUS_LABEL: Record<CodeStatus, string> = {
+  off: "Đã tắt",
+  expired: "Hết hạn",
+  exhausted: "Hết lượt",
+  active: "Hoạt động",
+};
+
+function codeStatus(code: AdminRedeemCodeDTO, now: number): CodeStatus {
+  if (!code.active) return "off";
+  if (code.expiresAt && new Date(code.expiresAt).getTime() <= now)
+    return "expired";
+  if (code.redeemedCount >= code.maxRedemptions) return "exhausted";
+  return "active";
+}
+
+// Fraction of the redemption cap consumed, clamped to [0, 1] for the gauge.
+function redeemedFraction(code: AdminRedeemCodeDTO): number {
+  if (code.maxRedemptions <= 0) return 1;
+  return Math.min(1, code.redeemedCount / code.maxRedemptions);
+}
+
+// Gauge fill colour follows status: gold once exhausted, dim when off/expired,
+// jade while healthy — same taxonomy as the status pill.
+function meterClass(status: CodeStatus): string {
+  if (status === "exhausted") return "exhausted";
+  if (status === "off" || status === "expired") return "dim";
+  return "";
+}
+
+// Small caps read as a countable tally; above this a continuous bar is clearer.
+const MAX_PIPS = 12;
+
+// The redemption capacity as a punch-voucher tally: one pip per redemption slot,
+// each consumed slot filled. Caps above MAX_PIPS fall back to a smooth bar so
+// the metaphor never degrades into an unreadable row of hairlines.
+function CapacityGauge({
+  code,
+  status,
+  size,
+}: {
+  code: AdminRedeemCodeDTO;
+  status: CodeStatus;
+  size: "sm" | "lg";
+}) {
+  const tone = meterClass(status);
+  const { redeemedCount, maxRedemptions } = code;
+  if (maxRedemptions >= 1 && maxRedemptions <= MAX_PIPS) {
+    const filled = Math.min(redeemedCount, maxRedemptions);
+    return (
+      <div className={`admin-code-pips admin-code-pips--${size}`} aria-hidden>
+        {Array.from({ length: maxRedemptions }, (_, i) => (
+          <span
+            // biome-ignore lint/suspicious/noArrayIndexKey: fixed positional slots
+            key={i}
+            className={`admin-code-pip${i < filled ? ` filled ${tone}` : ""}`}
+          />
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div className={`admin-code-meter admin-code-meter--${size}`} aria-hidden>
+      <div
+        className={`admin-code-meter-fill ${tone}`}
+        style={{ width: `${redeemedFraction(code) * 100}%` }}
+      />
+    </div>
+  );
+}
 
 function emptyCode(): CodeDraft {
   return {
@@ -112,145 +187,211 @@ function CodeForm({
   const numericValue = (v: number) => (Number.isNaN(v) ? "" : v);
   const rewardsError = findRedeemError(errors, "rewards");
 
+  const idError = findRedeemError(errors, "id");
+  const codeError = findRedeemError(errors, "code");
+  const maxError = findRedeemError(errors, "maxRedemptions");
+
   return (
-    <div className="admin-pill-form">
-      <div className="admin-pill-form-grid">
-        {isNew && (
-          <label>
-            ID
-            <input
-              className={`admin-input${findRedeemError(errors, "id") ? " invalid" : ""}`}
-              value={draft.id}
-              onChange={(e) => set("id", e.target.value)}
-              aria-label="ID mã"
-              placeholder="tan-thu-2026"
-            />
-            {findRedeemError(errors, "id") && (
-              <span className="admin-field-error">
-                {findRedeemError(errors, "id")?.message}
+    <div className="admin-code-form">
+      {/* Section 1 — identity + limits. Grouped and titled so the form reads as
+          discrete blocks rather than one undifferentiated grid. */}
+      <section className="admin-code-section">
+        <div className="admin-code-section-head">
+          <h4 className="admin-code-section-title">Thông tin cơ bản</h4>
+        </div>
+        <div className="admin-code-form-grid">
+          {isNew && (
+            <label className="admin-code-field">
+              <span className="admin-code-label">
+                ID <span className="admin-req">*</span>
               </span>
-            )}
-          </label>
-        )}
-        {isNew && (
-          <label>
-            Mã code
-            <input
-              className={`admin-input${findRedeemError(errors, "code") ? " invalid" : ""}`}
-              value={draft.code}
-              onChange={(e) => set("code", e.target.value.toUpperCase())}
-              aria-label="Mã code"
-              placeholder="TANTHU2026"
-            />
-            {findRedeemError(errors, "code") && (
-              <span className="admin-field-error">
-                {findRedeemError(errors, "code")?.message}
+              <input
+                className={`admin-input${idError ? " invalid" : ""}`}
+                value={draft.id}
+                onChange={(e) => set("id", e.target.value)}
+                aria-label="ID mã"
+                placeholder="tan-thu-2026"
+              />
+              <span className="admin-code-hint">
+                Định danh nội bộ, không đổi được sau khi tạo
               </span>
-            )}
-          </label>
-        )}
-        <label>
-          Tổng lượt đổi tối đa
-          <input
-            type="number"
-            className={`admin-input${findRedeemError(errors, "maxRedemptions") ? " invalid" : ""}`}
-            value={numericValue(draft.maxRedemptions)}
-            onChange={(e) =>
-              set(
-                "maxRedemptions",
-                e.target.value === "" ? Number.NaN : Number(e.target.value),
-              )
-            }
-            aria-label="Tổng lượt đổi tối đa"
-          />
-          {findRedeemError(errors, "maxRedemptions") && (
-            <span className="admin-field-error">
-              {findRedeemError(errors, "maxRedemptions")?.message}
-            </span>
+              {idError && (
+                <span className="admin-field-error">{idError.message}</span>
+              )}
+            </label>
           )}
-        </label>
-        <label>
-          Hết hạn (trống = không hết hạn)
-          <input
-            type="datetime-local"
-            className="admin-input"
-            value={isoToLocalInput(draft.expiresAt)}
-            onChange={(e) =>
-              set(
-                "expiresAt",
-                e.target.value ? new Date(e.target.value).toISOString() : null,
-              )
-            }
-            aria-label="Thời điểm hết hạn"
-          />
-        </label>
-        <label className="admin-pill-active">
+          {isNew && (
+            <label className="admin-code-field">
+              <span className="admin-code-label">
+                Mã code <span className="admin-req">*</span>
+              </span>
+              <input
+                className={`admin-input${codeError ? " invalid" : ""}`}
+                value={draft.code}
+                onChange={(e) => set("code", e.target.value.toUpperCase())}
+                aria-label="Mã code"
+                placeholder="TANTHU2026"
+              />
+              <span className="admin-code-hint">
+                Người chơi nhập để đổi (không phân biệt hoa/thường)
+              </span>
+              {codeError && (
+                <span className="admin-field-error">{codeError.message}</span>
+              )}
+            </label>
+          )}
+          <label className="admin-code-field">
+            <span className="admin-code-label">
+              Tổng lượt đổi tối đa <span className="admin-req">*</span>
+            </span>
+            <input
+              type="number"
+              className={`admin-input${maxError ? " invalid" : ""}`}
+              value={numericValue(draft.maxRedemptions)}
+              onChange={(e) =>
+                set(
+                  "maxRedemptions",
+                  e.target.value === "" ? Number.NaN : Number(e.target.value),
+                )
+              }
+              aria-label="Tổng lượt đổi tối đa"
+            />
+            {maxError && (
+              <span className="admin-field-error">{maxError.message}</span>
+            )}
+          </label>
+          <label className="admin-code-field">
+            <span className="admin-code-label">Hết hạn</span>
+            <input
+              type="datetime-local"
+              className="admin-input"
+              value={isoToLocalInput(draft.expiresAt)}
+              onChange={(e) =>
+                set(
+                  "expiresAt",
+                  e.target.value
+                    ? new Date(e.target.value).toISOString()
+                    : null,
+                )
+              }
+              aria-label="Thời điểm hết hạn"
+            />
+            <span className="admin-code-hint">Trống = không hết hạn</span>
+          </label>
+        </div>
+
+        {/* Active state as a switch, not a bare checkbox — reads as a live
+            on/off control matching the status pill in the header. */}
+        <label className="admin-code-toggle">
           <input
             type="checkbox"
+            className="admin-code-toggle-input"
             checked={draft.active}
             onChange={(e) => set("active", e.target.checked)}
             aria-label="Đang kích hoạt"
           />
-          Kích hoạt (tắt để chặn đổi mã)
+          <span className="admin-code-switch" aria-hidden="true" />
+          <span className="admin-code-toggle-text">
+            <span className="admin-code-toggle-title">Kích hoạt</span>
+            <span className="admin-code-hint">
+              Tắt để tạm chặn người chơi đổi mã (giữ nguyên số lượt đã đổi)
+            </span>
+          </span>
         </label>
-      </div>
+      </section>
 
-      <div className="admin-code-rewards">
-        <h4>Phần thưởng (đan dược)</h4>
+      {/* Section 2 — rewards. */}
+      <section className="admin-code-section">
+        <div className="admin-code-section-head">
+          <h4 className="admin-code-section-title">Phần thưởng</h4>
+          <span className="admin-code-section-hint">
+            Đan dược trao khi đổi mã
+          </span>
+        </div>
         {rewardsError && (
           <p className="admin-field-error">{rewardsError.message}</p>
         )}
-        {draft.rewards.map((r, i) => (
-          <div
-            // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional, no stable id
-            key={i}
-            className="admin-code-reward-row"
-          >
-            <select
-              className="admin-input"
-              value={r.pillId}
-              aria-label={`Đan dược hàng ${i + 1}`}
-              onChange={(e) => setReward(i, { pillId: e.target.value })}
-            >
-              <option value="">-- Chọn đan dược --</option>
-              {pills.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <input
-              type="number"
-              className="admin-input"
-              style={{ width: 90 }}
-              min={1}
-              aria-label={`Số lượng hàng ${i + 1}`}
-              value={numericValue(r.quantity)}
-              onChange={(e) =>
-                setReward(i, {
-                  quantity:
-                    e.target.value === "" ? Number.NaN : Number(e.target.value),
-                })
-              }
-            />
-            <button
-              type="button"
-              className="admin-btn"
-              aria-label={`Xóa hàng ${i + 1}`}
-              onClick={() => removeReward(i)}
-            >
-              Xóa
-            </button>
-          </div>
-        ))}
-        <button type="button" className="admin-btn" onClick={addReward}>
+        {draft.rewards.length === 0 && !rewardsError && (
+          <p className="admin-code-rewards-empty">
+            Chưa có phần thưởng. Thêm ít nhất một đan dược để mã có hiệu lực.
+          </p>
+        )}
+        <div className="admin-code-reward-list">
+          {draft.rewards.map((r, i) => {
+            const selected = pills.find((p) => p.id === r.pillId);
+            const glyphColor = selected
+              ? getRarityMeta(selected.rarity).color
+              : "var(--muted)";
+            return (
+              <div
+                // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional, no stable id
+                key={i}
+                className="admin-code-reward-row"
+              >
+                <span
+                  className="admin-code-reward-glyph"
+                  style={{ color: glyphColor }}
+                  aria-hidden="true"
+                >
+                  {selected?.glyph ?? "?"}
+                </span>
+                <select
+                  className="admin-input admin-code-reward-select"
+                  value={r.pillId}
+                  aria-label={`Đan dược hàng ${i + 1}`}
+                  onChange={(e) => setReward(i, { pillId: e.target.value })}
+                >
+                  <option value="">-- Chọn đan dược --</option>
+                  {pills.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="admin-code-reward-qty-wrap">
+                  <span className="admin-code-reward-times" aria-hidden="true">
+                    ×
+                  </span>
+                  <input
+                    type="number"
+                    className="admin-input admin-code-reward-qty"
+                    min={1}
+                    aria-label={`Số lượng hàng ${i + 1}`}
+                    value={numericValue(r.quantity)}
+                    onChange={(e) =>
+                      setReward(i, {
+                        quantity:
+                          e.target.value === ""
+                            ? Number.NaN
+                            : Number(e.target.value),
+                      })
+                    }
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="admin-btn admin-code-reward-remove"
+                  aria-label={`Xóa hàng ${i + 1}`}
+                  onClick={() => removeReward(i)}
+                >
+                  <CloseIcon width={16} height={16} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          className="admin-btn admin-code-add-reward"
+          onClick={addReward}
+        >
           + Thêm đan dược
         </button>
-      </div>
+      </section>
 
       {saveError && <p className="admin-error">{saveError}</p>}
 
-      <div className="admin-toolbar">
+      <div className="admin-code-form-footer">
         <button
           type="button"
           className="admin-btn admin-btn-primary"
@@ -343,6 +484,9 @@ export default function AdminCodesPage() {
   const editingCode =
     openId && openId !== "new" ? codes.find((c) => c.id === openId) : null;
   const isEditing = openId !== null;
+  // One "now" per render so every row's expiry check is consistent.
+  const now = Date.now();
+  const editingStatus = editingCode ? codeStatus(editingCode, now) : null;
 
   return (
     <section>
@@ -358,68 +502,93 @@ export default function AdminCodesPage() {
         </button>
       </div>
 
-      <div className="admin-pill-layout">
-        {/* Master: one row per code. */}
-        <div className="admin-pill-list">
+      <div className="admin-code-layout">
+        {/* Master: one voucher row per code — code + status, capacity gauge,
+            then counts + expiry. */}
+        <div className="admin-code-list">
+          {codes.length === 0 && (
+            <p className="admin-code-list-empty">
+              Chưa có mã nào. Tạo mã đầu tiên để phát thưởng.
+            </p>
+          )}
           {codes.map((code) => {
-            const exhausted = code.redeemedCount >= code.maxRedemptions;
+            const status = codeStatus(code, now);
             return (
               <button
                 key={code.id}
                 type="button"
-                className={`admin-pill-list-item${code.active ? "" : " inactive"}`}
+                className={`admin-code-row${status === "active" ? "" : " inactive"}`}
                 aria-current={openId === code.id}
-                style={{ "--rarity": "var(--gold)" } as CSSProperties}
                 onClick={() => requestOpen(openId === code.id ? null : code.id)}
               >
-                <span
-                  className="admin-pill-list-name"
-                  style={{ fontFamily: "var(--font-mono, monospace)" }}
-                >
-                  {code.code}
-                </span>
-                <span className="admin-pill-list-meta">
-                  <span className="admin-pill-list-effect">
-                    {code.redeemedCount}/{code.maxRedemptions} lượt
-                    {code.expiresAt
-                      ? ` · HSD ${new Date(code.expiresAt).toLocaleDateString("vi-VN")}`
-                      : ""}
+                <div className="admin-code-row-top">
+                  <span className="admin-code-string">{code.code}</span>
+                  <span
+                    className={`admin-code-status admin-code-status--${status}`}
+                  >
+                    {STATUS_LABEL[status]}
                   </span>
-                </span>
-                {exhausted && code.active && (
-                  <span className="admin-pill-list-dot off" title="Hết lượt" />
-                )}
-                {!code.active && (
-                  <span className="admin-pill-list-dot off" title="Đang tắt" />
-                )}
+                </div>
+                <CapacityGauge code={code} status={status} size="sm" />
+                <div className="admin-code-row-foot">
+                  <span className="admin-num">
+                    {code.redeemedCount}/{code.maxRedemptions} lượt
+                  </span>
+                  <span>
+                    {code.expiresAt
+                      ? `HSD ${new Date(code.expiresAt).toLocaleDateString("vi-VN")}`
+                      : "Không hết hạn"}
+                  </span>
+                </div>
               </button>
             );
           })}
         </div>
 
-        {/* Detail: editor for the selected code, or an empty prompt. */}
-        <div className="admin-pill-detail">
+        {/* Detail: voucher header + editor for the selected code, or a prompt. */}
+        <div
+          className={`admin-code-detail${
+            editingStatus ? ` admin-code-detail--${editingStatus}` : ""
+          }`}
+        >
           {isEditing ? (
             <>
-              <div className="admin-pill-detail-head">
-                <div className="admin-pill-detail-title">
-                  <h3>
-                    {openId === "new"
-                      ? "Tạo mã mới"
-                      : (editingCode?.code ?? "(không rõ)")}
-                  </h3>
-                  {editingCode && (
-                    <div className="admin-pill-chips">
-                      <span className="admin-pill-effect-chip">
-                        {editingCode.redeemedCount}/{editingCode.maxRedemptions}{" "}
-                        lượt đã đổi
+              <div className="admin-code-detail-head">
+                {openId === "new" ? (
+                  <h3 className="admin-code-detail-title">Tạo mã mới</h3>
+                ) : editingCode && editingStatus ? (
+                  <>
+                    <div className="admin-code-detail-id">
+                      <span className="admin-code-string admin-code-string--lg">
+                        {editingCode.code}
                       </span>
-                      {!editingCode.active && (
-                        <span className="admin-pill-off">Đang tắt</span>
-                      )}
+                      <span
+                        className={`admin-code-status admin-code-status--${editingStatus}`}
+                      >
+                        {STATUS_LABEL[editingStatus]}
+                      </span>
                     </div>
-                  )}
-                </div>
+                    <div className="admin-code-gauge">
+                      <CapacityGauge
+                        code={editingCode}
+                        status={editingStatus}
+                        size="lg"
+                      />
+                      <span className="admin-code-gauge-label">
+                        <span className="admin-num">
+                          {editingCode.redeemedCount}/
+                          {editingCode.maxRedemptions}
+                        </span>{" "}
+                        lượt đã đổi
+                        {editingCode.expiresAt
+                          ? ` · Hết hạn ${new Date(editingCode.expiresAt).toLocaleString("vi-VN")}`
+                          : " · Không hết hạn"}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <h3 className="admin-code-detail-title">(không rõ)</h3>
+                )}
               </div>
               <CodeForm
                 key={openId}
@@ -443,7 +612,7 @@ export default function AdminCodesPage() {
               />
             </>
           ) : (
-            <div className="admin-pill-detail-empty">
+            <div className="admin-code-detail-empty">
               <p>Chọn một mã để chỉnh sửa, hoặc tạo mã mới.</p>
             </div>
           )}
