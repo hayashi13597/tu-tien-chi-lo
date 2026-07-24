@@ -29,4 +29,17 @@ export class InMemoryCharacterRepository implements CharacterRepository {
     this.charactersById.set(id, updated);
     return updated;
   }
+
+  async spendLinhThach(characterId: string, amount: number): Promise<boolean> {
+    const existing = this.charactersById.get(characterId);
+    if (!existing || existing.linhThach < amount) return false;
+    this.charactersById.set(characterId, { ...existing, linhThach: existing.linhThach - amount });
+    return true;
+  }
+
+  async addLinhThach(characterId: string, amount: number): Promise<void> {
+    const existing = this.charactersById.get(characterId);
+    if (!existing) return;
+    this.charactersById.set(characterId, { ...existing, linhThach: existing.linhThach + amount });
+  }
 }

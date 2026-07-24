@@ -3,12 +3,13 @@ import { ConsumePillUseCase } from '../../src/application/ConsumePillUseCase';
 import { InMemoryCharacterRepository } from '../fakes/InMemoryCharacterRepository';
 import { InMemoryPillRepository } from '../fakes/InMemoryPillRepository';
 import { StaticRealmConfigSource } from '../fakes/StaticRealmConfigSource';
+import { InMemoryOwnedCongPhapRepository } from '../fakes/InMemoryOwnedCongPhapRepository';
 import { CharacterRecord } from '../../src/domain/entities/Character';
 import { PillRecord } from '../../src/domain/pills/pill';
 
 function makeCharacter(over: Partial<CharacterRecord> = {}): CharacterRecord {
   return {
-    id: 'char-1', userId: 'user-1', realmMajor: 0, realmSub: 0, linhKhi: 0,
+    id: 'char-1', userId: 'user-1', realmMajor: 0, realmSub: 0, linhKhi: 0, linhThach: 0,
     lastUpdateAt: new Date(), breakthroughFails: 0, punishedUntil: null, createdAt: new Date(),
     cultivationBuffMultiplier: null, cultivationBuffUntil: null, breakthroughBonusPct: 0, ...over,
   };
@@ -20,7 +21,7 @@ function setup(charOver: Partial<CharacterRecord> = {}) {
   const characters = new InMemoryCharacterRepository();
   characters.seed(makeCharacter(charOver));
   const pills = new InMemoryPillRepository();
-  return { characters, pills, useCase: new ConsumePillUseCase(characters, pills, new StaticRealmConfigSource()) };
+  return { characters, pills, useCase: new ConsumePillUseCase(characters, pills, new StaticRealmConfigSource(), new InMemoryOwnedCongPhapRepository()) };
 }
 
 describe('ConsumePillUseCase', () => {

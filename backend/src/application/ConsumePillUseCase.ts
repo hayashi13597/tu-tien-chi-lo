@@ -6,12 +6,15 @@ import { computeLinhKhi } from '../domain/cultivation/cultivation.calc';
 import { isMaxStage, computeSuccessRate } from '../domain/breakthrough/breakthrough.calc';
 import { applyPillEffect } from '../domain/pills/pill.calc';
 import { CultivationStateOutput } from './GetCultivationStateUseCase';
+import { OwnedCongPhapRepository } from '../domain/ports/OwnedCongPhapRepository';
+import { buildAttributeState } from './attributeState';
 
 export class ConsumePillUseCase {
   constructor(
     private readonly characters: CharacterRepository,
     private readonly pills: PillRepository,
     private readonly realmConfig: RealmConfigSource,
+    private readonly ownedCongPhap: OwnedCongPhapRepository,
   ) {}
 
   async execute(userId: string, pillId: string): Promise<CultivationStateOutput> {
@@ -80,6 +83,7 @@ export class ConsumePillUseCase {
       realmMajor: character.realmMajor,
       realmSub: character.realmSub,
       linhKhi: effect.linhKhi,
+      linhThach: character.linhThach,
       lastUpdateAt: now,
       breakthroughFails: character.breakthroughFails,
       punishedUntil: effect.punishedUntil,
@@ -100,6 +104,8 @@ export class ConsumePillUseCase {
     const newStage = config.getStage(updated.realmMajor, updated.realmSub);
     const newAtMax = isMaxStage(updated.realmMajor, updated.realmSub, config.maxRealmMajor, config.peakRealmSub(updated.realmMajor));
     const newPunished = updated.punishedUntil !== null && updated.punishedUntil.getTime() > now.getTime();
+    const owned = await this.ownedCongPhap.listByUser(userId);
+    const attrState = buildAttributeState(config, updated.realmMajor, updated.realmSub, owned);
     return {
       realmMajor: updated.realmMajor,
       realmSub: updated.realmSub,
@@ -122,6 +128,9 @@ export class ConsumePillUseCase {
         breakthroughFails: updated.breakthroughFails,
         bonusPct: updated.breakthroughBonusPct,
       }),
+      linhThach: updated.linhThach,
+      attributes: attrState.attributes,
+      battlePower: attrState.battlePower,
     };
   }
 }
