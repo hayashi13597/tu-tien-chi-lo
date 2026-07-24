@@ -26,6 +26,7 @@ model User {
   character    Character?
   inventory    InventoryItem[]
   redemptions  Redemption[]
+  ownedCongPhap OwnedCongPhap[]
 }
 
 model Character {
@@ -37,6 +38,8 @@ model Character {
   realmMajor        Int       @default(0)
   realmSub          Int       @default(0)
   linhKhi           Float     @default(0)
+  // Currency dùng để nâng cấp công pháp. Cấp qua redeem code + admin.
+  linhThach         Int       @default(0)
   lastUpdateAt      DateTime  @default(now())
 
   breakthroughFails Int       @default(0)
@@ -99,6 +102,13 @@ model RealmStage {
   pityIncrement     Float
   maxSuccessRate    Float
   punishmentSeconds Int
+  // Thuộc tính nền của sub-stage (trước bonus công pháp bị động). Admin chỉnh.
+  baseKhiHuyet      Float     @default(0)
+  baseChanNguyen    Float     @default(0)
+  baseCongVatLy     Float     @default(0)
+  baseCongPhep      Float     @default(0)
+  basePhongThu      Float     @default(0)
+  baseTocDo         Float     @default(0)
 
   @@unique([realmMajor, realmSub])
 }
@@ -116,14 +126,16 @@ model RedeemCode {
 }
 
 model RedeemCodeReward {
-  id       String     @id @default(uuid())
-  codeId   String
-  code     RedeemCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
-  pillId   String
-  pill     Pill       @relation(fields: [pillId], references: [id])
-  quantity Int
-
-  @@unique([codeId, pillId])
+  id         String     @id @default(uuid())
+  codeId     String
+  code       RedeemCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  // Đúng MỘT trong ba loại reward dưới đây khác null (validate ở domain khi tạo code).
+  pillId     String?
+  pill       Pill?      @relation(fields: [pillId], references: [id])
+  congPhapId String?
+  congPhap   CongPhap?  @relation(fields: [congPhapId], references: [id])
+  linhThach  Int?
+  quantity   Int
 }
 
 model Redemption {
@@ -135,4 +147,39 @@ model Redemption {
   redeemedAt DateTime   @default(now())
 
   @@unique([codeId, userId])
+}
+
+model CongPhap {
+  id                 String            @id
+  name               String
+  glyph              String
+  rarity             Int
+  category           String            // "active" | "passive"
+  desc               String
+  active             Boolean           @default(true)
+  maxLevel           Int
+  baseCost           Int
+  costGrowth         Float
+  // Bị động: mảng PassiveEffect { attribute, flatPerLevel, pctPerLevel }.
+  effects            Json?
+  // Chủ động: skill power = powerPerLevel * level (lưu & hiển thị, chưa áp dụng).
+  powerPerLevel      Float?
+  chanNguyenCost     Float?
+  // Linh Thạch quy đổi khi redeem trùng; null => dùng baseCost.
+  dupRefundLinhThach Int?
+  owned              OwnedCongPhap[]
+  redeemRewards      RedeemCodeReward[]
+}
+
+model OwnedCongPhap {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  congPhapId   String
+  congPhap     CongPhap @relation(fields: [congPhapId], references: [id])
+  level        Int      @default(1)
+  // 0..3 cho công pháp chủ động đã trang bị; null nếu chưa trang bị / bị động.
+  equippedSlot Int?
+
+  @@unique([userId, congPhapId])
 }

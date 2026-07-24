@@ -25,10 +25,42 @@ const PILLS = [
   { id: 'giai-phat-dan', name: 'Giải Phạt Đan', glyph: '解', rarity: 3, effectKind: 'clearPunishment', ...NO_STATS, desc: 'Hóa giải phản phệ độ kiếp, lập tức gỡ trạng thái bị phạt.', active: true, starterQuantity: 0 },
 ];
 
+// Công pháp mẫu (definitions trong DB). Re-run seed upsert đè chỉnh sửa admin —
+// công cụ reset, không routine (giống PILLS). effects là JSON cho công pháp bị động.
+const CONG_PHAP = [
+  {
+    id: 'thiet-cot-quyet', name: 'Thiết Cốt Quyết', glyph: '铁', rarity: 1,
+    category: 'passive', desc: 'Rèn thân như thiết, tăng khí huyết và phòng thủ.',
+    active: true, maxLevel: 10, baseCost: 100, costGrowth: 1.5,
+    effects: [
+      { attribute: 'khiHuyet', flatPerLevel: 50, pctPerLevel: 0 },
+      { attribute: 'phongThu', flatPerLevel: 8, pctPerLevel: 0 },
+    ],
+    powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null,
+  },
+  {
+    id: 'linh-tuc-quyet', name: 'Linh Tốc Quyết', glyph: '速', rarity: 2,
+    category: 'passive', desc: 'Thân pháp phiêu hốt, tăng tốc độ.',
+    active: true, maxLevel: 10, baseCost: 150, costGrowth: 1.5,
+    effects: [{ attribute: 'tocDo', flatPerLevel: 5, pctPerLevel: 2 }],
+    powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null,
+  },
+  {
+    id: 'liet-hoa-tam', name: 'Liệt Hỏa Trảm', glyph: '火', rarity: 3,
+    category: 'active', desc: 'Kiếm quyết liệt hỏa, gây sát thương lớn khi combat.',
+    active: true, maxLevel: 10, baseCost: 200, costGrowth: 1.6,
+    effects: null, powerPerLevel: 120, chanNguyenCost: 30, dupRefundLinhThach: null,
+  },
+];
+
 async function main() {
   for (const p of PILLS) {
     // Idempotent: re-running the seed updates definitions without duplicating.
     await prisma.pill.upsert({ where: { id: p.id }, create: p, update: p });
+  }
+
+  for (const c of CONG_PHAP) {
+    await prisma.congPhap.upsert({ where: { id: c.id }, create: c, update: c });
   }
 
   // Seed the realm config from the original hard-coded balance. Idempotent:
