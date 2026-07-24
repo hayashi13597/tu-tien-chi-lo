@@ -1,3 +1,5 @@
+import { AttributeSet } from '../attributes/attributes';
+
 export interface SubStageConfig {
   name: string;
   linhKhiRequired: number;
@@ -6,6 +8,12 @@ export interface SubStageConfig {
   pityIncrement: number;
   maxSuccessRate: number;
   punishmentSeconds: number;
+  baseKhiHuyet: number;
+  baseChanNguyen: number;
+  baseCongVatLy: number;
+  baseCongPhep: number;
+  basePhongThu: number;
+  baseTocDo: number;
 }
 
 export interface RealmConfig {
@@ -28,12 +36,21 @@ export interface SubStageRow {
   pityIncrement: number;
   maxSuccessRate: number;
   punishmentSeconds: number;
+  baseKhiHuyet: number;
+  baseChanNguyen: number;
+  baseCongVatLy: number;
+  baseCongPhep: number;
+  basePhongThu: number;
+  baseTocDo: number;
 }
 
-// SEED_REALMS is the original hard-coded balance, kept only as the seed source
-// of truth and a reference. Runtime reads the config from the DB (RealmStage);
-// this literal is upserted by prisma/seed.ts.
-export const SEED_REALMS: RealmConfig[] = [
+// SEED_REALMS_CORE is the original hard-coded balance, kept only as the seed
+// source of truth and a reference (core stats only — base attributes are
+// derived below via deriveBaseAttributes, not hand-authored per row).
+const SEED_REALMS_CORE: {
+  name: string;
+  subStages: Omit<SubStageConfig, 'baseKhiHuyet' | 'baseChanNguyen' | 'baseCongVatLy' | 'baseCongPhep' | 'basePhongThu' | 'baseTocDo'>[];
+}[] = [
   {
     name: 'Phàm Nhân',
     subStages: [
@@ -156,6 +173,42 @@ export const SEED_REALMS: RealmConfig[] = [
   },
 ];
 
+// Hệ số suy ra thuộc tính nền từ cultivationRate của sub-stage. cultivationRate
+// đã tăng dần theo cảnh giới nên base cũng tăng theo — số cân bằng khởi tạo,
+// admin tinh chỉnh từng dòng qua /admin/realms.
+const BASE_ATTR_FACTORS: AttributeSet = {
+  khiHuyet: 40, chanNguyen: 30, congVatLy: 6, congPhep: 6, phongThu: 4, tocDo: 2,
+};
+
+export function deriveBaseAttributes(cultivationRate: number): AttributeSet {
+  return {
+    khiHuyet: Math.round(cultivationRate * BASE_ATTR_FACTORS.khiHuyet),
+    chanNguyen: Math.round(cultivationRate * BASE_ATTR_FACTORS.chanNguyen),
+    congVatLy: Math.round(cultivationRate * BASE_ATTR_FACTORS.congVatLy),
+    congPhep: Math.round(cultivationRate * BASE_ATTR_FACTORS.congPhep),
+    phongThu: Math.round(cultivationRate * BASE_ATTR_FACTORS.phongThu),
+    tocDo: Math.round(cultivationRate * BASE_ATTR_FACTORS.tocDo),
+  };
+}
+
+// SEED_REALMS = core balance + base thuộc tính suy ra. Giữ literal core gọn,
+// base sinh tự động để không phải tay-tác 360 con số.
+export const SEED_REALMS: RealmConfig[] = SEED_REALMS_CORE.map((r) => ({
+  name: r.name,
+  subStages: r.subStages.map((s) => {
+    const base = deriveBaseAttributes(s.cultivationRate);
+    return {
+      ...s,
+      baseKhiHuyet: base.khiHuyet,
+      baseChanNguyen: base.chanNguyen,
+      baseCongVatLy: base.congVatLy,
+      baseCongPhep: base.congPhep,
+      basePhongThu: base.phongThu,
+      baseTocDo: base.tocDo,
+    };
+  }),
+}));
+
 // Immutable view over the realm config with the pure helpers the use cases need.
 // Replaces the old REALMS[..] indexing + MAX_REALM_* constants so the sub-stage
 // count and realm count come from the data, not magic numbers.
@@ -164,6 +217,14 @@ export class RealmConfigSet {
 
   getStage(realmMajor: number, realmSub: number): SubStageConfig {
     return this.realms[realmMajor].subStages[realmSub];
+  }
+
+  baseAttributes(realmMajor: number, realmSub: number): AttributeSet {
+    const s = this.getStage(realmMajor, realmSub);
+    return {
+      khiHuyet: s.baseKhiHuyet, chanNguyen: s.baseChanNguyen, congVatLy: s.baseCongVatLy,
+      congPhep: s.baseCongPhep, phongThu: s.basePhongThu, tocDo: s.baseTocDo,
+    };
   }
 
   realmName(realmMajor: number): string {
@@ -211,6 +272,8 @@ export function realmConfigSetFromRows(rows: SubStageRow[]): RealmConfigSet {
       pityIncrement: r.pityIncrement,
       maxSuccessRate: r.maxSuccessRate,
       punishmentSeconds: r.punishmentSeconds,
+      baseKhiHuyet: r.baseKhiHuyet, baseChanNguyen: r.baseChanNguyen, baseCongVatLy: r.baseCongVatLy,
+      baseCongPhep: r.baseCongPhep, basePhongThu: r.basePhongThu, baseTocDo: r.baseTocDo,
     };
   }
   return new RealmConfigSet(realms);
@@ -232,6 +295,8 @@ export function flattenRealms(realms: RealmConfig[]): SubStageRow[] {
         pityIncrement: s.pityIncrement,
         maxSuccessRate: s.maxSuccessRate,
         punishmentSeconds: s.punishmentSeconds,
+        baseKhiHuyet: s.baseKhiHuyet, baseChanNguyen: s.baseChanNguyen, baseCongVatLy: s.baseCongVatLy,
+        baseCongPhep: s.baseCongPhep, basePhongThu: s.basePhongThu, baseTocDo: s.baseTocDo,
       });
     });
   });
