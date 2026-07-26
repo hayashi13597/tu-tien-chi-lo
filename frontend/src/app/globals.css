@@ -2690,6 +2690,79 @@ body {
   border-top: 1px solid var(--border);
 }
 
+/* Cụm danh tính ở hàng trên của một thẻ: glyph (nếu có) + tên bản ghi. */
+.admin-master-item-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  font-weight: 600;
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-pip.filled.tint {
+  background: currentColor;
+  box-shadow: 0 0 5px currentColor;
+}
+
+.admin-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.admin-chip {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-bright);
+  color: var(--fg-dim);
+  white-space: nowrap;
+}
+
+.admin-chip--tint,
+.admin-chip--ok,
+.admin-chip--danger {
+  border-color: currentColor;
+}
+
+.admin-chip--ok {
+  color: var(--jade);
+}
+
+.admin-chip--danger {
+  color: #f6b8b8;
+}
+
+.admin-detail-head--row {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.admin-detail-head-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  flex: 1;
+}
+
+.admin-detail-glyph {
+  flex: none;
+  font-size: 2.4rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 6px currentColor);
+}
+
+.admin-field--wide {
+  grid-column: 1 / -1;
+}
+
 /* ==== Redeem code: phần riêng của trang mã đổi thưởng ==== */
 
 /* Chuỗi mã là nhân vật chính — mono chữ số đều, giãn chữ, màu vàng. */
