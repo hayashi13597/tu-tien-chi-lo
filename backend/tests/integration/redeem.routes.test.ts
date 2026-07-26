@@ -60,7 +60,8 @@ describe('POST /redeem', () => {
     const cookies = await registerAndLogin('rt-player');
     const res = await request(app).post('/redeem').set('Cookie', cookies).send({ code: 'rtest' }); // lowercase — normalized
     expect(res.status).toBe(200);
-    expect(res.body.rewards[0].pillId).toBe('hoi-khi-dan');
+    expect(res.body.rewards[0].kind).toBe('pill');
+    expect(res.body.rewards[0].id).toBe('hoi-khi-dan');
     expect(res.body.rewards[0].quantity).toBe(2);
     const inv = await request(app).get('/pills/inventory').set('Cookie', cookies);
     const item = inv.body.find((i: { id: string }) => i.id === 'hoi-khi-dan');

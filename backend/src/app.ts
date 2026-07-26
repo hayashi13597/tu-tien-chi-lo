@@ -10,6 +10,8 @@ import { PrismaPillRepository } from './infrastructure/repositories/PrismaPillRe
 import { PrismaRealmConfigRepository } from './infrastructure/repositories/PrismaRealmConfigRepository';
 import { PrismaStatsRepository } from './infrastructure/repositories/PrismaStatsRepository';
 import { PrismaRedeemCodeRepository } from './infrastructure/repositories/PrismaRedeemCodeRepository';
+import { PrismaCongPhapRepository } from './infrastructure/repositories/PrismaCongPhapRepository';
+import { PrismaOwnedCongPhapRepository } from './infrastructure/repositories/PrismaOwnedCongPhapRepository';
 import { RealmConfigProvider } from './infrastructure/config/RealmConfigProvider';
 import { BcryptPasswordHasher } from './infrastructure/auth/BcryptPasswordHasher';
 import { JwtTokenService } from './infrastructure/auth/JwtTokenService';
@@ -33,11 +35,16 @@ import { RedeemCodeUseCase } from './application/RedeemCodeUseCase';
 import { ListRedeemCodesUseCase } from './application/ListRedeemCodesUseCase';
 import { CreateRedeemCodeUseCase } from './application/CreateRedeemCodeUseCase';
 import { UpdateRedeemCodeUseCase } from './application/UpdateRedeemCodeUseCase';
+import { ListCongPhapUseCase } from './application/ListCongPhapUseCase';
+import { EquipCongPhapUseCase } from './application/EquipCongPhapUseCase';
+import { UnequipCongPhapUseCase } from './application/UnequipCongPhapUseCase';
+import { LevelUpCongPhapUseCase } from './application/LevelUpCongPhapUseCase';
 import { createAuthRouter } from './presentation/routes/auth.routes';
 import { createCultivationRouter } from './presentation/routes/cultivation.routes';
 import { createPillsRouter } from './presentation/routes/pills.routes';
 import { createAdminRouter } from './presentation/routes/admin.routes';
 import { createRedeemRouter } from './presentation/routes/redeem.routes';
+import { createCongPhapRouter } from './presentation/routes/congphap.routes';
 import { createRequireAuth } from './presentation/middleware/auth';
 import { errorHandler } from './presentation/middleware/errorHandler';
 
@@ -59,6 +66,8 @@ export function createApp(overrides: AppOverrides = {}) {
   const realmConfigProvider = new RealmConfigProvider(realmConfigRepository);
   const statsRepository = new PrismaStatsRepository(client);
   const redeemCodeRepository = new PrismaRedeemCodeRepository(client);
+  const congPhapRepository = new PrismaCongPhapRepository(client);
+  const ownedCongPhapRepository = new PrismaOwnedCongPhapRepository(client);
   const passwordHasher = new BcryptPasswordHasher();
 
   const jwtSecret = process.env.JWT_SECRET as string;
@@ -101,20 +110,24 @@ export function createApp(overrides: AppOverrides = {}) {
   const loginUserUseCase = new LoginUserUseCase(userRepository, passwordHasher, tokenService);
   const refreshAccessTokenUseCase = new RefreshAccessTokenUseCase(tokenService, userRepository);
   const logoutUseCase = new LogoutUseCase(tokenService, userRepository);
-  const getCultivationStateUseCase = new GetCultivationStateUseCase(characterRepository, realmConfigProvider);
+  const getCultivationStateUseCase = new GetCultivationStateUseCase(characterRepository, realmConfigProvider, ownedCongPhapRepository);
   const attemptBreakthroughUseCase = new AttemptBreakthroughUseCase(characterRepository, randomSource, realmConfigProvider);
   const getInventoryUseCase = new GetInventoryUseCase(pillRepository);
-  const consumePillUseCase = new ConsumePillUseCase(characterRepository, pillRepository, realmConfigProvider);
+  const consumePillUseCase = new ConsumePillUseCase(characterRepository, pillRepository, realmConfigProvider, ownedCongPhapRepository);
   const updateRealmConfigUseCase = new UpdateRealmConfigUseCase(realmConfigRepository);
   const listPillsAdminUseCase = new ListPillsAdminUseCase(pillRepository);
   const createPillUseCase = new CreatePillUseCase(pillRepository);
   const updatePillUseCase = new UpdatePillUseCase(pillRepository);
   const getCurrentUserUseCase = new GetCurrentUserUseCase(userRepository);
   const getAdminStatsUseCase = new GetAdminStatsUseCase(statsRepository, realmConfigProvider);
-  const redeemCodeUseCase = new RedeemCodeUseCase(redeemCodeRepository, pillRepository);
+  const redeemCodeUseCase = new RedeemCodeUseCase(redeemCodeRepository, pillRepository, congPhapRepository, ownedCongPhapRepository, characterRepository);
   const listRedeemCodesUseCase = new ListRedeemCodesUseCase(redeemCodeRepository);
   const createRedeemCodeUseCase = new CreateRedeemCodeUseCase(redeemCodeRepository);
   const updateRedeemCodeUseCase = new UpdateRedeemCodeUseCase(redeemCodeRepository);
+  const listCongPhapUseCase = new ListCongPhapUseCase(ownedCongPhapRepository, congPhapRepository);
+  const equipCongPhapUseCase = new EquipCongPhapUseCase(ownedCongPhapRepository, congPhapRepository);
+  const unequipCongPhapUseCase = new UnequipCongPhapUseCase(ownedCongPhapRepository);
+  const levelUpCongPhapUseCase = new LevelUpCongPhapUseCase(ownedCongPhapRepository, congPhapRepository, characterRepository);
 
   const requireAuth = createRequireAuth(tokenService);
 
@@ -157,6 +170,10 @@ export function createApp(overrides: AppOverrides = {}) {
     createPillsRouter({ getInventoryUseCase, consumePillUseCase, requireAuth }),
   );
   app.use('/redeem', createRedeemRouter({ redeemCodeUseCase, requireAuth }));
+  app.use(
+    '/congphap',
+    createCongPhapRouter({ listCongPhapUseCase, equipCongPhapUseCase, unequipCongPhapUseCase, levelUpCongPhapUseCase, requireAuth }),
+  );
   app.use(
     '/admin',
     createAdminRouter({ updateRealmConfigUseCase, getAdminStatsUseCase, listPillsAdminUseCase, createPillUseCase, updatePillUseCase, realmConfigSource: realmConfigProvider, realmConfigReloader: realmConfigProvider, listRedeemCodesUseCase, createRedeemCodeUseCase, updateRedeemCodeUseCase, requireAuth }),
