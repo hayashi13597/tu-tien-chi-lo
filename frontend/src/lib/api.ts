@@ -14,6 +14,7 @@ import type {
   ExpeditionClaimDTO,
   ExpeditionDTO,
   LevelUpResult,
+  MaterialDTO,
   MaterialInventoryDTO,
   Me,
   PillInventoryItem,
@@ -175,6 +176,55 @@ export function updateAdminRealms(
   return apiFetch<{ realms: RealmConfigDTO[] }>("/admin/realms", {
     method: "PUT",
     body: JSON.stringify({ realms }),
+  });
+}
+
+// GET /admin/materials — full material catalog, inactive rows included.
+export function fetchAdminMaterials(): Promise<{ materials: MaterialDTO[] }> {
+  return apiFetch<{ materials: MaterialDTO[] }>("/admin/materials");
+}
+
+// PUT /admin/materials — full catalog upsert; referenced rows are not deleted.
+export function updateAdminMaterials(
+  materials: MaterialDTO[],
+): Promise<{ materials: MaterialDTO[] }> {
+  return apiFetch<{ materials: MaterialDTO[] }>("/admin/materials", {
+    method: "PUT",
+    body: JSON.stringify({ materials }),
+  });
+}
+
+// GET /admin/alchemy/recipes — full recipe catalog, inactive rows included.
+export function fetchAdminAlchemyRecipes(): Promise<{
+  recipes: AlchemyRecipeDTO[];
+}> {
+  return apiFetch<{ recipes: AlchemyRecipeDTO[] }>("/admin/alchemy/recipes");
+}
+
+// PUT /admin/alchemy/recipes — full recipe catalog upsert.
+export function updateAdminAlchemyRecipes(
+  recipes: AlchemyRecipeDTO[],
+): Promise<{ recipes: AlchemyRecipeDTO[] }> {
+  return apiFetch<{ recipes: AlchemyRecipeDTO[] }>("/admin/alchemy/recipes", {
+    method: "PUT",
+    body: JSON.stringify({ recipes }),
+  });
+}
+
+// GET /admin/expeditions — full branch/difficulty catalog.
+export function fetchAdminExpeditions(): Promise<{
+  branches: ExpeditionBranchDTO[];
+}> {
+  return apiFetch<{ branches: ExpeditionBranchDTO[] }>("/admin/expeditions");
+}
+
+// PUT /admin/expeditions — full branch/difficulty catalog upsert.
+export function updateAdminExpeditions(
+  branches: ExpeditionBranchDTO[],
+): Promise<{ branches: ExpeditionBranchDTO[] }> {
+  return apiFetch<{ branches: ExpeditionBranchDTO[] }>("/admin/expeditions", {
+    method: "PUT",
+    body: JSON.stringify({ branches }),
   });
 }
 
