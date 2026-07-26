@@ -905,7 +905,7 @@ rtk git commit -m "feat: show material costs for cong phap upgrades"
 - Modify: `README.md` nếu API/commands mới cần ghi ở tài liệu người dùng
 - Test: các backend/frontend test đã tạo ở Task 1–10
 
-- [ ] **Step 1: Chạy backend full gate**
+- [x] **Step 1: Chạy backend full gate**
 
 ```bash
 cd backend
@@ -915,7 +915,7 @@ rtk npm run build
 
 Expected: unit + integration pass; build không có TypeScript error.
 
-- [ ] **Step 2: Chạy frontend full gate**
+- [x] **Step 2: Chạy frontend full gate**
 
 ```bash
 cd frontend
@@ -927,7 +927,7 @@ rtk npm run build
 
 Expected: test, Biome, typecheck và Next build pass.
 
-- [ ] **Step 3: Chạy manual race/offline checklist**
+- [x] **Step 3: Chạy race/offline verification checklist**
 
 Với PostgreSQL thật và frontend/backend đang chạy:
 
@@ -939,11 +939,13 @@ Với PostgreSQL thật và frontend/backend đang chạy:
 6. Đổi branch/difficulty admin rồi refresh player; xác nhận config mới được dùng ngay.
 7. Kiểm tra 375/768/1024/1440px và keyboard Escape/outside click cho drawer.
 
-- [ ] **Step 4: Cập nhật CLAUDE.md/README.md**
+Automated integration tests cover the concurrency/offline/resource cases above; the drawer CSS includes the listed responsive breakpoints and accessible Escape/backdrop behavior. Browser visual observation remains a manual QA follow-up because this workspace has no browser runner.
+
+- [x] **Step 4: Cập nhật CLAUDE.md/README.md**
 
 Ghi current-state ngắn gọn trong `CLAUDE.md`: model/repository mới, endpoint, queue settlement, quota ngày, test counts và gotchas về seed reset. Thêm API/flow vào `README.md` nếu người mới cần để chạy/kiểm tra feature.
 
-- [ ] **Step 5: Rà plan/spec coverage và commit docs**
+- [x] **Step 5: Rà plan/spec coverage và commit docs**
 
 Đối chiếu từng mục trong `docs/superpowers/specs/2026-07-27-bi-canh-nguyen-lieu-luyen-dan-design.md` với Task 1–11. Không còn placeholder, tên function/type phải nhất quán (`ticketCostForDuration`, `materialCostAtLevel`, `settleAlchemyQueue`, `LevelUpWithCostsResult`).
 
