@@ -2,6 +2,8 @@
 
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { CloseIcon } from "@/components/icons";
+import { RarityPips } from "@/components/rarity-pips";
 import {
   createAdminCongPhap,
   fetchAdminCongPhap,
@@ -176,149 +178,179 @@ function CongPhapForm({
       : "";
 
   return (
-    <div className="admin-pill-form">
-      <div className="admin-pill-form-grid">
-        <label>
-          ID
-          <input
-            className={`admin-input${err("id") ? " invalid" : ""}`}
-            value={draft.id}
-            onChange={(e) => set("id", e.target.value)}
-            readOnly={!isNew}
-            disabled={saving}
-            aria-label="ID công pháp"
-          />
-          {err("id") && (
-            <span className="admin-field-error">{err("id")?.message}</span>
-          )}
-        </label>
-        <label>
-          Tên
-          <input
-            className={`admin-input${err("name") ? " invalid" : ""}`}
-            value={draft.name}
-            onChange={(e) => set("name", e.target.value)}
-            disabled={saving}
-            aria-label="Tên công pháp"
-          />
-        </label>
-        <label>
-          Glyph
-          <input
-            className={`admin-input${err("glyph") ? " invalid" : ""}`}
-            value={draft.glyph}
-            onChange={(e) => set("glyph", e.target.value)}
-            disabled={saving}
-            aria-label="Glyph công pháp"
-          />
-        </label>
-        <label>
-          Độ hiếm
-          <select
-            className="admin-input"
-            value={draft.rarity}
-            onChange={(e) => set("rarity", Number(e.target.value))}
-            disabled={saving}
-            aria-label="Độ hiếm"
-          >
-            {RARITIES.map((r) => (
-              <option key={r} value={r}>
-                {getCongPhapRarityMeta(r).name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Loại
-          <select
-            className="admin-input"
-            value={draft.category}
-            onChange={(e) => setCategory(e.target.value as CongPhapCategory)}
-            disabled={saving}
-            aria-label="Loại công pháp"
-          >
-            {CATEGORIES.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Cấp tối đa
-          <input
-            type="number"
-            className={`admin-input admin-num${err("maxLevel") ? " invalid" : ""}`}
-            value={numericValue(draft.maxLevel)}
-            onChange={(e) => set("maxLevel", numeric(e.target.value))}
-            disabled={saving}
-            aria-label="Cấp tối đa"
-          />
-          {err("maxLevel") && (
-            <span className="admin-field-error">
-              {err("maxLevel")?.message}
-            </span>
-          )}
-        </label>
-        <label>
-          Chi phí gốc (Linh Thạch)
-          <input
-            type="number"
-            className={`admin-input admin-num${err("baseCost") ? " invalid" : ""}`}
-            value={numericValue(draft.baseCost)}
-            onChange={(e) => set("baseCost", numeric(e.target.value))}
-            disabled={saving}
-            aria-label="Chi phí gốc"
-          />
-          {err("baseCost") && (
-            <span className="admin-field-error">
-              {err("baseCost")?.message}
-            </span>
-          )}
-        </label>
-        <label>
-          Hệ số tăng chi phí
-          <input
-            type="number"
-            step="0.1"
-            className={`admin-input admin-num${err("costGrowth") ? " invalid" : ""}`}
-            value={numericValue(draft.costGrowth)}
-            onChange={(e) => set("costGrowth", numeric(e.target.value))}
-            disabled={saving}
-            aria-label="Hệ số tăng chi phí"
-          />
-          {err("costGrowth") && (
-            <span className="admin-field-error">
-              {err("costGrowth")?.message}
-            </span>
-          )}
-        </label>
-        <label>
-          Quy đổi khi trùng (bỏ trống = chi phí gốc)
-          <input
-            type="number"
-            className={`admin-input admin-num${err("dupRefundLinhThach") ? " invalid" : ""}`}
-            value={numericValue(draft.dupRefundLinhThach)}
-            onChange={(e) =>
-              set(
-                "dupRefundLinhThach",
-                e.target.value === "" ? null : Number(e.target.value),
-              )
-            }
-            disabled={saving}
-            aria-label="Linh Thạch quy đổi khi redeem trùng"
-          />
-          {err("dupRefundLinhThach") && (
-            <span className="admin-field-error">
-              {err("dupRefundLinhThach")?.message}
-            </span>
-          )}
-        </label>
+    <div className="admin-form">
+      <section className="admin-form-section">
+        <div className="admin-form-section-head">
+          <h4 className="admin-form-section-title">Nhận dạng</h4>
+        </div>
+        <div className="admin-form-grid">
+          <label>
+            <span className="admin-field-label">ID</span>
+            <input
+              className={`admin-input${err("id") ? " invalid" : ""}`}
+              value={draft.id}
+              onChange={(e) => set("id", e.target.value)}
+              readOnly={!isNew}
+              disabled={saving}
+              aria-label="ID công pháp"
+            />
+            {err("id") && (
+              <span className="admin-field-error">{err("id")?.message}</span>
+            )}
+          </label>
+          <label className="admin-field">
+            <span className="admin-field-label">Tên</span>
+            <input
+              className={`admin-input${err("name") ? " invalid" : ""}`}
+              value={draft.name}
+              onChange={(e) => set("name", e.target.value)}
+              disabled={saving}
+              aria-label="Tên công pháp"
+            />
+          </label>
+          <label className="admin-field">
+            <span className="admin-field-label">Glyph</span>
+            <input
+              className={`admin-input${err("glyph") ? " invalid" : ""}`}
+              value={draft.glyph}
+              onChange={(e) => set("glyph", e.target.value)}
+              disabled={saving}
+              aria-label="Glyph công pháp"
+            />
+          </label>
+          <label className="admin-field">
+            <span className="admin-field-label">Độ hiếm</span>
+            <select
+              className="admin-input"
+              value={draft.rarity}
+              onChange={(e) => set("rarity", Number(e.target.value))}
+              disabled={saving}
+              aria-label="Độ hiếm"
+            >
+              {RARITIES.map((r) => (
+                <option key={r} value={r}>
+                  {getCongPhapRarityMeta(r).name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="admin-field">
+            <span className="admin-field-label">Loại</span>
+            <select
+              className="admin-input"
+              value={draft.category}
+              onChange={(e) => setCategory(e.target.value as CongPhapCategory)}
+              disabled={saving}
+              aria-label="Loại công pháp"
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </section>
 
-        {draft.category === "active" && (
-          <>
-            <label>
-              Sức mạnh mỗi cấp
+      <section className="admin-form-section">
+        <div className="admin-form-section-head">
+          <h4 className="admin-form-section-title">Thăng cấp</h4>
+          {costPreview && (
+            <span className="admin-form-section-hint admin-num">
+              {costPreview}
+            </span>
+          )}
+        </div>
+        <div className="admin-form-grid">
+          <label className="admin-field">
+            <span className="admin-field-label">Cấp tối đa</span>
+            <input
+              type="number"
+              className={`admin-input admin-num${err("maxLevel") ? " invalid" : ""}`}
+              value={numericValue(draft.maxLevel)}
+              onChange={(e) => set("maxLevel", numeric(e.target.value))}
+              disabled={saving}
+              aria-label="Cấp tối đa"
+            />
+            {err("maxLevel") && (
+              <span className="admin-field-error">
+                {err("maxLevel")?.message}
+              </span>
+            )}
+          </label>
+          <label className="admin-field">
+            <span className="admin-field-label">Chi phí gốc (Linh Thạch)</span>
+            <input
+              type="number"
+              className={`admin-input admin-num${err("baseCost") ? " invalid" : ""}`}
+              value={numericValue(draft.baseCost)}
+              onChange={(e) => set("baseCost", numeric(e.target.value))}
+              disabled={saving}
+              aria-label="Chi phí gốc"
+            />
+            <span className="admin-field-hint">Chi phí lên cấp 1 → 2</span>
+            {err("baseCost") && (
+              <span className="admin-field-error">
+                {err("baseCost")?.message}
+              </span>
+            )}
+          </label>
+          <label className="admin-field">
+            <span className="admin-field-label">Hệ số tăng chi phí</span>
+            <input
+              type="number"
+              step="0.1"
+              className={`admin-input admin-num${err("costGrowth") ? " invalid" : ""}`}
+              value={numericValue(draft.costGrowth)}
+              onChange={(e) => set("costGrowth", numeric(e.target.value))}
+              disabled={saving}
+              aria-label="Hệ số tăng chi phí"
+            />
+            {err("costGrowth") && (
+              <span className="admin-field-error">
+                {err("costGrowth")?.message}
+              </span>
+            )}
+          </label>
+          <label className="admin-field">
+            <span className="admin-field-label">Quy đổi khi trùng</span>
+            <input
+              type="number"
+              className={`admin-input admin-num${err("dupRefundLinhThach") ? " invalid" : ""}`}
+              value={numericValue(draft.dupRefundLinhThach)}
+              onChange={(e) =>
+                set(
+                  "dupRefundLinhThach",
+                  e.target.value === "" ? null : Number(e.target.value),
+                )
+              }
+              disabled={saving}
+              aria-label="Linh Thạch quy đổi khi redeem trùng"
+            />
+            <span className="admin-field-hint">
+              (tùy chọn) bỏ trống thì lấy chi phí gốc
+            </span>
+            {err("dupRefundLinhThach") && (
+              <span className="admin-field-error">
+                {err("dupRefundLinhThach")?.message}
+              </span>
+            )}
+          </label>
+        </div>
+      </section>
+
+      {draft.category === "active" && (
+        <section className="admin-form-section">
+          <div className="admin-form-section-head">
+            <h4 className="admin-form-section-title">Kỹ năng chủ động</h4>
+            <span className="admin-form-section-hint">
+              lưu sẵn cho phase combat — chưa áp dụng vào chiến lực
+            </span>
+          </div>
+          <div className="admin-form-grid">
+            <label className="admin-field">
+              <span className="admin-field-label">Sức mạnh mỗi cấp</span>
               <input
                 type="number"
                 className={`admin-input admin-num${err("powerPerLevel") ? " invalid" : ""}`}
@@ -333,8 +365,8 @@ function CongPhapForm({
                 </span>
               )}
             </label>
-            <label>
-              Chân nguyên tiêu hao (bỏ trống nếu không dùng)
+            <label className="admin-field">
+              <span className="admin-field-label">Chân nguyên tiêu hao</span>
               <input
                 type="number"
                 className={`admin-input admin-num${err("chanNguyenCost") ? " invalid" : ""}`}
@@ -354,40 +386,50 @@ function CongPhapForm({
                 </span>
               )}
             </label>
-          </>
-        )}
+          </div>
+        </section>
+      )}
 
-        <label className="admin-pill-desc">
-          Mô tả
-          <textarea
-            className={`admin-input${err("desc") ? " invalid" : ""}`}
-            value={draft.desc}
-            onChange={(e) => set("desc", e.target.value)}
-            rows={2}
-            disabled={saving}
-            aria-label="Mô tả công pháp"
-          />
-        </label>
-        <label className="admin-pill-active">
+      <section className="admin-form-section">
+        <div className="admin-form-section-head">
+          <h4 className="admin-form-section-title">Phát hành</h4>
+        </div>
+        <div className="admin-form-grid">
+          <label className="admin-field admin-field--wide">
+            <span className="admin-field-label">Mô tả</span>
+            <textarea
+              className={`admin-input${err("desc") ? " invalid" : ""}`}
+              value={draft.desc}
+              onChange={(e) => set("desc", e.target.value)}
+              rows={2}
+              disabled={saving}
+              aria-label="Mô tả công pháp"
+            />
+          </label>
+        </div>
+        <label className="admin-switch">
           <input
             type="checkbox"
+            className="admin-switch-input"
             checked={draft.active}
             onChange={(e) => set("active", e.target.checked)}
             disabled={saving}
             aria-label="Đang kích hoạt"
           />
-          Kích hoạt (tắt để ẩn khỏi người chơi — công pháp đã sở hữu được giữ
-          nguyên nhưng ngừng có tác dụng)
+          <span className="admin-switch-track" aria-hidden="true" />
+          <span className="admin-switch-text">
+            <span className="admin-switch-title">Kích hoạt</span>
+            <span className="admin-field-hint">
+              Tắt để ẩn khỏi người chơi — công pháp đã sở hữu vẫn còn nhưng
+              ngừng có tác dụng
+            </span>
+          </span>
         </label>
-      </div>
-
-      {costPreview && (
-        <p className="admin-congphap-cost-preview">Chi phí: {costPreview}</p>
-      )}
+      </section>
 
       {/* Passive effects editor — the list the domain requires to be non-empty. */}
       {draft.category === "passive" && (
-        <div className="admin-congphap-effects">
+        <section className="admin-form-section">
           <div className="admin-form-section-head">
             <h4 className="admin-form-section-title">Hiệu ứng bị động</h4>
             <span className="admin-form-section-hint">
@@ -401,10 +443,10 @@ function CongPhapForm({
             <div
               // biome-ignore lint/suspicious/noArrayIndexKey: effect rows are positional, no stable id
               key={i}
-              className="admin-congphap-effect-row"
+              className="admin-row"
             >
               <select
-                className="admin-input"
+                className="admin-input admin-row-grow"
                 value={effect.attribute}
                 aria-label={`Thuộc tính hàng ${i + 1}`}
                 disabled={saving}
@@ -418,11 +460,11 @@ function CongPhapForm({
                   </option>
                 ))}
               </select>
-              <label>
-                Cộng phẳng/cấp
+              <label className="admin-row-field">
+                <span>Cộng phẳng/cấp</span>
                 <input
                   type="number"
-                  className="admin-input admin-num"
+                  className="admin-input admin-num admin-row-num"
                   value={numericValue(effect.flatPerLevel)}
                   aria-label={`Cộng phẳng hàng ${i + 1}`}
                   disabled={saving}
@@ -431,11 +473,11 @@ function CongPhapForm({
                   }
                 />
               </label>
-              <label>
-                Cộng %/cấp
+              <label className="admin-row-field">
+                <span>Cộng %/cấp</span>
                 <input
                   type="number"
-                  className="admin-input admin-num"
+                  className="admin-input admin-num admin-row-num"
                   value={numericValue(effect.pctPerLevel)}
                   aria-label={`Cộng phần trăm hàng ${i + 1}`}
                   disabled={saving}
@@ -446,29 +488,29 @@ function CongPhapForm({
               </label>
               <button
                 type="button"
-                className="admin-btn"
+                className="admin-btn admin-row-remove"
                 aria-label={`Xóa hiệu ứng hàng ${i + 1}`}
                 disabled={saving}
                 onClick={() => removeEffect(i)}
               >
-                Xóa
+                <CloseIcon width={16} height={16} />
               </button>
             </div>
           ))}
           <button
             type="button"
-            className="admin-btn"
+            className="admin-btn admin-row-add"
             onClick={addEffect}
             disabled={saving}
           >
             + Thêm hiệu ứng
           </button>
-        </div>
+        </section>
       )}
 
       {saveError && <p className="admin-error">{saveError}</p>}
 
-      <div className="admin-toolbar">
+      <div className="admin-form-footer">
         <button
           type="button"
           className="admin-btn admin-btn-primary"
@@ -724,70 +766,107 @@ export default function AdminCongPhapPage() {
         </button>
       </div>
 
-      <div className="admin-pill-layout">
-        <div className="admin-pill-list">
+      <div className="admin-master-detail">
+        <div className="admin-master-list">
+          {list.length === 0 && (
+            <p className="admin-master-empty">
+              Chưa có công pháp nào. Thêm công pháp đầu tiên.
+            </p>
+          )}
           {list.map((def) => {
             const meta = getCongPhapRarityMeta(def.rarity);
             return (
               <button
                 key={def.id}
                 type="button"
-                className={`admin-pill-list-item${def.active ? "" : " inactive"}`}
+                className={`admin-master-item${def.active ? "" : " inactive"}`}
                 aria-current={openId === def.id}
-                style={{ "--rarity": meta.color } as CSSProperties}
                 onClick={() => requestOpen(openId === def.id ? null : def.id)}
               >
-                <span
-                  className="admin-pill-list-glyph"
-                  style={{ color: meta.color }}
-                >
-                  {def.glyph}
-                </span>
-                <span className="admin-pill-list-meta">
-                  <span className="admin-pill-list-name">{def.name}</span>
-                  <span className="admin-pill-list-effect">
-                    {headline(def)}
+                <div className="admin-master-item-top">
+                  <span className="admin-master-item-name">
+                    <span
+                      className="admin-row-glyph"
+                      style={{ color: meta.color }}
+                      aria-hidden="true"
+                    >
+                      {def.glyph}
+                    </span>
+                    {def.name}
                   </span>
-                </span>
-                {!def.active && (
-                  <span className="admin-pill-list-dot off" title="Đang tắt" />
-                )}
+                  <span
+                    className={`admin-status admin-status--${def.active ? "ok" : "off"}`}
+                  >
+                    {def.active ? "Hoạt động" : "Đang tắt"}
+                  </span>
+                </div>
+                <RarityPips rarity={def.rarity} color={meta.color} />
+                <div className="admin-master-item-foot">
+                  <span className="admin-num">{headline(def)}</span>
+                  <span>
+                    {def.category === "passive" ? "Bị động" : "Chủ động"}
+                  </span>
+                </div>
               </button>
             );
           })}
         </div>
 
-        <div className="admin-pill-detail">
+        <div
+          className="admin-detail"
+          style={
+            headerMeta
+              ? ({ "--detail-tone": headerMeta.color } as CSSProperties)
+              : undefined
+          }
+        >
           {openId !== null && headerDef ? (
             <>
-              <div className="admin-pill-detail-head">
+              <div className="admin-detail-head admin-detail-head--row">
                 <span
-                  className="admin-pill-glyph"
+                  className="admin-detail-glyph"
                   style={{ color: headerMeta?.color }}
+                  aria-hidden="true"
                 >
                   {headerDef.glyph || "功"}
                 </span>
-                <div className="admin-pill-detail-title">
-                  <h3>
+                <div className="admin-detail-head-main">
+                  <h3 className="admin-detail-title">
                     {openId === "new"
                       ? "Thêm công pháp mới"
                       : headerDef.name || "(chưa có tên)"}
                   </h3>
-                  <div className="admin-pill-chips">
+                  <div className="admin-chips">
                     <span
-                      className="admin-pill-rarity"
+                      className="admin-chip admin-chip--tint"
                       style={{ color: headerMeta?.color }}
                     >
                       {headerMeta?.name}
                     </span>
-                    <span className="admin-pill-effect-chip">
+                    <span className="admin-chip">
                       {headerDef.category === "passive"
                         ? "Bị động"
                         : "Chủ động"}
                     </span>
+                    <span className="admin-chip">
+                      Tối đa cấp {headerDef.maxLevel}
+                    </span>
                     {!headerDef.active && (
-                      <span className="admin-pill-off">Đang tắt</span>
+                      <span className="admin-chip admin-chip--danger">
+                        Đang tắt
+                      </span>
                     )}
+                  </div>
+                  <div className="admin-detail-gauge">
+                    <RarityPips
+                      rarity={headerDef.rarity}
+                      color={headerMeta?.color ?? "var(--muted)"}
+                      size="lg"
+                    />
+                    <span className="admin-detail-gauge-label">
+                      <span className="admin-num">{headline(headerDef)}</span> ·{" "}
+                      {headerMeta?.name}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -803,7 +882,7 @@ export default function AdminCongPhapPage() {
               />
             </>
           ) : (
-            <div className="admin-pill-detail-empty">
+            <div className="admin-detail-empty">
               <p>Chọn một công pháp để chỉnh sửa, hoặc thêm công pháp mới.</p>
             </div>
           )}

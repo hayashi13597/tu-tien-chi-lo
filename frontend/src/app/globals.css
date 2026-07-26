@@ -2658,6 +2658,19 @@ body {
   min-width: 0;
 }
 
+.admin-row-field {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.admin-row-num {
+  width: 96px;
+}
+
 /* Nút xóa chỉ có icon — vuông, chuyển sắc cảnh báo khi rê chuột. */
 .admin-row-remove {
   flex: none;
