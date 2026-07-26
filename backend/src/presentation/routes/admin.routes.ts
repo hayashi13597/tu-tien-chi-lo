@@ -1,5 +1,5 @@
 import { Router, RequestHandler } from 'express';
-import { updateRealmsSchema, createPillSchema, updatePillSchema } from '../schemas/admin.schemas';
+import { updateRealmsSchema, createPillSchema, updatePillSchema, createCongPhapSchema, updateCongPhapSchema, grantSchema, searchUsersQuerySchema } from '../schemas/admin.schemas';
 import { createRedeemCodeSchema, updateRedeemCodeSchema } from '../schemas/redeem.schemas';
 import { UpdateRealmConfigUseCase } from '../../application/UpdateRealmConfigUseCase';
 import { GetAdminStatsUseCase } from '../../application/GetAdminStatsUseCase';
@@ -9,6 +9,11 @@ import { UpdatePillUseCase } from '../../application/UpdatePillUseCase';
 import { ListRedeemCodesUseCase } from '../../application/ListRedeemCodesUseCase';
 import { CreateRedeemCodeUseCase } from '../../application/CreateRedeemCodeUseCase';
 import { UpdateRedeemCodeUseCase } from '../../application/UpdateRedeemCodeUseCase';
+import { ListCongPhapAdminUseCase } from '../../application/ListCongPhapAdminUseCase';
+import { CreateCongPhapUseCase } from '../../application/CreateCongPhapUseCase';
+import { UpdateCongPhapUseCase } from '../../application/UpdateCongPhapUseCase';
+import { GrantUseCase } from '../../application/GrantUseCase';
+import { SearchUsersUseCase } from '../../application/SearchUsersUseCase';
 import { RealmConfigSource } from '../../domain/ports/RealmConfigSource';
 import { RealmConfigReloader } from '../../domain/ports/RealmConfigReloader';
 import { requireAdmin } from '../middleware/requireAdmin';
@@ -23,6 +28,11 @@ export interface AdminRouterDeps {
   listRedeemCodesUseCase: ListRedeemCodesUseCase;
   createRedeemCodeUseCase: CreateRedeemCodeUseCase;
   updateRedeemCodeUseCase: UpdateRedeemCodeUseCase;
+  listCongPhapAdminUseCase: ListCongPhapAdminUseCase;
+  createCongPhapUseCase: CreateCongPhapUseCase;
+  updateCongPhapUseCase: UpdateCongPhapUseCase;
+  grantUseCase: GrantUseCase;
+  searchUsersUseCase: SearchUsersUseCase;
   // Domain ports, not the concrete provider: reads the current config to serve
   // GET /realms, and invalidates the cache after PUT /realms.
   realmConfigSource: RealmConfigSource;
@@ -145,6 +155,66 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
         rewards: parsed.data.rewards,
       });
       res.status(200).json(saved);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get('/congphap', async (_req, res, next) => {
+    try {
+      res.status(200).json({ congphap: await deps.listCongPhapAdminUseCase.execute() });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post('/congphap', async (req, res, next) => {
+    try {
+      const parsed = createCongPhapSchema.safeParse(req.body);
+      if (!parsed.success) {
+        throw new DomainError('INVALID_CONGPHAP_CONFIG', parsed.error.issues[0].message);
+      }
+      const saved = await deps.createCongPhapUseCase.execute(parsed.data);
+      res.status(201).json(saved);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.put('/congphap/:id', async (req, res, next) => {
+    try {
+      const parsed = updateCongPhapSchema.safeParse(req.body);
+      if (!parsed.success) {
+        throw new DomainError('INVALID_CONGPHAP_CONFIG', parsed.error.issues[0].message);
+      }
+      // id from the URL only — immutable (OwnedCongPhap FK key), same as pills.
+      const saved = await deps.updateCongPhapUseCase.execute({ ...parsed.data, id: req.params.id });
+      res.status(200).json(saved);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post('/grant', async (req, res, next) => {
+    try {
+      const parsed = grantSchema.safeParse(req.body);
+      if (!parsed.success) {
+        throw new DomainError('INVALID_GRANT', parsed.error.issues[0].message);
+      }
+      await deps.grantUseCase.execute(parsed.data);
+      res.status(200).json({ ok: true });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get('/users', async (req, res, next) => {
+    try {
+      const parsed = searchUsersQuerySchema.safeParse(req.query);
+      if (!parsed.success) {
+        throw new DomainError('INVALID_INPUT', parsed.error.issues[0].message);
+      }
+      res.status(200).json({ users: await deps.searchUsersUseCase.execute(parsed.data) });
     } catch (err) {
       next(err);
     }

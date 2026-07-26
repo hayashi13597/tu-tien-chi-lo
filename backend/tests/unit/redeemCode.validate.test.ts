@@ -32,4 +32,19 @@ describe('validateRedeemCodeDefinition', () => {
   it('rejects a duplicate pillId', () => {
     expect(() => validateRedeemCodeDefinition({ ...base, rewards: [{ pillId: 'p1', quantity: 1 }, { pillId: 'p1', quantity: 2 }] })).toThrow(DomainError);
   });
+  it('accepts congphap and linhThach rewards', () => {
+    expect(() => validateRedeemCodeDefinition({ ...base, rewards: [{ congPhapId: 'cp1', quantity: 1 }, { linhThach: 500, quantity: 1 }] })).not.toThrow();
+  });
+  it('rejects a reward with no kind set', () => {
+    expect(() => validateRedeemCodeDefinition({ ...base, rewards: [{ quantity: 1 }] })).toThrow(DomainError);
+  });
+  it('rejects a reward mixing two kinds', () => {
+    expect(() => validateRedeemCodeDefinition({ ...base, rewards: [{ pillId: 'p1', congPhapId: 'cp1', quantity: 1 }] })).toThrow(DomainError);
+  });
+  it('rejects a linhThach reward < 1', () => {
+    expect(() => validateRedeemCodeDefinition({ ...base, rewards: [{ linhThach: 0, quantity: 1 }] })).toThrow(DomainError);
+  });
+  it('allows the same id across different reward kinds', () => {
+    expect(() => validateRedeemCodeDefinition({ ...base, rewards: [{ pillId: 'x', quantity: 1 }, { congPhapId: 'x', quantity: 1 }] })).not.toThrow();
+  });
 });

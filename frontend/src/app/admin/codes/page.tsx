@@ -1,18 +1,52 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CloseIcon } from "@/components/icons";
 import {
   createAdminCode,
   fetchAdminCodes,
+  fetchAdminCongPhap,
   fetchAdminPills,
   updateAdminCode,
 } from "@/lib/api";
+import { getCongPhapRarityMeta } from "@/lib/congphap-display";
 import { getRarityMeta } from "@/lib/pill-constants";
 import { findRedeemError, validateRedeemDraft } from "@/lib/redeem-validation";
-import type { AdminPillDTO, AdminRedeemCodeDTO } from "@/lib/types";
+import type {
+  AdminPillDTO,
+  AdminRedeemCodeDTO,
+  AdminRedeemRewardDTO,
+  CongPhapDTO,
+} from "@/lib/types";
 
 type CodeDraft = Omit<AdminRedeemCodeDTO, "redeemedCount">;
+
+// A reward carries exactly one kind; the selector below rewrites the row
+// wholesale when the kind changes so a stale key can never linger and trip the
+// backend's "exactly one" rule.
+type RewardKind = "pill" | "congphap" | "linhThach";
+
+const REWARD_KIND_LABEL: Record<RewardKind, string> = {
+  pill: "Đan dược",
+  congphap: "Công pháp",
+  linhThach: "Linh Thạch",
+};
+
+function rewardKind(r: AdminRedeemRewardDTO): RewardKind {
+  if (r.congPhapId !== undefined) return "congphap";
+  if (r.linhThach !== undefined) return "linhThach";
+  return "pill";
+}
+
+function emptyRewardOfKind(
+  kind: RewardKind,
+  quantity: number,
+): AdminRedeemRewardDTO {
+  if (kind === "congphap") return { congPhapId: "", quantity };
+  if (kind === "linhThach") return { linhThach: 100, quantity: 1 };
+  return { pillId: "", quantity };
+}
 
 // The single blocking reason a player would hit, in precedence order: an admin
 // switch-off wins over a passed expiry wins over a hit cap; otherwise live.
@@ -23,6 +57,25 @@ const STATUS_LABEL: Record<CodeStatus, string> = {
   expired: "Hết hạn",
   exhausted: "Hết lượt",
   active: "Hoạt động",
+};
+
+// Bốn trạng thái của mã ánh xạ vào bốn sắc thái trung tính dùng chung cho mọi
+// trang admin. CSS chỉ biết ok/warn/danger/off, không biết "hết hạn" là gì.
+type Tone = "ok" | "warn" | "danger" | "off";
+
+const STATUS_TONE: Record<CodeStatus, Tone> = {
+  active: "ok",
+  exhausted: "warn",
+  expired: "danger",
+  off: "off",
+};
+
+// Màu viền trên khung chi tiết, đặt qua biến --detail-tone.
+const TONE_COLOR: Record<Tone, string> = {
+  ok: "var(--jade)",
+  warn: "var(--gold)",
+  danger: "var(--red)",
+  off: "var(--muted-dim)",
 };
 
 function codeStatus(code: AdminRedeemCodeDTO, now: number): CodeStatus {
@@ -39,11 +92,11 @@ function redeemedFraction(code: AdminRedeemCodeDTO): number {
   return Math.min(1, code.redeemedCount / code.maxRedemptions);
 }
 
-// Gauge fill colour follows status: gold once exhausted, dim when off/expired,
-// jade while healthy — same taxonomy as the status pill.
+// Màu gauge theo trạng thái: vàng khi hết lượt, xám khi tắt/hết hạn, ngọc khi
+// còn khỏe — cùng bảng sắc thái với nhãn trạng thái.
 function meterClass(status: CodeStatus): string {
-  if (status === "exhausted") return "exhausted";
-  if (status === "off" || status === "expired") return "dim";
+  if (status === "exhausted") return "warn";
+  if (status === "off" || status === "expired") return "off";
   return "";
 }
 
@@ -67,21 +120,21 @@ function CapacityGauge({
   if (maxRedemptions >= 1 && maxRedemptions <= MAX_PIPS) {
     const filled = Math.min(redeemedCount, maxRedemptions);
     return (
-      <div className={`admin-code-pips admin-code-pips--${size}`} aria-hidden>
+      <div className={`admin-pips admin-pips--${size}`} aria-hidden>
         {Array.from({ length: maxRedemptions }, (_, i) => (
           <span
             // biome-ignore lint/suspicious/noArrayIndexKey: fixed positional slots
             key={i}
-            className={`admin-code-pip${i < filled ? ` filled ${tone}` : ""}`}
+            className={`admin-pip${i < filled ? ` filled ${tone}` : ""}`}
           />
         ))}
       </div>
     );
   }
   return (
-    <div className={`admin-code-meter admin-code-meter--${size}`} aria-hidden>
+    <div className={`admin-meter admin-meter--${size}`} aria-hidden>
       <div
-        className={`admin-code-meter-fill ${tone}`}
+        className={`admin-meter-fill ${tone}`}
         style={{ width: `${redeemedFraction(code) * 100}%` }}
       />
     </div>
@@ -111,6 +164,7 @@ interface CodeFormProps {
   initial: CodeDraft;
   isNew: boolean;
   pills: AdminPillDTO[];
+  congphap: CongPhapDTO[];
   onSaved: (saved: AdminRedeemCodeDTO) => void;
   onCancel: () => void;
   onDirtyChange: (dirty: boolean) => void;
@@ -120,6 +174,7 @@ function CodeForm({
   initial,
   isNew,
   pills,
+  congphap,
   onSaved,
   onCancel,
   onDirtyChange,
@@ -145,13 +200,19 @@ function CodeForm({
   const set = <K extends keyof CodeDraft>(key: K, value: CodeDraft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
 
-  const setReward = (
-    idx: number,
-    patch: Partial<{ pillId: string; quantity: number }>,
-  ) =>
+  const setReward = (idx: number, patch: Partial<AdminRedeemRewardDTO>) =>
     setDraft((d) => ({
       ...d,
       rewards: d.rewards.map((r, i) => (i === idx ? { ...r, ...patch } : r)),
+    }));
+
+  // Replace (not merge) so the previous kind's key disappears entirely.
+  const setRewardKind = (idx: number, kind: RewardKind) =>
+    setDraft((d) => ({
+      ...d,
+      rewards: d.rewards.map((r, i) =>
+        i === idx ? emptyRewardOfKind(kind, r.quantity) : r,
+      ),
     }));
 
   const addReward = () =>
@@ -192,17 +253,17 @@ function CodeForm({
   const maxError = findRedeemError(errors, "maxRedemptions");
 
   return (
-    <div className="admin-code-form">
+    <div className="admin-form">
       {/* Section 1 — identity + limits. Grouped and titled so the form reads as
           discrete blocks rather than one undifferentiated grid. */}
-      <section className="admin-code-section">
-        <div className="admin-code-section-head">
-          <h4 className="admin-code-section-title">Thông tin cơ bản</h4>
+      <section className="admin-form-section">
+        <div className="admin-form-section-head">
+          <h4 className="admin-form-section-title">Thông tin cơ bản</h4>
         </div>
-        <div className="admin-code-form-grid">
+        <div className="admin-form-grid">
           {isNew && (
-            <label className="admin-code-field">
-              <span className="admin-code-label">
+            <label className="admin-field">
+              <span className="admin-field-label">
                 ID <span className="admin-req">*</span>
               </span>
               <input
@@ -212,7 +273,7 @@ function CodeForm({
                 aria-label="ID mã"
                 placeholder="tan-thu-2026"
               />
-              <span className="admin-code-hint">
+              <span className="admin-field-hint">
                 Định danh nội bộ, không đổi được sau khi tạo
               </span>
               {idError && (
@@ -221,8 +282,8 @@ function CodeForm({
             </label>
           )}
           {isNew && (
-            <label className="admin-code-field">
-              <span className="admin-code-label">
+            <label className="admin-field">
+              <span className="admin-field-label">
                 Mã code <span className="admin-req">*</span>
               </span>
               <input
@@ -232,7 +293,7 @@ function CodeForm({
                 aria-label="Mã code"
                 placeholder="TANTHU2026"
               />
-              <span className="admin-code-hint">
+              <span className="admin-field-hint">
                 Người chơi nhập để đổi (không phân biệt hoa/thường)
               </span>
               {codeError && (
@@ -240,8 +301,8 @@ function CodeForm({
               )}
             </label>
           )}
-          <label className="admin-code-field">
-            <span className="admin-code-label">
+          <label className="admin-field">
+            <span className="admin-field-label">
               Tổng lượt đổi tối đa <span className="admin-req">*</span>
             </span>
             <input
@@ -260,8 +321,8 @@ function CodeForm({
               <span className="admin-field-error">{maxError.message}</span>
             )}
           </label>
-          <label className="admin-code-field">
-            <span className="admin-code-label">Hết hạn</span>
+          <label className="admin-field">
+            <span className="admin-field-label">Hết hạn</span>
             <input
               type="datetime-local"
               className="admin-input"
@@ -276,24 +337,24 @@ function CodeForm({
               }
               aria-label="Thời điểm hết hạn"
             />
-            <span className="admin-code-hint">Trống = không hết hạn</span>
+            <span className="admin-field-hint">Trống = không hết hạn</span>
           </label>
         </div>
 
         {/* Active state as a switch, not a bare checkbox — reads as a live
             on/off control matching the status pill in the header. */}
-        <label className="admin-code-toggle">
+        <label className="admin-switch">
           <input
             type="checkbox"
-            className="admin-code-toggle-input"
+            className="admin-switch-input"
             checked={draft.active}
             onChange={(e) => set("active", e.target.checked)}
             aria-label="Đang kích hoạt"
           />
-          <span className="admin-code-switch" aria-hidden="true" />
-          <span className="admin-code-toggle-text">
-            <span className="admin-code-toggle-title">Kích hoạt</span>
-            <span className="admin-code-hint">
+          <span className="admin-switch-track" aria-hidden="true" />
+          <span className="admin-switch-text">
+            <span className="admin-switch-title">Kích hoạt</span>
+            <span className="admin-field-hint">
               Tắt để tạm chặn người chơi đổi mã (giữ nguyên số lượt đã đổi)
             </span>
           </span>
@@ -301,76 +362,154 @@ function CodeForm({
       </section>
 
       {/* Section 2 — rewards. */}
-      <section className="admin-code-section">
-        <div className="admin-code-section-head">
-          <h4 className="admin-code-section-title">Phần thưởng</h4>
-          <span className="admin-code-section-hint">
-            Đan dược trao khi đổi mã
+      <section className="admin-form-section">
+        <div className="admin-form-section-head">
+          <h4 className="admin-form-section-title">Phần thưởng</h4>
+          <span className="admin-form-section-hint">
+            Đan dược, công pháp hoặc Linh Thạch trao khi đổi mã
           </span>
         </div>
         {rewardsError && (
           <p className="admin-field-error">{rewardsError.message}</p>
         )}
         {draft.rewards.length === 0 && !rewardsError && (
-          <p className="admin-code-rewards-empty">
-            Chưa có phần thưởng. Thêm ít nhất một đan dược để mã có hiệu lực.
+          <p className="admin-row-empty">
+            Chưa có phần thưởng. Thêm ít nhất một phần thưởng để mã có hiệu lực.
           </p>
         )}
-        <div className="admin-code-reward-list">
+        <div className="admin-row-list">
           {draft.rewards.map((r, i) => {
-            const selected = pills.find((p) => p.id === r.pillId);
-            const glyphColor = selected
-              ? getRarityMeta(selected.rarity).color
-              : "var(--muted)";
+            const kind = rewardKind(r);
+            const selectedPill = pills.find((p) => p.id === r.pillId);
+            const selectedCongPhap = congphap.find(
+              (cp) => cp.id === r.congPhapId,
+            );
+            const glyph =
+              kind === "linhThach"
+                ? "晶"
+                : kind === "congphap"
+                  ? (selectedCongPhap?.glyph ?? "?")
+                  : (selectedPill?.glyph ?? "?");
+            const glyphColor =
+              kind === "linhThach"
+                ? "var(--jade)"
+                : kind === "congphap"
+                  ? selectedCongPhap
+                    ? getCongPhapRarityMeta(selectedCongPhap.rarity).color
+                    : "var(--muted)"
+                  : selectedPill
+                    ? getRarityMeta(selectedPill.rarity).color
+                    : "var(--muted)";
             return (
               <div
                 // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional, no stable id
                 key={i}
-                className="admin-code-reward-row"
+                className="admin-row"
               >
                 <span
-                  className="admin-code-reward-glyph"
+                  className="admin-row-glyph"
                   style={{ color: glyphColor }}
                   aria-hidden="true"
                 >
-                  {selected?.glyph ?? "?"}
+                  {glyph}
                 </span>
                 <select
-                  className="admin-input admin-code-reward-select"
-                  value={r.pillId}
-                  aria-label={`Đan dược hàng ${i + 1}`}
-                  onChange={(e) => setReward(i, { pillId: e.target.value })}
+                  className="admin-input admin-code-reward-kind"
+                  value={kind}
+                  aria-label={`Loại phần thưởng hàng ${i + 1}`}
+                  onChange={(e) =>
+                    setRewardKind(i, e.target.value as RewardKind)
+                  }
                 >
-                  <option value="">-- Chọn đan dược --</option>
-                  {pills.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
+                  {(Object.keys(REWARD_KIND_LABEL) as RewardKind[]).map((k) => (
+                    <option key={k} value={k}>
+                      {REWARD_KIND_LABEL[k]}
                     </option>
                   ))}
                 </select>
-                <div className="admin-code-reward-qty-wrap">
-                  <span className="admin-code-reward-times" aria-hidden="true">
-                    ×
-                  </span>
+                {kind === "pill" && (
+                  <select
+                    className="admin-input admin-row-grow"
+                    value={r.pillId ?? ""}
+                    aria-label={`Đan dược hàng ${i + 1}`}
+                    onChange={(e) => setReward(i, { pillId: e.target.value })}
+                  >
+                    <option value="">-- Chọn đan dược --</option>
+                    {pills.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {kind === "congphap" && (
+                  <select
+                    className="admin-input admin-row-grow"
+                    value={r.congPhapId ?? ""}
+                    aria-label={`Công pháp hàng ${i + 1}`}
+                    onChange={(e) =>
+                      setReward(i, { congPhapId: e.target.value })
+                    }
+                  >
+                    <option value="">-- Chọn công pháp --</option>
+                    {congphap.map((cp) => (
+                      <option key={cp.id} value={cp.id}>
+                        {cp.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {kind === "linhThach" && (
                   <input
                     type="number"
-                    className="admin-input admin-code-reward-qty"
+                    className="admin-input admin-row-grow"
                     min={1}
-                    aria-label={`Số lượng hàng ${i + 1}`}
-                    value={numericValue(r.quantity)}
+                    aria-label={`Số Linh Thạch hàng ${i + 1}`}
+                    value={numericValue(r.linhThach ?? Number.NaN)}
                     onChange={(e) =>
                       setReward(i, {
-                        quantity:
+                        linhThach:
                           e.target.value === ""
                             ? Number.NaN
                             : Number(e.target.value),
                       })
                     }
                   />
-                </div>
+                )}
+                {/* A Linh Thạch reward carries its amount in the field above,
+                    so the ×N multiplier would be a second, contradictory
+                    number — render it only for the item kinds. (An `hidden`
+                    attribute would do nothing here: this class sets
+                    `display: flex`, which outranks the UA stylesheet's
+                    `[hidden] { display: none }`.) */}
+                {kind !== "linhThach" && (
+                  <div className="admin-code-reward-qty-wrap">
+                    <span
+                      className="admin-code-reward-times"
+                      aria-hidden="true"
+                    >
+                      ×
+                    </span>
+                    <input
+                      type="number"
+                      className="admin-input admin-code-reward-qty"
+                      min={1}
+                      aria-label={`Số lượng hàng ${i + 1}`}
+                      value={numericValue(r.quantity)}
+                      onChange={(e) =>
+                        setReward(i, {
+                          quantity:
+                            e.target.value === ""
+                              ? Number.NaN
+                              : Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                )}
                 <button
                   type="button"
-                  className="admin-btn admin-code-reward-remove"
+                  className="admin-btn admin-row-remove"
                   aria-label={`Xóa hàng ${i + 1}`}
                   onClick={() => removeReward(i)}
                 >
@@ -382,7 +521,7 @@ function CodeForm({
         </div>
         <button
           type="button"
-          className="admin-btn admin-code-add-reward"
+          className="admin-btn admin-row-add"
           onClick={addReward}
         >
           + Thêm đan dược
@@ -391,7 +530,7 @@ function CodeForm({
 
       {saveError && <p className="admin-error">{saveError}</p>}
 
-      <div className="admin-code-form-footer">
+      <div className="admin-form-footer">
         <button
           type="button"
           className="admin-btn admin-btn-primary"
@@ -416,6 +555,7 @@ function CodeForm({
 export default function AdminCodesPage() {
   const [codes, setCodes] = useState<AdminRedeemCodeDTO[] | null>(null);
   const [pills, setPills] = useState<AdminPillDTO[]>([]);
+  const [congphap, setCongPhap] = useState<CongPhapDTO[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [dirtyOpen, setDirtyOpen] = useState(false);
@@ -423,12 +563,15 @@ export default function AdminCodesPage() {
   const load = useCallback(async () => {
     setLoadError(null);
     try {
-      const [{ codes: list }, { pills: pillList }] = await Promise.all([
-        fetchAdminCodes(),
-        fetchAdminPills(),
-      ]);
+      const [{ codes: list }, { pills: pillList }, { congphap: cpList }] =
+        await Promise.all([
+          fetchAdminCodes(),
+          fetchAdminPills(),
+          fetchAdminCongPhap(),
+        ]);
       setCodes(list);
       setPills(pillList);
+      setCongPhap(cpList);
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : "Không tải được danh sách");
     }
@@ -502,12 +645,12 @@ export default function AdminCodesPage() {
         </button>
       </div>
 
-      <div className="admin-code-layout">
+      <div className="admin-master-detail">
         {/* Master: one voucher row per code — code + status, capacity gauge,
             then counts + expiry. */}
-        <div className="admin-code-list">
+        <div className="admin-master-list">
           {codes.length === 0 && (
-            <p className="admin-code-list-empty">
+            <p className="admin-master-empty">
               Chưa có mã nào. Tạo mã đầu tiên để phát thưởng.
             </p>
           )}
@@ -517,20 +660,20 @@ export default function AdminCodesPage() {
               <button
                 key={code.id}
                 type="button"
-                className={`admin-code-row${status === "active" ? "" : " inactive"}`}
+                className={`admin-master-item${status === "active" ? "" : " inactive"}`}
                 aria-current={openId === code.id}
                 onClick={() => requestOpen(openId === code.id ? null : code.id)}
               >
-                <div className="admin-code-row-top">
+                <div className="admin-master-item-top">
                   <span className="admin-code-string">{code.code}</span>
                   <span
-                    className={`admin-code-status admin-code-status--${status}`}
+                    className={`admin-status admin-status--${STATUS_TONE[status]}`}
                   >
                     {STATUS_LABEL[status]}
                   </span>
                 </div>
                 <CapacityGauge code={code} status={status} size="sm" />
-                <div className="admin-code-row-foot">
+                <div className="admin-master-item-foot">
                   <span className="admin-num">
                     {code.redeemedCount}/{code.maxRedemptions} lượt
                   </span>
@@ -547,34 +690,39 @@ export default function AdminCodesPage() {
 
         {/* Detail: voucher header + editor for the selected code, or a prompt. */}
         <div
-          className={`admin-code-detail${
-            editingStatus ? ` admin-code-detail--${editingStatus}` : ""
-          }`}
+          className="admin-detail"
+          style={
+            editingStatus
+              ? ({
+                  "--detail-tone": TONE_COLOR[STATUS_TONE[editingStatus]],
+                } as CSSProperties)
+              : undefined
+          }
         >
           {isEditing ? (
             <>
-              <div className="admin-code-detail-head">
+              <div className="admin-detail-head">
                 {openId === "new" ? (
-                  <h3 className="admin-code-detail-title">Tạo mã mới</h3>
+                  <h3 className="admin-detail-title">Tạo mã mới</h3>
                 ) : editingCode && editingStatus ? (
                   <>
-                    <div className="admin-code-detail-id">
+                    <div className="admin-detail-id">
                       <span className="admin-code-string admin-code-string--lg">
                         {editingCode.code}
                       </span>
                       <span
-                        className={`admin-code-status admin-code-status--${editingStatus}`}
+                        className={`admin-status admin-status--${STATUS_TONE[editingStatus]}`}
                       >
                         {STATUS_LABEL[editingStatus]}
                       </span>
                     </div>
-                    <div className="admin-code-gauge">
+                    <div className="admin-detail-gauge">
                       <CapacityGauge
                         code={editingCode}
                         status={editingStatus}
                         size="lg"
                       />
-                      <span className="admin-code-gauge-label">
+                      <span className="admin-detail-gauge-label">
                         <span className="admin-num">
                           {editingCode.redeemedCount}/
                           {editingCode.maxRedemptions}
@@ -587,7 +735,7 @@ export default function AdminCodesPage() {
                     </div>
                   </>
                 ) : (
-                  <h3 className="admin-code-detail-title">(không rõ)</h3>
+                  <h3 className="admin-detail-title">(không rõ)</h3>
                 )}
               </div>
               <CodeForm
@@ -606,13 +754,14 @@ export default function AdminCodesPage() {
                 }
                 isNew={openId === "new"}
                 pills={pills}
+                congphap={congphap}
                 onSaved={onSaved}
                 onCancel={() => setOpenId(null)}
                 onDirtyChange={setDirtyOpen}
               />
             </>
           ) : (
-            <div className="admin-code-detail-empty">
+            <div className="admin-detail-empty">
               <p>Chọn một mã để chỉnh sửa, hoặc tạo mã mới.</p>
             </div>
           )}

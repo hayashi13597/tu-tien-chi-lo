@@ -17,3 +17,16 @@ export const RARITY_META: Record<PillRarity, { name: string; color: string }> =
 export function getRarityMeta(rarity: PillRarity) {
   return RARITY_META[rarity];
 }
+
+/** Số ô của gauge độ hiếm — một ô cho mỗi bậc. */
+export const RARITY_PIPS = 5;
+
+/**
+ * Số pip sáng cho một bậc độ hiếm: bậc 0 sáng 1, bậc 4 sáng đủ 5.
+ * `CongPhap.rarity` phía backend là `Int` không chặn khoảng (khác `Pill`), nên
+ * kẹp trước khi đếm — cùng lý do `getCongPhapRarityMeta` phải kẹp trước khi tra
+ * `RARITY_META`.
+ */
+export function rarityPipCount(rarity: number): number {
+  return Math.min(Math.max(Math.floor(rarity), 0), 4) + 1;
+}

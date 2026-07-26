@@ -163,6 +163,12 @@ describe("admin api", () => {
             pityIncrement: 10,
             maxSuccessRate: 95,
             punishmentSeconds: 300,
+            baseKhiHuyet: 40,
+            baseChanNguyen: 30,
+            baseCongVatLy: 6,
+            baseCongPhep: 6,
+            basePhongThu: 4,
+            baseTocDo: 2,
           },
         ],
       },
@@ -263,7 +269,9 @@ describe("admin pill api", () => {
 describe("redeem api", () => {
   it("redeemCode POSTs the code and returns rewards", async () => {
     const result = {
-      rewards: [{ pillId: "p1", name: "Pill", glyph: "x", quantity: 3 }],
+      rewards: [
+        { kind: "pill", id: "p1", name: "Pill", glyph: "x", quantity: 3 },
+      ],
     };
     const fetchMock = vi.fn(
       async (_input: RequestInfo | URL, _init?: RequestInit) =>
@@ -272,7 +280,8 @@ describe("redeem api", () => {
     vi.stubGlobal("fetch", fetchMock);
     const { redeemCode } = await import("./api");
     const data = await redeemCode("TEST2026");
-    expect(data.rewards[0].pillId).toBe("p1");
+    expect(data.rewards[0].kind).toBe("pill");
+    expect(data.rewards[0].id).toBe("p1");
     const [url, init] = fetchMock.mock.calls[0];
     expect(String(url)).toContain("/redeem");
     expect(init?.method).toBe("POST");
@@ -312,5 +321,110 @@ describe("redeem api", () => {
     expect(parsed.id).toBeUndefined();
     expect(parsed.code).toBeUndefined();
     expect(parsed.redeemedCount).toBeUndefined();
+  });
+});
+
+describe("congphap api", () => {
+  it("fetchCongPhap GETs /congphap", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, { owned: [], catalog: [] }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { fetchCongPhap } = await import("./api");
+    const data = await fetchCongPhap();
+    expect(data.owned).toEqual([]);
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/congphap");
+  });
+
+  it("equipCongPhap POSTs the id and slot", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, { ok: true }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { equipCongPhap } = await import("./api");
+    await equipCongPhap("liet-hoa-tam", 2);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain("/congphap/equip");
+    expect(init?.method).toBe("POST");
+    expect(JSON.parse(init?.body as string)).toEqual({
+      congPhapId: "liet-hoa-tam",
+      slot: 2,
+    });
+  });
+
+  it("levelUpCongPhap returns the new level and Linh Thạch", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, { level: 3, linhThach: 40 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { levelUpCongPhap } = await import("./api");
+    const res = await levelUpCongPhap("thiet-cot-quyet");
+    expect(res).toEqual({ level: 3, linhThach: 40 });
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/congphap/levelup");
+  });
+
+  it("updateAdminCongPhap keeps the id in the URL only", async () => {
+    const def = {
+      id: "cp1",
+      name: "N",
+      glyph: "g",
+      rarity: 1,
+      category: "passive" as const,
+      desc: "d",
+      active: true,
+      maxLevel: 5,
+      baseCost: 100,
+      costGrowth: 1.5,
+      effects: [
+        { attribute: "tocDo" as const, flatPerLevel: 1, pctPerLevel: 0 },
+      ],
+      powerPerLevel: null,
+      chanNguyenCost: null,
+      dupRefundLinhThach: null,
+    };
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, def),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { updateAdminCongPhap } = await import("./api");
+    const { id, ...body } = def;
+    await updateAdminCongPhap(id, body);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain("/admin/congphap/cp1");
+    expect(init?.method).toBe("PUT");
+    expect(JSON.parse(init?.body as string).id).toBeUndefined();
+  });
+
+  it("searchAdminUsers encodes the query", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, { users: [] }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { searchAdminUsers } = await import("./api");
+    await searchAdminUsers("a b&c");
+    expect(String(fetchMock.mock.calls[0][0])).toContain(
+      "/admin/users?q=a%20b%26c",
+    );
+  });
+
+  it("grantToUser POSTs the grant body", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, { ok: true }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { grantToUser } = await import("./api");
+    await grantToUser({ userId: "u1", linhThach: 500 });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain("/admin/grant");
+    expect(JSON.parse(init?.body as string)).toEqual({
+      userId: "u1",
+      linhThach: 500,
+    });
   });
 });

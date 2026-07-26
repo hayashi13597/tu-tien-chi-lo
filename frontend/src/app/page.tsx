@@ -2,11 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AttributePanel } from "@/components/attribute-panel";
 import { BreakthroughButton } from "@/components/breakthrough-button";
 import {
   BreakthroughOverlay,
   type BreakthroughPhase,
 } from "@/components/breakthrough-overlay";
+import { CongPhapModal } from "@/components/congphap-modal";
 import { CosmicBackground } from "@/components/cosmic-background";
 import { DantianFormation } from "@/components/dantian-formation";
 import { HeaderMenu } from "@/components/header-menu";
@@ -21,10 +23,12 @@ import { RealmPath } from "@/components/realm-path";
 import { RedeemModal } from "@/components/redeem-modal";
 import { StatsPanel } from "@/components/stats-panel";
 import { ToastContainer } from "@/components/toast-container";
+import { useCongPhap } from "@/hooks/use-congphap";
 import { useCultivationState } from "@/hooks/use-cultivation-state";
 import { usePillInventory } from "@/hooks/use-pill-inventory";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth-context";
+import { getCongPhapRarityMeta } from "@/lib/congphap-display";
 import { formatSeconds } from "@/lib/format";
 import { getRarityMeta } from "@/lib/pill-constants";
 import { getRealmMeta, getSubStageName } from "@/lib/realm-constants";
@@ -55,6 +59,10 @@ export default function Home() {
   const [phase, setPhase] = useState<BreakthroughPhase>("idle");
   const [pillModalOpen, setPillModalOpen] = useState(false);
   const [redeemModalOpen, setRedeemModalOpen] = useState(false);
+  const [congPhapModalOpen, setCongPhapModalOpen] = useState(false);
+  // One in-flight công pháp mutation at a time: every action re-reads the
+  // list, so overlapping writes would race their own refetches.
+  const [congPhapBusy, setCongPhapBusy] = useState(false);
   const {
     inventory,
     loading: inventoryLoading,
@@ -62,6 +70,16 @@ export default function Home() {
     refetch: refetchInventory,
     consume,
   } = usePillInventory(pillModalOpen);
+  const {
+    owned: congPhapOwned,
+    catalog: congPhapCatalog,
+    loading: congPhapLoading,
+    error: congPhapError,
+    refetch: refetchCongPhap,
+    equip: equipCongPhapAction,
+    unequip: unequipCongPhapAction,
+    levelUp: levelUpCongPhapAction,
+  } = useCongPhap(congPhapModalOpen);
   const particleRef = useRef<ParticleCanvasHandle>(null);
   // The POST result/error is stashed here while the tribulation animation plays,
   // then read in handleTribulationComplete to resolve success/failure.
@@ -152,6 +170,78 @@ export default function Home() {
       }
     },
     [inventory, consume, refetch, addToast],
+  );
+
+  // Wait-for-server, like handleUsePill: POST + refetch the list (inside the
+  // hook), then pull the cultivation state so Linh Thạch, attributes and
+  // battle power all reflect the committed result before we celebrate.
+  const handleLevelUpCongPhap = useCallback(
+    async (congPhapId: string) => {
+      const entry = congPhapOwned.find((o) => o.def.id === congPhapId);
+      setCongPhapBusy(true);
+      try {
+        const result = await levelUpCongPhapAction(congPhapId);
+        await refetch();
+        if (entry) {
+          particleRef.current?.spawnBurst(
+            getCongPhapRarityMeta(entry.def.rarity).color,
+            30,
+          );
+          addToast(
+            "Nâng Cấp Công Pháp",
+            `${entry.def.name} đạt cấp ${result.level}`,
+            "purple",
+          );
+        }
+      } catch (err) {
+        addToast(
+          "Lỗi",
+          err instanceof Error ? err.message : "Nâng cấp thất bại",
+          "danger",
+        );
+      } finally {
+        setCongPhapBusy(false);
+      }
+    },
+    [congPhapOwned, levelUpCongPhapAction, refetch, addToast],
+  );
+
+  const handleEquipCongPhap = useCallback(
+    async (congPhapId: string, slot: number) => {
+      setCongPhapBusy(true);
+      try {
+        await equipCongPhapAction(congPhapId, slot);
+        addToast("Trang Bị", `Đã đặt vào ô ${slot + 1}`, "success");
+      } catch (err) {
+        addToast(
+          "Lỗi",
+          err instanceof Error ? err.message : "Trang bị thất bại",
+          "danger",
+        );
+      } finally {
+        setCongPhapBusy(false);
+      }
+    },
+    [equipCongPhapAction, addToast],
+  );
+
+  const handleUnequipCongPhap = useCallback(
+    async (congPhapId: string) => {
+      setCongPhapBusy(true);
+      try {
+        await unequipCongPhapAction(congPhapId);
+        addToast("Gỡ Trang Bị", "Đã gỡ công pháp khỏi ô", "info");
+      } catch (err) {
+        addToast(
+          "Lỗi",
+          err instanceof Error ? err.message : "Gỡ trang bị thất bại",
+          "danger",
+        );
+      } finally {
+        setCongPhapBusy(false);
+      }
+    },
+    [unequipCongPhapAction, addToast],
   );
 
   const isPillDisabled = useCallback(
@@ -270,6 +360,7 @@ export default function Home() {
         <div className="cultivator-info">
           <HeaderMenu
             onOpenPills={() => setPillModalOpen(true)}
+            onOpenCongPhap={() => setCongPhapModalOpen(true)}
             onOpenRedeem={() => setRedeemModalOpen(true)}
             onLogout={handleLogout}
           />
@@ -301,6 +392,7 @@ export default function Home() {
                 )}
               </div>
             )}
+            <AttributePanel state={state} />
           </div>
 
           <section className="cultivation-stage">
@@ -353,6 +445,21 @@ export default function Home() {
         onClose={() => setPillModalOpen(false)}
         onUse={handleUsePill}
         isDisabled={isPillDisabled}
+      />
+
+      <CongPhapModal
+        open={congPhapModalOpen}
+        owned={congPhapOwned}
+        catalog={congPhapCatalog}
+        linhThach={state.linhThach}
+        loading={congPhapLoading}
+        error={congPhapError}
+        busy={congPhapBusy}
+        onRetry={refetchCongPhap}
+        onClose={() => setCongPhapModalOpen(false)}
+        onEquip={handleEquipCongPhap}
+        onUnequip={handleUnequipCongPhap}
+        onLevelUp={handleLevelUpCongPhap}
       />
 
       <RedeemModal

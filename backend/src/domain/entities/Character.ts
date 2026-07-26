@@ -4,6 +4,8 @@ export interface CharacterRecord {
   realmMajor: number;
   realmSub: number;
   linhKhi: number;
+  // Currency dùng để nâng cấp công pháp. Cấp qua redeem code + admin.
+  linhThach: number;
   lastUpdateAt: Date;
   breakthroughFails: number;
   punishedUntil: Date | null;

@@ -3,6 +3,9 @@ import { DomainError } from '../domain/errors';
 import { RealmConfigSource } from '../domain/ports/RealmConfigSource';
 import { computeLinhKhi } from '../domain/cultivation/cultivation.calc';
 import { isMaxStage, computeSuccessRate } from '../domain/breakthrough/breakthrough.calc';
+import { OwnedCongPhapRepository } from '../domain/ports/OwnedCongPhapRepository';
+import { AttributeSet } from '../domain/attributes/attributes';
+import { buildAttributeState } from './attributeState';
 
 export interface CultivationStateOutput {
   realmMajor: number;
@@ -22,12 +25,16 @@ export interface CultivationStateOutput {
   // clamped to the stage cap. Read-only mirror of AttemptBreakthroughUseCase's
   // computeSuccessRate so the client can show it without knowing the formula.
   breakthroughSuccessRate: number;
+  linhThach: number;
+  attributes: { base: AttributeSet; final: AttributeSet };
+  battlePower: number;
 }
 
 export class GetCultivationStateUseCase {
   constructor(
     private readonly characters: CharacterRepository,
     private readonly realmConfig: RealmConfigSource,
+    private readonly ownedCongPhap: OwnedCongPhapRepository,
   ) {}
 
   async execute(userId: string): Promise<CultivationStateOutput> {
@@ -51,6 +58,7 @@ export class GetCultivationStateUseCase {
         realmMajor: character.realmMajor,
         realmSub: character.realmSub,
         linhKhi: character.linhKhi,
+        linhThach: character.linhThach,
         lastUpdateAt: character.lastUpdateAt,
         breakthroughFails: character.breakthroughFails,
         punishedUntil: character.punishedUntil,
@@ -90,6 +98,9 @@ export class GetCultivationStateUseCase {
       bonusPct: character.breakthroughBonusPct,
     });
 
+    const owned = await this.ownedCongPhap.listByUser(userId);
+    const attrState = buildAttributeState(config, character.realmMajor, character.realmSub, owned);
+
     return {
       realmMajor: character.realmMajor,
       realmSub: character.realmSub,
@@ -106,6 +117,9 @@ export class GetCultivationStateUseCase {
       cultivationBuffUntil: character.cultivationBuffUntil,
       breakthroughBonusPct: character.breakthroughBonusPct,
       breakthroughSuccessRate,
+      linhThach: character.linhThach,
+      attributes: attrState.attributes,
+      battlePower: attrState.battlePower,
     };
   }
 }

@@ -2,8 +2,12 @@ import type {
   AdminPillDTO,
   AdminRedeemCodeDTO,
   AdminStats,
+  AdminUserDTO,
   ApiError,
+  CongPhapDTO,
+  CongPhapListResult,
   CultivationState,
+  LevelUpResult,
   Me,
   PillInventoryItem,
   RealmConfigDTO,
@@ -169,6 +173,84 @@ export function updateAdminCode(
     method: "PUT",
     body: JSON.stringify(body),
   });
+}
+
+// GET /congphap — owned công pháp (with definitions) + the active catalog.
+export function fetchCongPhap(): Promise<CongPhapListResult> {
+  return apiFetch<CongPhapListResult>("/congphap");
+}
+
+// POST /congphap/equip — put an active công pháp in slot 0..3 (replaces any
+// công pháp already in that slot, server-side).
+export function equipCongPhap(
+  congPhapId: string,
+  slot: number,
+): Promise<{ ok: true }> {
+  return apiFetch<{ ok: true }>("/congphap/equip", {
+    method: "POST",
+    body: JSON.stringify({ congPhapId, slot }),
+  });
+}
+
+// POST /congphap/unequip — clear this công pháp's slot.
+export function unequipCongPhap(congPhapId: string): Promise<{ ok: true }> {
+  return apiFetch<{ ok: true }>("/congphap/unequip", {
+    method: "POST",
+    body: JSON.stringify({ congPhapId }),
+  });
+}
+
+// POST /congphap/levelup — spend Linh Thạch for +1 level; returns both new values.
+export function levelUpCongPhap(congPhapId: string): Promise<LevelUpResult> {
+  return apiFetch<LevelUpResult>("/congphap/levelup", {
+    method: "POST",
+    body: JSON.stringify({ congPhapId }),
+  });
+}
+
+// GET /admin/congphap — full catalog, inactive included.
+export function fetchAdminCongPhap(): Promise<{ congphap: CongPhapDTO[] }> {
+  return apiFetch<{ congphap: CongPhapDTO[] }>("/admin/congphap");
+}
+
+// POST /admin/congphap — create (id chosen once here, immutable after).
+export function createAdminCongPhap(def: CongPhapDTO): Promise<CongPhapDTO> {
+  return apiFetch<CongPhapDTO>("/admin/congphap", {
+    method: "POST",
+    body: JSON.stringify(def),
+  });
+}
+
+// PUT /admin/congphap/:id — full-row update; the id travels in the URL only.
+export function updateAdminCongPhap(
+  id: string,
+  body: Omit<CongPhapDTO, "id">,
+): Promise<CongPhapDTO> {
+  return apiFetch<CongPhapDTO>(`/admin/congphap/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+}
+
+// POST /admin/grant — give a player a công pháp and/or Linh Thạch.
+export function grantToUser(body: {
+  userId: string;
+  congPhapId?: string;
+  linhThach?: number;
+}): Promise<{ ok: true }> {
+  return apiFetch<{ ok: true }>("/admin/grant", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+// GET /admin/users — search players by username for the grant picker.
+export function searchAdminUsers(
+  q: string,
+): Promise<{ users: AdminUserDTO[] }> {
+  return apiFetch<{ users: AdminUserDTO[] }>(
+    `/admin/users?q=${encodeURIComponent(q)}`,
+  );
 }
 
 export { API_BASE };

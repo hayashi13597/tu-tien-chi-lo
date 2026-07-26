@@ -12,6 +12,7 @@ function makeCharacter(overrides: Partial<CharacterRecord> = {}): CharacterRecor
     realmMajor: 0,
     realmSub: 0,
     linhKhi: 0,
+    linhThach: 0,
     lastUpdateAt: new Date(),
     breakthroughFails: 0,
     punishedUntil: null,

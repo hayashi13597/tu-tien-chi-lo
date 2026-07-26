@@ -26,7 +26,7 @@ A cultivation-game (gameplay rebuilt to 100% feature parity with Nhất Niệm T
 - Backend env: `JWT_SECRET`, `JWT_REFRESH_SECRET`, `CORS_ORIGIN=http://localhost:3000`, `PORT=5000`. Frontend: `NEXT_PUBLIC_API_BASE=http://localhost:5000` in `frontend/.env.local`.
 - Docker/Prisma gotcha: `node:20-alpine` needs `openssl` in the image + `linux-musl-openssl-3.0.x` binary target in `prisma/schema.prisma`, or the query engine fails to load.
 - Integration-test gotchas: pre-warm Prisma connections before racing concurrent requests (cold pool makes races non-deterministic); usernames must satisfy `registerSchema` `min(3)`.
-- Current test counts: **backend 230, frontend 60**.
+- Current test counts: **backend 353, frontend 101**.
 
 ## Backend: Phase 1 (core) + Phase 2 (cookie auth)
 
@@ -59,17 +59,38 @@ A cultivation-game (gameplay rebuilt to 100% feature parity with Nhất Niệm T
 
 ## Admin dashboard (frontend)
 
-- `/admin` inside the Next.js app, sidebar-rail **pro-dashboard** register (flat `.admin-panel`s, `--font-mono`/`.admin-num` for numerics, gold accents; rail collapses to top strip ≤768px). `admin/layout.tsx` = client-side guard (UX only — real enforcement is backend). Pages: `/admin` (KPIs + realm distribution), `/admin/realms` (master/detail editor, full-replace PUT, draft + Hoàn tác + `beforeunload`), `/admin/pills` (master/detail, per-pill draft), `/admin/codes` (master/detail).
+- `/admin` inside the Next.js app, sidebar-rail **pro-dashboard** register (flat `.admin-panel`s, `--font-mono`/`.admin-num` for numerics, gold accents; rail collapses to top strip ≤768px). `admin/layout.tsx` = client-side guard (UX only — real enforcement is backend).
+- **Cả bốn trang CRUD dùng chung một bộ khung trung tính** trong `globals.css`: `.admin-master-detail` (lưới 2 cột) · `.admin-master-list`/`-item`/`-empty` (thẻ rời cuộn được) · `.admin-status--ok|warn|danger|off` · `.admin-detail` (viền trên lấy màu từ `--detail-tone`) · `.admin-form` + `-section*` + `.admin-field*` + `.admin-switch*` + `.admin-form-footer` · `.admin-row*`. Tên lớp mang nghĩa miền chỉ còn `.admin-code-string`, `.admin-code-reward-kind|qty*`.
+- Gauge: redeem code = lượt đã đổi (`.admin-pips`/`.admin-meter`), đan dược + công pháp = 5 pip độ hiếm (`RarityPips`, `rarityPipCount`), cảnh giới = đường cong linh khí thang log (`RealmCurve`, `curveHeights`). `/admin/realms` sửa một tiểu cảnh giới qua tab (`.admin-tabs`/`.admin-tab`), có chấm lỗi `.admin-err-dot`; 12 ô số chia 3 section.
+- Quy ước nhãn: `/admin/codes` đánh dấu `*`; ba trang kia để ô bắt buộc trơn và ghi `(tùy chọn)` trong hint cho ô tùy chọn.
 - Backend: `GET /auth/me` (`requireAuth`, role from the **verified token**, not DB — mirrors what `requireAdmin` enforces this session), `GET /admin/stats` (`StatsRepository` port + `GetAdminStatsUseCase`; realm deleted from config labeled `"Realm #N"`).
 - Frontend: `auth-context` probes `/auth/me` on mount, exposes `me`; `HeaderMenu` shows "Quản trị" when `me.role === "admin"`. Pure validation mirrors: `lib/realm-validation.ts`, `lib/pill-validation.ts`, `lib/redeem-validation.ts` (pre-flight field errors; NaN from empty numeric input blocks Save). Draft editors disable all mutating controls while saving; index-keyed UI state is remapped on remove.
 - `HeaderMenu` owns header actions: desktop inline / mobile hamburger (pure CSS media query, SSR-safe), Escape/outside-click close, full ARIA. Items: Đan Phòng, Nhập Code, Quản trị (admin), Đăng xuất.
 
 ## Redeem codes
 
-- Schema: `RedeemCode` (code unique, active, maxRedemptions, redeemedCount, expiresAt), `RedeemCodeReward` (`@@unique([codeId, pillId])`), `Redemption` (`@@unique([codeId, userId])`, cascade on user+code).
+- Schema: `RedeemCode` (code unique, active, maxRedemptions, redeemedCount, expiresAt), `RedeemCodeReward` (multi-kind: nullable `pillId`/`congPhapId`/`linhThach`, exactly one set — no `@@unique` since nullable-unique semantics differ per DB), `Redemption` (`@@unique([codeId, userId])`, cascade on user+code).
 - `tryReserveRedemption` (atomic): insert `Redemption` first (P2002 → already_redeemed), then conditional `updateMany` increment under cap — `count === 0` → delete the redemption (saga compensation) → exhausted. Reserve BEFORE grant.
 - `normalizeCode` (trim+uppercase) is the single case-insensitivity source for create and lookup. Player route `POST /redeem`; admin `GET/POST/PUT /admin/codes` (`redeemedCount`/`code` immutable). Disabled-pill rewards are still granted (code's promise wins); hard-deleted pill falls back to id in the toast. 7 error codes mapped in `errorHandler` (404 not-found; 400 inactive/expired/invalid; 409 already-used/exhausted/taken).
-- Frontend: `RedeemModal` (GSAP, from HeaderMenu; success = particle burst + toast + cultivation refetch).
+- Reward result shape is `{ kind: 'pill'|'congphap'|'linhThach', id, name, glyph, quantity }` (was `{ pillId, … }`). `validateRedeemCodeDefinition` enforces exactly-one-kind per reward and dedupes per kind (`pill:x` ≠ `congphap:x`). `PrismaRedeemCodeRepository.grantRewards` only touches inventory for `pillId` rewards; công pháp/Linh Thạch are granted by the use case.
+- Frontend: `RedeemModal` (GSAP, from HeaderMenu; success = particle burst + toast + cultivation refetch). `/admin/codes` chọn loại thưởng cho từng dòng — đổi loại thì **thay cả dòng** (`emptyRewardOfKind`) để không sót khóa cũ làm hỏng rule "đúng một loại".
+
+## Công Pháp & Thuộc tính
+
+- **6 thuộc tính** (khóa dùng nguyên văn): `khiHuyet, chanNguyen, congVatLy, congPhep, phongThu, tocDo` (`domain/attributes/`). Chiến lực = tổng trọng số `BATTLE_POWER_WEIGHTS` trên thuộc tính *final*, làm tròn; công pháp chủ động **không** tham gia.
+- Công thức gộp: `final = (base + Σ flat×level) × (1 + Σ pct×level/100)` — cộng phẳng TRƯỚC, nhân % SAU.
+- Base theo sub-stage nằm ở 6 cột `RealmStage.base*` (admin sửa qua `PUT /admin/realms`, schema `.default(0)` nên body client cũ vẫn hợp lệ). `SEED_REALMS = SEED_REALMS_CORE + deriveBaseAttributes(cultivationRate)` — literal core giữ gọn, base sinh tự động. `RealmConfigSet.baseAttributes(major, sub)`.
+- `CongPhap` (định nghĩa trong DB, `effects` là Json cho passive) + `OwnedCongPhap` (`@@unique([userId, congPhapId])`, `level`, `equippedSlot`) + `Character.linhThach`. Bị động cộng thuộc tính; chủ động chiếm 1 trong `ACTIVE_SLOTS`=4 slot và **chưa** áp dụng hiệu ứng (để dành phase combat). Soft-disable bằng `active`, không hard-delete.
+- `levelUpCost = round(baseCost · costGrowth^(level−1))` (level 1→2 = baseCost). `LevelUpCongPhapUseCase` dùng saga giống `ConsumePill`: `spendLinhThach` (atomic guard `linhThach >= amount`) TRƯỚC, rồi `levelUpGuarded` (guard trên level cũ); thua race → `addLinhThach` hoàn lại.
+- Redeem trùng công pháp → quy đổi `duplicateRefund = dupRefundLinhThach ?? baseCost` thành Linh Thạch.
+- `buildAttributeState` (application) dùng chung cho các use case trả cultivation state; chỉ passive **và** `def.active` mới đóng góp. `GET /cultivation/state` trả thêm `linhThach`, `attributes.{base,final}`, `battlePower`. `POST /cultivation/breakthrough` vẫn trả `{ success, character }` (character mang `linhThach`, không mang attributes).
+- Routes: `GET /congphap`, `POST /congphap/equip|unequip|levelup`; admin `GET/POST /admin/congphap`, `PUT /admin/congphap/:id`, `POST /admin/grant` (cấp công pháp và/hoặc Linh Thạch), `GET /admin/users?q=&limit=` (tìm người chơi cho ô cấp thưởng; `SearchUsersUseCase` clamp limit vào [1,50], mặc định 20).
+- Mã lỗi: `CONGPHAP_NOT_FOUND` 404 · `CONGPHAP_NOT_OWNED` 404 · `CONGPHAP_NOT_EQUIPPABLE` 400 · `CONGPHAP_SLOT_INVALID` 400 · `CONGPHAP_MAX_LEVEL` 409 · `INSUFFICIENT_LINH_THACH` 409 · `INVALID_CONGPHAP_CONFIG` 400 · `CONGPHAP_ID_TAKEN` 409 · `INVALID_GRANT` 400.
+- Frontend: `AttributePanel` — panel riêng ở cột trái, dùng chung khuôn `.panel`/`.panel-title`/`.stat-row` với `StatsPanel` (Tu Hành Bảng): Chiến lực + Linh Thạch + 6 thuộc tính (hiện `final`, hậu tố vàng `(+N)` = chênh so với `base`). Modal Công Pháp (`CongPhapModal`, mở từ `HeaderMenu`): 4 ô chủ động + danh sách bị động + "chưa sở hữu"; `useCongPhap(enabled)` lazy-fetch, mọi mutation `try/finally refetch` rồi `refetch()` cultivation state (wait-for-server như `handleUsePill`). Thư viện thuần: `attribute-constants.ts`, `congphap-display.ts` (mirror `levelUpCost`/bonus/`attributeDelta`), `congphap-validation.ts`.
+- **`getCongPhapRarityMeta` clamp rarity về 0–4** trước khi tra `RARITY_META`: `CongPhap.rarity` là `Int` không chặn khoảng (khác `Pill`), admin đặt 7 sẽ ra `undefined.color` nếu tra thẳng.
+- Admin: `/admin/congphap` (master/detail như `/admin/pills`; form đổi theo `category`, editor `effects[]`, preview chi phí) + khối **Cấp thưởng** (search user debounce 300ms → `POST /admin/grant`). `/admin/realms` có thêm 6 ô base thuộc tính. `/admin/codes` chọn được loại thưởng (đan dược / công pháp / Linh Thạch).
+- Gotcha: `db:seed` upsert cả `CongPhap` (3 mẫu) — đè chỉnh sửa admin, dùng như công cụ reset.
+- Prisma gotcha: cột `Json?` phải set `Prisma.DbNull` để xóa giá trị khi update — bỏ trống key nghĩa là "không đổi", nên passive→active sẽ còn sót `effects` cũ.
 
 ## Security hardening (backend)
 

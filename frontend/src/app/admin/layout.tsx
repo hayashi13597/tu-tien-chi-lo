@@ -8,6 +8,7 @@ import {
   ChartIcon,
   GiftIcon,
   MountainIcon,
+  ScrollIcon,
 } from "@/components/icons";
 import { useAuth } from "@/lib/auth-context";
 
@@ -67,6 +68,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           >
             <CauldronIcon width={18} height={18} />
             Đan dược
+          </Link>
+          <Link
+            href="/admin/congphap"
+            aria-current={pathname === "/admin/congphap" ? "page" : undefined}
+          >
+            <ScrollIcon width={18} height={18} />
+            Công pháp
           </Link>
           <Link
             href="/admin/codes"

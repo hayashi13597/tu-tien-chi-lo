@@ -2,8 +2,28 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import { RedeemCodeRepository, ReserveResult } from '../../domain/ports/RedeemCodeRepository';
 import { RedeemCodeRecord, RewardEntry } from '../../domain/redeem/redeemCode';
 
-function toRecord(row: { id: string; code: string; active: boolean; maxRedemptions: number; redeemedCount: number; expiresAt: Date | null; createdAt: Date; rewards: Array<{ pillId: string; quantity: number }> }): RedeemCodeRecord {
-  return { id: row.id, code: row.code, active: row.active, maxRedemptions: row.maxRedemptions, redeemedCount: row.redeemedCount, expiresAt: row.expiresAt, rewards: row.rewards.map((r) => ({ pillId: r.pillId, quantity: r.quantity })) };
+function toRecord(row: { id: string; code: string; active: boolean; maxRedemptions: number; redeemedCount: number; expiresAt: Date | null; createdAt: Date; rewards: Array<{ pillId: string | null; congPhapId: string | null; linhThach: number | null; quantity: number }> }): RedeemCodeRecord {
+  return {
+    id: row.id, code: row.code, active: row.active, maxRedemptions: row.maxRedemptions,
+    redeemedCount: row.redeemedCount, expiresAt: row.expiresAt,
+    // Cột nullable -> field optional ở domain: chỉ mang theo loại reward thực sự được set.
+    rewards: row.rewards.map((r) => ({
+      ...(r.pillId !== null ? { pillId: r.pillId } : {}),
+      ...(r.congPhapId !== null ? { congPhapId: r.congPhapId } : {}),
+      ...(r.linhThach !== null ? { linhThach: r.linhThach } : {}),
+      quantity: r.quantity,
+    })),
+  };
+}
+
+// Một RewardEntry -> hàng RedeemCodeReward (chỉ ghi loại được set).
+function toRewardData(r: RewardEntry) {
+  return {
+    pillId: r.pillId ?? null,
+    congPhapId: r.congPhapId ?? null,
+    linhThach: r.linhThach ?? null,
+    quantity: r.quantity,
+  };
 }
 
 export class PrismaRedeemCodeRepository implements RedeemCodeRepository {
@@ -22,7 +42,7 @@ export class PrismaRedeemCodeRepository implements RedeemCodeRepository {
   async create(record: RedeemCodeRecord): Promise<void> {
     const { rewards, ...scalars } = record;
     await this.client.redeemCode.create({
-      data: { ...scalars, rewards: { create: rewards.map((r) => ({ pillId: r.pillId, quantity: r.quantity })) } },
+      data: { ...scalars, rewards: { create: rewards.map(toRewardData) } },
     });
   }
 
@@ -34,7 +54,7 @@ export class PrismaRedeemCodeRepository implements RedeemCodeRepository {
     // partially written (same pattern as PrismaRealmConfigRepository.replaceAll).
     await this.client.$transaction([
       this.client.redeemCodeReward.deleteMany({ where: { codeId: id } }),
-      this.client.redeemCodeReward.createMany({ data: rewards.map((r) => ({ codeId: id, pillId: r.pillId, quantity: r.quantity })) }),
+      this.client.redeemCodeReward.createMany({ data: rewards.map((r) => ({ codeId: id, ...toRewardData(r) })) }),
       this.client.redeemCode.update({ where: { id }, data: scalars }),
     ]);
     return true;
@@ -66,6 +86,9 @@ export class PrismaRedeemCodeRepository implements RedeemCodeRepository {
 
   async grantRewards(userId: string, rewards: RewardEntry[]): Promise<void> {
     for (const r of rewards) {
+      // Chỉ phần thưởng đan dược đi vào inventory; công pháp/Linh Thạch do
+      // RedeemCodeUseCase cấp trực tiếp qua repo riêng của chúng.
+      if (!r.pillId) continue;
       await this.client.inventoryItem.upsert({
         where: { userId_pillId: { userId, pillId: r.pillId } },
         create: { userId, pillId: r.pillId, quantity: r.quantity },

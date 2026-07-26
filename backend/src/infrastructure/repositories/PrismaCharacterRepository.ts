@@ -26,4 +26,18 @@ export class PrismaCharacterRepository implements CharacterRepository {
     }
     return this.client.character.findUniqueOrThrow({ where: { id } });
   }
+
+  async spendLinhThach(characterId: string, amount: number): Promise<boolean> {
+    // Row-level atomic guard: chỉ trừ khi số dư >= amount => không bao giờ âm,
+    // hai lần nâng cấp song song không cùng tiêu quá số dư.
+    const res = await this.client.character.updateMany({
+      where: { id: characterId, linhThach: { gte: amount } },
+      data: { linhThach: { decrement: amount } },
+    });
+    return res.count === 1;
+  }
+
+  async addLinhThach(characterId: string, amount: number): Promise<void> {
+    await this.client.character.updateMany({ where: { id: characterId }, data: { linhThach: { increment: amount } } });
+  }
 }

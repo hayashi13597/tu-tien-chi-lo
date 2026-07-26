@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { RarityPips } from "@/components/rarity-pips";
 import { createAdminPill, fetchAdminPills, updateAdminPill } from "@/lib/api";
 import { getRarityMeta } from "@/lib/pill-constants";
 import {
@@ -19,6 +20,14 @@ const EFFECT_KINDS: { value: PillEffectKind; label: string }[] = [
 ];
 
 const RARITIES: PillRarity[] = [0, 1, 2, 3, 4];
+
+const EFFECT_HINTS: Record<PillEffectKind, string> = {
+  linhKhi: "cộng thẳng một lần vào linh khí khi dùng",
+  cultivationBuff:
+    "nhân tốc độ tu luyện trong một khoảng thời gian; dùng lại thì làm mới, không cộng dồn",
+  breakthroughBoost: "cộng tỉ lệ cho lần đột phá kế tiếp, dùng một lần rồi mất",
+  clearPunishment: "gỡ trạng thái trọng thương ngay lập tức",
+};
 
 // Human label for an effect kind, reusing the select's option list.
 function effectLabel(kind: PillEffectKind): string {
@@ -171,136 +180,188 @@ function PillForm({
   const statFields = PILL_KIND_FIELDS[draft.effectKind];
 
   return (
-    <div className="admin-pill-form">
-      <div className="admin-pill-form-grid">
-        <label>
-          ID
-          <input
-            className={`admin-input${idError ? " invalid" : ""}`}
-            value={draft.id}
-            onChange={(e) => set("id", e.target.value)}
-            readOnly={!isNew}
-            aria-label="ID đan dược"
-          />
-          {idError && (
-            <span className="admin-field-error">{idError.message}</span>
-          )}
-        </label>
-        <label>
-          Tên
-          <input
-            className={`admin-input${findPillError(errors, "name") ? " invalid" : ""}`}
-            value={draft.name}
-            onChange={(e) => set("name", e.target.value)}
-            aria-label="Tên đan dược"
-          />
-        </label>
-        <label>
-          Glyph
-          <input
-            className={`admin-input${findPillError(errors, "glyph") ? " invalid" : ""}`}
-            value={draft.glyph}
-            onChange={(e) => set("glyph", e.target.value)}
-            aria-label="Glyph đan dược"
-          />
-        </label>
-        <label>
-          Độ hiếm
-          <select
-            className="admin-input"
-            value={draft.rarity}
-            onChange={(e) =>
-              set("rarity", Number(e.target.value) as PillRarity)
-            }
-            aria-label="Độ hiếm"
-          >
-            {RARITIES.map((r) => (
-              <option key={r} value={r}>
-                {getRarityMeta(r).name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Hiệu ứng
-          <select
-            className="admin-input"
-            value={draft.effectKind}
-            onChange={(e) => setKind(e.target.value as PillEffectKind)}
-            aria-label="Loại hiệu ứng"
-          >
-            {EFFECT_KINDS.map((k) => (
-              <option key={k.value} value={k.value}>
-                {k.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        {statFields.map((key) => {
-          const err = findPillError(errors, key);
-          return (
-            <label key={key}>
-              {STAT_LABELS[key]}
-              <input
-                type="number"
-                className={`admin-input${err ? " invalid" : ""}`}
-                value={numericValue(draft[key])}
-                onChange={(e) =>
-                  set(
-                    key,
-                    e.target.value === "" ? Number.NaN : Number(e.target.value),
-                  )
-                }
-                aria-label={STAT_LABELS[key]}
-              />
-              {err && <span className="admin-field-error">{err.message}</span>}
-            </label>
-          );
-        })}
-        <label>
-          Phát tân thủ
-          <input
-            type="number"
-            className={`admin-input${findPillError(errors, "starterQuantity") ? " invalid" : ""}`}
-            value={numericValue(draft.starterQuantity)}
-            onChange={(e) =>
-              set(
-                "starterQuantity",
-                e.target.value === "" ? Number.NaN : Number(e.target.value),
-              )
-            }
-            aria-label="Số lượng phát cho người chơi mới"
-          />
-          {findPillError(errors, "starterQuantity") && (
-            <span className="admin-field-error">
-              {findPillError(errors, "starterQuantity")?.message}
+    <div className="admin-form">
+      <section className="admin-form-section">
+        <div className="admin-form-section-head">
+          <h4 className="admin-form-section-title">Nhận dạng</h4>
+        </div>
+        <div className="admin-form-grid">
+          <label className="admin-field">
+            <span className="admin-field-label">ID</span>
+            <input
+              className={`admin-input${idError ? " invalid" : ""}`}
+              value={draft.id}
+              onChange={(e) => set("id", e.target.value)}
+              readOnly={!isNew}
+              disabled={saving}
+              aria-label="ID đan dược"
+            />
+            <span className="admin-field-hint">
+              Định danh nội bộ, không đổi được sau khi tạo
             </span>
-          )}
-        </label>
-        <label className="admin-pill-desc">
-          Mô tả
-          <textarea
-            className={`admin-input${findPillError(errors, "desc") ? " invalid" : ""}`}
-            value={draft.desc}
-            onChange={(e) => set("desc", e.target.value)}
-            rows={2}
-            aria-label="Mô tả đan dược"
-          />
-        </label>
-        <label className="admin-pill-active">
+            {idError && (
+              <span className="admin-field-error">{idError.message}</span>
+            )}
+          </label>
+          <label className="admin-field">
+            <span className="admin-field-label">Tên</span>
+            <input
+              className={`admin-input${findPillError(errors, "name") ? " invalid" : ""}`}
+              value={draft.name}
+              onChange={(e) => set("name", e.target.value)}
+              disabled={saving}
+              aria-label="Tên đan dược"
+            />
+          </label>
+          <label className="admin-field">
+            <span className="admin-field-label">Glyph</span>
+            <input
+              className={`admin-input${findPillError(errors, "glyph") ? " invalid" : ""}`}
+              value={draft.glyph}
+              onChange={(e) => set("glyph", e.target.value)}
+              disabled={saving}
+              aria-label="Glyph đan dược"
+            />
+            <span className="admin-field-hint">
+              Một ký tự Hán hiển thị trên viên đan
+            </span>
+          </label>
+          <label className="admin-field">
+            <span className="admin-field-label">Độ hiếm</span>
+            <select
+              className="admin-input"
+              value={draft.rarity}
+              onChange={(e) =>
+                set("rarity", Number(e.target.value) as PillRarity)
+              }
+              disabled={saving}
+              aria-label="Độ hiếm"
+            >
+              {RARITIES.map((r) => (
+                <option key={r} value={r}>
+                  {getRarityMeta(r).name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section className="admin-form-section">
+        <div className="admin-form-section-head">
+          <h4 className="admin-form-section-title">Hiệu ứng</h4>
+          <span className="admin-form-section-hint">
+            {EFFECT_HINTS[draft.effectKind]}
+          </span>
+        </div>
+        <div className="admin-form-grid">
+          <label className="admin-field">
+            <span className="admin-field-label">Loại hiệu ứng</span>
+            <select
+              className="admin-input"
+              value={draft.effectKind}
+              onChange={(e) => setKind(e.target.value as PillEffectKind)}
+              disabled={saving}
+              aria-label="Loại hiệu ứng"
+            >
+              {EFFECT_KINDS.map((k) => (
+                <option key={k.value} value={k.value}>
+                  {k.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {statFields.map((key) => {
+            const err = findPillError(errors, key);
+            return (
+              <label className="admin-field" key={key}>
+                <span className="admin-field-label">{STAT_LABELS[key]}</span>
+                <input
+                  type="number"
+                  className={`admin-input admin-num${err ? " invalid" : ""}`}
+                  value={numericValue(draft[key])}
+                  onChange={(e) =>
+                    set(
+                      key,
+                      e.target.value === ""
+                        ? Number.NaN
+                        : Number(e.target.value),
+                    )
+                  }
+                  disabled={saving}
+                  aria-label={STAT_LABELS[key]}
+                />
+                {err && (
+                  <span className="admin-field-error">{err.message}</span>
+                )}
+              </label>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="admin-form-section">
+        <div className="admin-form-section-head">
+          <h4 className="admin-form-section-title">Phát hành</h4>
+        </div>
+        <div className="admin-form-grid">
+          <label className="admin-field">
+            <span className="admin-field-label">Phát tân thủ</span>
+            <input
+              type="number"
+              className={`admin-input${findPillError(errors, "starterQuantity") ? " invalid" : ""}`}
+              value={numericValue(draft.starterQuantity)}
+              onChange={(e) =>
+                set(
+                  "starterQuantity",
+                  e.target.value === "" ? Number.NaN : Number(e.target.value),
+                )
+              }
+              disabled={saving}
+              aria-label="Số lượng phát cho người chơi mới"
+            />
+            <span className="admin-field-hint">
+              0 = không phát cho người chơi mới
+            </span>
+            {findPillError(errors, "starterQuantity") && (
+              <span className="admin-field-error">
+                {findPillError(errors, "starterQuantity")?.message}
+              </span>
+            )}
+          </label>
+          <label className="admin-field admin-field--wide">
+            <span className="admin-field-label">Mô tả</span>
+            <textarea
+              className={`admin-input${findPillError(errors, "desc") ? " invalid" : ""}`}
+              value={draft.desc}
+              onChange={(e) => set("desc", e.target.value)}
+              rows={2}
+              disabled={saving}
+              aria-label="Mô tả đan dược"
+            />
+          </label>
+        </div>
+        <label className="admin-switch">
           <input
             type="checkbox"
+            className="admin-switch-input"
             checked={draft.active}
             onChange={(e) => set("active", e.target.checked)}
             aria-label="Đang kích hoạt"
           />
-          Kích hoạt (tắt để ẩn khỏi người chơi — túi đồ được giữ nguyên)
+          <span className="admin-switch-track" aria-hidden="true" />
+          <span className="admin-switch-text">
+            <span className="admin-switch-title">Kích hoạt</span>
+            <span className="admin-field-hint">
+              Tắt để ẩn khỏi người chơi — túi đồ được giữ nguyên
+            </span>
+          </span>
         </label>
-      </div>
+      </section>
 
       {saveError && <p className="admin-error">{saveError}</p>}
 
-      <div className="admin-toolbar">
+      <div className="admin-form-footer">
         <button
           type="button"
           className="admin-btn admin-btn-primary"
@@ -412,82 +473,112 @@ export default function AdminPillsPage() {
         </button>
       </div>
 
-      <div className="admin-pill-layout">
-        {/* Master: scannable list, one row per pill, rarity-colored glyph +
-            left accent, monospace effect summary, status dot. */}
-        <div className="admin-pill-list">
+      <div className="admin-master-detail">
+        <div className="admin-master-list">
+          {pills.length === 0 && (
+            <p className="admin-master-empty">
+              Chưa có đan dược nào. Thêm viên đầu tiên để người chơi có thứ mà
+              dùng.
+            </p>
+          )}
           {pills.map((pill) => {
             const meta = getRarityMeta(pill.rarity);
             return (
               <button
                 key={pill.id}
                 type="button"
-                className={`admin-pill-list-item${pill.active ? "" : " inactive"}`}
+                className={`admin-master-item${pill.active ? "" : " inactive"}`}
                 aria-current={openId === pill.id}
-                style={{ "--rarity": meta.color } as CSSProperties}
                 onClick={() => requestOpen(openId === pill.id ? null : pill.id)}
               >
-                <span
-                  className="admin-pill-list-glyph"
-                  style={{ color: meta.color }}
-                >
-                  {pill.glyph}
-                </span>
-                <span className="admin-pill-list-meta">
-                  <span className="admin-pill-list-name">{pill.name}</span>
-                  <span className="admin-pill-list-effect">
-                    {headlineStat(pill)}
+                <div className="admin-master-item-top">
+                  <span className="admin-master-item-name">
+                    <span
+                      className="admin-row-glyph"
+                      style={{ color: meta.color }}
+                      aria-hidden="true"
+                    >
+                      {pill.glyph}
+                    </span>
+                    {pill.name}
                   </span>
-                </span>
-                {pill.starterQuantity > 0 && pill.active && (
                   <span
-                    className="admin-pill-list-dot starter"
-                    title={`Tân thủ ×${pill.starterQuantity}`}
-                  />
-                )}
-                {!pill.active && (
-                  <span className="admin-pill-list-dot off" title="Đang tắt" />
-                )}
+                    className={`admin-status admin-status--${pill.active ? "ok" : "off"}`}
+                  >
+                    {pill.active ? "Hoạt động" : "Đang tắt"}
+                  </span>
+                </div>
+                <RarityPips rarity={pill.rarity} color={meta.color} />
+                <div className="admin-master-item-foot">
+                  <span className="admin-num">{headlineStat(pill)}</span>
+                  <span>
+                    {pill.starterQuantity > 0
+                      ? `Tân thủ ×${pill.starterQuantity}`
+                      : meta.name}
+                  </span>
+                </div>
               </button>
             );
           })}
         </div>
 
-        {/* Detail: editor for the selected pill, or an empty prompt. */}
-        <div className="admin-pill-detail">
+        <div
+          className="admin-detail"
+          style={
+            headerMeta
+              ? ({ "--detail-tone": headerMeta.color } as CSSProperties)
+              : undefined
+          }
+        >
           {isEditing && headerPill ? (
             <>
-              <div className="admin-pill-detail-head">
+              <div className="admin-detail-head admin-detail-head--row">
                 <span
-                  className="admin-pill-glyph"
+                  className="admin-detail-glyph"
                   style={{ color: headerMeta?.color }}
+                  aria-hidden="true"
                 >
                   {headerPill.glyph || "丹"}
                 </span>
-                <div className="admin-pill-detail-title">
-                  <h3>
+                <div className="admin-detail-head-main">
+                  <h3 className="admin-detail-title">
                     {openId === "new"
                       ? "Thêm đan dược mới"
                       : headerPill.name || "(chưa có tên)"}
                   </h3>
-                  <div className="admin-pill-chips">
+                  <div className="admin-chips">
                     <span
-                      className="admin-pill-rarity"
+                      className="admin-chip admin-chip--tint"
                       style={{ color: headerMeta?.color }}
                     >
                       {headerMeta?.name}
                     </span>
-                    <span className="admin-pill-effect-chip">
+                    <span className="admin-chip">
                       {effectLabel(headerPill.effectKind)}
                     </span>
                     {headerPill.starterQuantity > 0 && (
-                      <span className="admin-pill-starter">
+                      <span className="admin-chip admin-chip--ok">
                         Tân thủ ×{headerPill.starterQuantity}
                       </span>
                     )}
                     {!headerPill.active && (
-                      <span className="admin-pill-off">Đang tắt</span>
+                      <span className="admin-chip admin-chip--danger">
+                        Đang tắt
+                      </span>
                     )}
+                  </div>
+                  <div className="admin-detail-gauge">
+                    <RarityPips
+                      rarity={headerPill.rarity}
+                      color={headerMeta?.color ?? "var(--muted)"}
+                      size="lg"
+                    />
+                    <span className="admin-detail-gauge-label">
+                      <span className="admin-num">
+                        {headlineStat(headerPill)}
+                      </span>{" "}
+                      · {headerMeta?.name}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -503,7 +594,7 @@ export default function AdminPillsPage() {
               />
             </>
           ) : (
-            <div className="admin-pill-detail-empty">
+            <div className="admin-detail-empty">
               <p>Chọn một đan dược để chỉnh sửa, hoặc thêm đan dược mới.</p>
             </div>
           )}

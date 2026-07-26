@@ -1,5 +1,8 @@
 export interface RewardEntry {
-  pillId: string;
+  // Đúng một trong ba khác undefined.
+  pillId?: string;
+  congPhapId?: string;
+  linhThach?: number;
   quantity: number;
 }
 
@@ -13,6 +16,14 @@ export interface RedeemCodeRecord {
   rewards: RewardEntry[];
 }
 
+export interface RedeemRewardResult {
+  kind: 'pill' | 'congphap' | 'linhThach';
+  id: string;        // pillId / congPhapId / 'linh-thach'
+  name: string;
+  glyph: string;
+  quantity: number;
+}
+
 export interface RedeemResultDto {
-  rewards: Array<{ pillId: string; name: string; glyph: string; quantity: number }>;
+  rewards: RedeemRewardResult[];
 }

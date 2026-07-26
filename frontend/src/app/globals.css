@@ -351,6 +351,21 @@ body {
 .stat-row:last-child {
   border-bottom: none;
 }
+.stat-battle-power {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: var(--space-3) 0;
+  border-bottom: 1px dashed rgba(212, 175, 55, 0.15);
+}
+.stat-battle-power-value {
+  font-family: var(--font-mono), monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gold);
+  text-shadow: 0 0 12px var(--gold-glow);
+  line-height: 1;
+}
 .stat-label {
   color: var(--muted);
   font-size: 0.8rem;
@@ -1833,125 +1848,6 @@ body {
   box-shadow: 0 0 14px var(--gold-glow);
 }
 
-.admin-toolbar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-  margin-bottom: var(--space-4);
-}
-
-/* Realm editor — master (list) + detail (selected realm) */
-.admin-realm-layout {
-  display: grid;
-  grid-template-columns: 260px 1fr;
-  gap: var(--space-5);
-  align-items: start;
-}
-
-.admin-realm-list {
-  position: sticky;
-  top: var(--space-4);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface-elevated);
-  box-shadow: var(--shadow-panel);
-  overflow: hidden;
-}
-
-.admin-realm-list-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  width: 100%;
-  min-height: 44px;
-  padding: var(--space-2) var(--space-3);
-  background: none;
-  border: none;
-  border-left: 3px solid transparent;
-  border-bottom: 1px solid var(--border);
-  color: var(--fg-dim);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition:
-    background var(--dur-fast) var(--ease-out),
-    color var(--dur-fast) var(--ease-out);
-}
-
-.admin-realm-list-item:hover {
-  background: rgba(251, 191, 36, 0.06);
-  color: var(--fg);
-}
-
-.admin-realm-list-item[aria-current="true"] {
-  background: rgba(251, 191, 36, 0.1);
-  border-left-color: var(--gold);
-  color: var(--gold);
-}
-
-.admin-realm-list-item .count {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-
-/* Red dot marking a realm that currently fails validation. */
-.admin-realm-list-item .err-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--red);
-  flex: none;
-}
-
-.admin-realm-list-foot {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-3);
-}
-
-.admin-realm-detail {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface-elevated);
-  box-shadow: var(--shadow-panel);
-  padding: var(--space-5);
-}
-
-.admin-substage-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  padding: var(--space-4);
-  margin-top: var(--space-3);
-}
-
-.admin-substage-card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  margin-bottom: var(--space-3);
-}
-
-.admin-substage-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: var(--space-3);
-}
-
-.admin-substage-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-
 .admin-input {
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -1977,253 +1873,20 @@ body {
   margin-top: 3px;
 }
 
-@media (max-width: 768px) {
-  .admin-realm-layout {
-    grid-template-columns: 1fr;
-  }
-  .admin-realm-list {
-    position: static;
-  }
-}
-
-/* ---- Admin pill catalog: master/detail (list + detail pane) ---- */
-.admin-pill-layout {
-  display: grid;
-  grid-template-columns: 300px 1fr;
-  gap: var(--space-5);
-  align-items: start;
-}
-
-.admin-pill-list {
-  position: sticky;
-  top: var(--space-4);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface-elevated);
-  box-shadow: var(--shadow-panel);
-  overflow: hidden;
-}
-
-.admin-pill-list-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  width: 100%;
-  min-height: 52px;
-  padding: var(--space-2) var(--space-3);
-  background: none;
-  border: none;
-  /* Left accent carries the rarity color at rest (via the --rarity custom
-     property set inline); the aria-current rule overrides it with gold when
-     selected — plain cascade, no !important needed. */
-  border-left: 3px solid var(--rarity, transparent);
-  border-bottom: 1px solid var(--border);
-  color: var(--fg-dim);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition:
-    background var(--dur-fast) var(--ease-out),
-    color var(--dur-fast) var(--ease-out);
-}
-
-.admin-pill-list-item:hover {
-  background: rgba(251, 191, 36, 0.06);
-  color: var(--fg);
-}
-
-.admin-pill-list-item[aria-current="true"] {
-  background: rgba(251, 191, 36, 0.1);
-  border-left-color: var(--gold);
-  color: var(--gold);
-}
-
-.admin-pill-list-item.inactive {
-  opacity: 0.5;
-}
-
-/* Compact glyph inside a list row (rarity color applied inline). */
-.admin-pill-list-glyph {
-  font-size: 1.4rem;
-  line-height: 1;
-  flex: none;
-  filter: drop-shadow(0 0 5px currentColor);
-}
-
-.admin-pill-list-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  flex: 1;
-}
-
-.admin-pill-list-name {
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.admin-pill-list-effect {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Small round status dot at the row's trailing edge. */
-.admin-pill-list-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex: none;
-}
-.admin-pill-list-dot.starter {
-  background: var(--jade);
-}
-.admin-pill-list-dot.off {
-  background: var(--red);
-}
-
-.admin-pill-detail {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface-elevated);
-  box-shadow: var(--shadow-panel);
-  padding: var(--space-5);
-}
-
-/* Detail header: big glyph + name + rarity/effect/status chips. */
-.admin-pill-detail-head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  padding-bottom: var(--space-4);
-  margin-bottom: var(--space-2);
-  border-bottom: 1px solid var(--border);
-}
-
-.admin-pill-glyph {
-  font-size: 1.6rem;
-  line-height: 1;
-  /* Rarity color is applied inline from getRarityMeta; add a soft glow in the
-     same hue via currentColor so higher-rarity glyphs read as more radiant. */
-  filter: drop-shadow(0 0 6px currentColor);
-}
-
-.admin-pill-detail-head .admin-pill-glyph {
-  font-size: 2.4rem;
-}
-
-.admin-pill-detail-title {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
-.admin-pill-detail-title h3 {
-  font-size: 1.2rem;
-  color: var(--fg);
-}
-
-.admin-pill-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  align-items: center;
-}
-
-/* Empty state when no pill is selected. */
-.admin-pill-detail-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 240px;
-  color: var(--muted);
-  text-align: center;
-}
-
-.admin-pill-rarity,
-.admin-pill-effect-chip {
-  font-size: 0.75rem;
-  padding: 0.15rem 0.6rem;
-  border-radius: 999px;
-  border: 1px solid currentColor;
-}
-
-.admin-pill-effect-chip {
-  color: var(--fg-dim);
-  border-color: var(--border-bright);
-}
-
-.admin-pill-starter {
-  font-size: 0.75rem;
-  padding: 0.15rem 0.6rem;
-  border-radius: 999px;
-  border: 1px solid var(--jade);
-  color: var(--jade);
-}
-
-.admin-pill-off {
-  font-size: 0.75rem;
-  padding: 0.15rem 0.6rem;
-  border-radius: 999px;
-  border: 1px solid var(--red);
-  color: #f6b8b8;
-}
-
-@media (max-width: 768px) {
-  .admin-pill-layout {
-    grid-template-columns: 1fr;
-  }
-  .admin-pill-list {
-    position: static;
-  }
-}
-
-.admin-pill-form {
-  padding-top: var(--space-4);
-}
-
-.admin-pill-form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: var(--space-3);
-}
-
-.admin-pill-form-grid label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
-.admin-pill-desc {
-  grid-column: 1 / -1;
-}
-
-/* Beats the .admin-pill-form-grid label column layout via specificity (no
-   !important): the active toggle is a single checkbox + text row. */
-.admin-pill-form-grid label.admin-pill-active {
-  grid-column: 1 / -1;
-  flex-direction: row;
-  align-items: center;
-}
-
-/* ==== Redeem code: voucher ledger (master/detail, own identity) ==== */
-.admin-code-layout {
+/* ============================================================
+   Khung master/detail dùng chung cho mọi trang admin CRUD
+   (redeem code, đan dược, công pháp, cảnh giới). Phần nhấn
+   riêng của từng trang nằm ở khối CSS của trang đó; ở đây
+   không có gì biết mình đang mô tả miền dữ liệu nào.
+   ============================================================ */
+.admin-master-detail {
   display: grid;
   grid-template-columns: 320px 1fr;
   gap: var(--space-5);
   align-items: start;
 }
 
-.admin-code-list {
+.admin-master-list {
   position: sticky;
   top: var(--space-4);
   display: flex;
@@ -2234,7 +1897,7 @@ body {
   padding-right: 2px;
 }
 
-.admin-code-list-empty {
+.admin-master-empty {
   color: var(--muted);
   font-size: 0.85rem;
   padding: var(--space-4);
@@ -2243,8 +1906,9 @@ body {
   text-align: center;
 }
 
-/* A voucher ticket: code + status, capacity gauge, counts + expiry. */
-.admin-code-row {
+/* Một "vé": danh tính + trạng thái ở trên, gauge ở giữa, siêu dữ liệu ở chân.
+   Mọi danh sách master đều dùng đúng hình này; chỉ nội dung ba hàng đổi. */
+.admin-master-item {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -2263,30 +1927,586 @@ body {
     box-shadow var(--dur-fast) var(--ease-out);
 }
 
-.admin-code-row:hover {
+.admin-master-item:hover {
   border-color: var(--border-bright);
   background: rgba(251, 191, 36, 0.05);
 }
 
-.admin-code-row[aria-current="true"] {
+.admin-master-item[aria-current="true"] {
   border-color: var(--gold);
   box-shadow:
     inset 3px 0 0 var(--gold),
     0 0 14px var(--gold-glow);
 }
 
-.admin-code-row.inactive {
+.admin-master-item.inactive {
   opacity: 0.72;
 }
 
-.admin-code-row-top {
+.admin-master-item-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
 }
 
-/* The code string is the hero — tabular mono, wide tracking, gold. */
+.admin-master-item-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* Nhãn trạng thái — bốn sắc thái trung tính. Mỗi trang tự ánh xạ trạng thái
+   miền của mình vào ok/warn/danger/off; CSS không cần biết chúng nghĩa là gì. */
+.admin-status {
+  flex: none;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+
+.admin-status--ok {
+  color: var(--jade);
+}
+.admin-status--warn {
+  color: var(--gold);
+}
+.admin-status--danger {
+  color: #f6b8b8;
+}
+.admin-status--off {
+  color: var(--muted);
+}
+
+/* Gauge dạng thanh liền — dùng khi số ô quá nhiều để đếm bằng mắt. */
+.admin-meter {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.admin-meter--lg {
+  height: 8px;
+  border-radius: 4px;
+}
+
+.admin-meter-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--jade);
+  min-width: 2px;
+  transition: width var(--dur) var(--ease-out);
+}
+
+.admin-meter-fill.warn {
+  background: linear-gradient(90deg, var(--gold), var(--gold-deep));
+}
+
+.admin-meter-fill.off {
+  background: var(--muted-dim);
+}
+
+/* Gauge dạng pip: mỗi ô một suất. Các ô co giãn để mọi số lượng đều trải hết
+   chiều ngang và so sánh được với nhau. */
+.admin-pips {
+  display: flex;
+  gap: 3px;
+}
+
+.admin-pip {
+  flex: 1 1 0;
+  height: 6px;
+  border-radius: 2px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+  transition: background var(--dur) var(--ease-out);
+}
+
+.admin-pips--lg .admin-pip {
+  height: 10px;
+  border-radius: 3px;
+}
+
+.admin-pip.filled {
+  background: var(--jade);
+  box-shadow: 0 0 5px var(--jade-glow);
+}
+
+.admin-pip.filled.warn {
+  background: var(--gold);
+  box-shadow: 0 0 5px var(--gold-glow);
+}
+
+.admin-pip.filled.off {
+  background: var(--muted-dim);
+  box-shadow: none;
+}
+
+/* Khung chi tiết. Viền trên nhận màu từ biến --detail-tone đặt inline — cùng
+   khuôn với --rarity ở danh sách, nên một quy tắc phục vụ mọi cách nhuộm. */
+.admin-detail {
+  position: relative;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--detail-tone, var(--border-bright));
+  border-radius: var(--radius);
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-panel);
+  padding: var(--space-6);
+}
+
+.admin-detail-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-bottom: var(--space-5);
+  margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-detail-title {
+  font-size: 1.2rem;
+  color: var(--fg);
+}
+
+.admin-detail-id {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.admin-detail-gauge {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.admin-detail-gauge-label {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.admin-detail-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ===== Biểu mẫu chia section, dùng chung cho cả bốn trang ===== */
+.admin-form {
+  padding-top: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* Mỗi khối là một section có tiêu đề và đường kẻ, để form đọc thành từng nhóm
+   rời chứ không phải một lưới ô không phân biệt. */
+.admin-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.admin-form-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-form-section-title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.admin-form-section-hint {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* Lưới ô hai cột, ngưỡng rộng hơn lưới đan dược cũ để ô ngày giờ và ô số không
+   bị ép thành 3–4 cột lởm chởm. */
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-5);
+}
+
+.admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.admin-field-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--fg-dim);
+}
+
+.admin-req {
+  color: var(--gold);
+}
+
+.admin-field-hint {
+  font-size: 0.74rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+/* Công tắc bật/tắt tự vẽ — một điều khiển "sống", khác hẳn checkbox mặc định. */
+.admin-switch {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+/* Ẩn checkbox gốc nhưng vẫn để nó trong cây a11y/focus (nó điều khiển track). */
+.admin-switch-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.admin-switch-track {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 22px;
+  margin-top: 1px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border);
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+
+/* Núm gạt. */
+.admin-switch-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+
+.admin-switch-input:checked + .admin-switch-track {
+  background: rgba(93, 217, 177, 0.25);
+  border-color: var(--jade);
+}
+
+.admin-switch-input:checked + .admin-switch-track::after {
+  transform: translateX(18px);
+  background: var(--jade);
+}
+
+.admin-switch-input:focus-visible + .admin-switch-track {
+  box-shadow: 0 0 0 3px var(--jade-glow);
+}
+
+.admin-switch-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.admin-switch-title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--fg);
+}
+
+/* Editor dạng hàng: danh sách phần thưởng của redeem code và danh sách hiệu ứng
+   bị động của công pháp cùng dùng bộ này. */
+.admin-row-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.admin-row-empty {
+  font-size: 0.82rem;
+  color: var(--muted);
+  padding: var(--space-4);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.admin-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.admin-row:hover {
+  border-color: var(--border-bright);
+}
+
+/* Glyph riêng của hàng, tô màu độ hiếm — giúp quét danh sách bằng mắt. */
+.admin-row-glyph {
+  flex: none;
+  width: 2rem;
+  text-align: center;
+  font-size: 1.3rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 5px currentColor);
+}
+
+/* Điều khiển chính của hàng: giãn ra lấp chỗ trống nhưng giữ bề rộng dùng được
+   thay vì co về 0 — hàng còn mang glyph, ô loại, ô số lượng và nút xóa cố định,
+   nên `min-width: 0` không chặn sẽ bóp nó mất hút trong cột chi tiết vốn hẹp.
+   Hẹp hơn ngưỡng thì cả hàng xuống dòng. */
+.admin-row-grow {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.admin-row-field {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.admin-row-num {
+  width: 96px;
+}
+
+/* Nút xóa chỉ có icon — vuông, chuyển sắc cảnh báo khi rê chuột. */
+.admin-row-remove {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  padding: 0;
+  color: var(--muted);
+}
+
+.admin-row-remove:hover:not(:disabled) {
+  border-color: var(--red);
+  background: rgba(239, 68, 68, 0.12);
+  color: #f6b8b8;
+}
+
+.admin-row-add {
+  align-self: flex-start;
+  margin-top: var(--space-1);
+}
+
+/* Hàng nút nằm trên đường kẻ riêng, kết thúc biểu mẫu một cách dứt khoát. */
+.admin-form-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border);
+}
+
+/* Cụm danh tính ở hàng trên của một thẻ: glyph (nếu có) + tên bản ghi. */
+.admin-master-item-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  font-weight: 600;
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-pip.filled.tint {
+  background: currentColor;
+  box-shadow: 0 0 5px currentColor;
+}
+
+.admin-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.admin-chip {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-bright);
+  color: var(--fg-dim);
+  white-space: nowrap;
+}
+
+.admin-chip--tint,
+.admin-chip--ok,
+.admin-chip--danger {
+  border-color: currentColor;
+}
+
+.admin-chip--ok {
+  color: var(--jade);
+}
+
+.admin-chip--danger {
+  color: #f6b8b8;
+}
+
+.admin-detail-head--row {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.admin-detail-head-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  flex: 1;
+}
+
+.admin-detail-glyph {
+  flex: none;
+  font-size: 2.4rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 6px currentColor);
+}
+
+.admin-field--wide {
+  grid-column: 1 / -1;
+}
+
+.admin-curve {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 22px;
+}
+
+.admin-curve--lg {
+  height: 40px;
+}
+
+.admin-curve-bar {
+  flex: 1 1 0;
+  min-height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(180deg, var(--jade), rgba(93, 217, 177, 0.25));
+}
+
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.admin-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--fg-dim);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.admin-tab:hover:not(:disabled) {
+  border-color: var(--border-bright);
+  color: var(--fg);
+}
+
+.admin-tab[aria-current="true"] {
+  border-color: var(--gold);
+  background: rgba(251, 191, 36, 0.1);
+  color: var(--gold);
+}
+
+.admin-tab:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.admin-err-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  flex: none;
+}
+
+.admin-detail-name-input {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.admin-substage-id {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-5);
+}
+
+.admin-substage-name {
+  flex: 1 1 240px;
+}
+
+.admin-dirty {
+  font-size: 0.8rem;
+  color: var(--gold);
+}
+
+/* ==== Redeem code: phần riêng của trang mã đổi thưởng ==== */
+
+/* Chuỗi mã là nhân vật chính — mono chữ số đều, giãn chữ, màu vàng. */
 .admin-code-string {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
@@ -2303,367 +2523,13 @@ body {
   letter-spacing: 0.12em;
 }
 
-/* Status pill — the one blocking reason, colour-coded. */
-.admin-code-status {
-  flex: none;
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  padding: 0.12rem 0.5rem;
-  border-radius: 999px;
-  border: 1px solid currentColor;
-  white-space: nowrap;
+/* Ô chọn loại phần thưởng, đứng trước ô chọn giá trị trong mỗi hàng. */
+.admin-code-reward-kind {
+  flex: 0 0 auto;
+  width: 130px;
 }
 
-.admin-code-status--active {
-  color: var(--jade);
-}
-.admin-code-status--exhausted {
-  color: var(--gold);
-}
-.admin-code-status--expired {
-  color: #f6b8b8;
-}
-.admin-code-status--off {
-  color: var(--muted);
-}
-
-/* Capacity gauge — the signature element. Small caps render as a punch-voucher
-   pip tally (one slot per redemption); large caps fall back to a smooth bar. */
-.admin-code-meter {
-  height: 6px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
-  overflow: hidden;
-}
-
-.admin-code-meter--lg {
-  height: 8px;
-  border-radius: 4px;
-}
-
-.admin-code-meter-fill {
-  height: 100%;
-  border-radius: inherit;
-  background: var(--jade);
-  min-width: 2px;
-  transition: width var(--dur) var(--ease-out);
-}
-
-.admin-code-meter-fill.exhausted {
-  background: linear-gradient(90deg, var(--gold), var(--gold-deep));
-}
-
-.admin-code-meter-fill.dim {
-  background: var(--muted-dim);
-}
-
-/* Pip tally: one slot per redemption, filled = punched. Slots flex to fill the
-   row so a 2-cap and a 10-cap both span the full width and stay comparable. */
-.admin-code-pips {
-  display: flex;
-  gap: 3px;
-}
-
-.admin-code-pip {
-  flex: 1 1 0;
-  height: 6px;
-  border-radius: 2px;
-  /* Empty slot: a faint outlined ticket stub awaiting a punch. */
-  background: transparent;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
-  transition: background var(--dur) var(--ease-out);
-}
-
-.admin-code-pips--lg .admin-code-pip {
-  height: 10px;
-  border-radius: 3px;
-}
-
-.admin-code-pip.filled {
-  background: var(--jade);
-  box-shadow: 0 0 5px var(--jade-glow);
-}
-
-.admin-code-pip.filled.exhausted {
-  background: var(--gold);
-  box-shadow: 0 0 5px var(--gold-glow);
-}
-
-.admin-code-pip.filled.dim {
-  background: var(--muted-dim);
-  box-shadow: none;
-}
-
-.admin-code-row-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  font-size: 0.78rem;
-  color: var(--muted);
-}
-
-/* Detail pane — a status-tinted top hairline mirrors the KPI-tile accent
-   language so the selected voucher's state reads at a glance. */
-.admin-code-detail {
-  position: relative;
-  border: 1px solid var(--border);
-  border-top: 3px solid var(--border-bright);
-  border-radius: var(--radius);
-  background: var(--surface-elevated);
-  box-shadow: var(--shadow-panel);
-  padding: var(--space-6);
-}
-
-.admin-code-detail--active {
-  border-top-color: var(--jade);
-}
-.admin-code-detail--exhausted {
-  border-top-color: var(--gold);
-}
-.admin-code-detail--expired {
-  border-top-color: var(--red);
-}
-.admin-code-detail--off {
-  border-top-color: var(--muted-dim);
-}
-
-.admin-code-detail-head {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding-bottom: var(--space-5);
-  margin-bottom: var(--space-3);
-  border-bottom: 1px solid var(--border);
-}
-
-.admin-code-detail-title {
-  font-size: 1.2rem;
-  color: var(--fg);
-}
-
-.admin-code-detail-id {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-}
-
-.admin-code-gauge {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.admin-code-gauge-label {
-  font-size: 0.82rem;
-  color: var(--muted);
-}
-
-.admin-code-detail-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 240px;
-  color: var(--muted);
-  text-align: center;
-}
-
-/* ===== Redeem code form: dedicated, sectioned layout (not the pill grid) ===== */
-.admin-code-form {
-  padding-top: var(--space-5);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-}
-
-/* Each block (basic info, rewards) is a titled section with a hairline head so
-   the form reads as discrete groups instead of one undifferentiated grid. */
-.admin-code-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.admin-code-section-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--border);
-}
-
-.admin-code-section-title {
-  margin: 0;
-  font-size: 0.82rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--gold);
-}
-
-.admin-code-section-hint {
-  font-size: 0.78rem;
-  color: var(--muted);
-}
-
-/* Two-column responsive field grid, wider min than the pill grid so datetime
-   and number inputs don't get squeezed into 3-4 ragged columns. */
-.admin-code-form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--space-5);
-}
-
-.admin-code-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.admin-code-label {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--fg-dim);
-}
-
-.admin-req {
-  color: var(--gold);
-}
-
-.admin-code-hint {
-  font-size: 0.74rem;
-  color: var(--muted);
-  line-height: 1.35;
-}
-
-/* Custom on/off switch — a live control, visually distinct from the plain
-   browser checkbox the rest of the admin still uses. */
-.admin-code-toggle {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-4);
-  padding: var(--space-4);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  cursor: pointer;
-}
-
-/* Hide the native checkbox but keep it in the a11y/focus tree (drives .track). */
-.admin-code-toggle-input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.admin-code-switch {
-  position: relative;
-  flex: none;
-  width: 40px;
-  height: 22px;
-  margin-top: 1px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid var(--border);
-  transition:
-    background var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out);
-}
-
-/* The knob. */
-.admin-code-switch::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--muted);
-  transition:
-    transform var(--dur-fast) var(--ease-out),
-    background var(--dur-fast) var(--ease-out);
-}
-
-.admin-code-toggle-input:checked + .admin-code-switch {
-  background: rgba(93, 217, 177, 0.25);
-  border-color: var(--jade);
-}
-
-.admin-code-toggle-input:checked + .admin-code-switch::after {
-  transform: translateX(18px);
-  background: var(--jade);
-}
-
-.admin-code-toggle-input:focus-visible + .admin-code-switch {
-  box-shadow: 0 0 0 3px var(--jade-glow);
-}
-
-.admin-code-toggle-text {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.admin-code-toggle-title {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--fg);
-}
-
-/* Rewards editor: titled block of glyph + pill-select + qty + remove rows. */
-.admin-code-reward-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.admin-code-rewards-empty {
-  font-size: 0.82rem;
-  color: var(--muted);
-  padding: var(--space-4);
-  border: 1px dashed var(--border);
-  border-radius: var(--radius-sm);
-  text-align: center;
-}
-
-.admin-code-reward-row {
-  display: flex;
-  gap: var(--space-3);
-  align-items: center;
-  padding: var(--space-3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  transition: border-color var(--dur-fast) var(--ease-out);
-}
-
-.admin-code-reward-row:hover {
-  border-color: var(--border-bright);
-}
-
-/* The reward's own glyph in its rarity colour — makes the row scannable. */
-.admin-code-reward-glyph {
-  flex: none;
-  width: 2rem;
-  text-align: center;
-  font-size: 1.3rem;
-  line-height: 1;
-  filter: drop-shadow(0 0 5px currentColor);
-}
-
-.admin-code-reward-select {
-  flex: 1;
-  min-width: 0;
-}
-
-/* "× N" quantity cluster so the number reads as a multiplier, not a stray box. */
+/* Cụm "× N" để con số đọc ra là hệ số nhân chứ không phải một ô rời rạc. */
 .admin-code-reward-qty-wrap {
   flex: none;
   display: flex;
@@ -2681,44 +2547,362 @@ body {
   width: 72px;
 }
 
-/* Icon-only remove button — square, danger-tinted on hover. */
-.admin-code-reward-remove {
-  flex: none;
-  display: inline-flex;
+@media (max-width: 768px) {
+  .admin-master-detail {
+    grid-template-columns: 1fr;
+  }
+  .admin-master-list {
+    position: static;
+    max-height: none;
+  }
+}
+
+/* ============================================================
+   Công Pháp modal — reuses .pill-overlay/.pill-panel chrome so
+   the two modals stay visually identical; only the inner layout
+   (slots, cards, picker) is new.
+   ============================================================ */
+.congphap-panel {
+  width: min(1040px, 100%);
+}
+.congphap-purse {
+  margin-left: auto;
+  margin-right: var(--space-4);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.congphap-purse strong {
+  color: var(--jade);
+}
+.congphap-section {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin: var(--space-5) 0 var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.25);
+  font-family:
+    var(--font-serif-vi), var(--font-mashan), "Cormorant Garamond", serif;
+  font-size: 1.1rem;
+  color: var(--gold);
+}
+.congphap-section-note {
+  font-family: inherit;
+  font-size: 0.75rem;
+  color: var(--muted-dim);
+}
+.congphap-empty {
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding: var(--space-3) 0;
+}
+
+/* --- Four active slots --- */
+.congphap-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+}
+.congphap-slot {
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  padding: 0;
+  gap: var(--space-2);
+  min-height: 130px;
+  padding: var(--space-3);
+  border-radius: var(--radius);
+  text-align: center;
+}
+.congphap-slot.empty {
+  border: 1px dashed rgba(212, 175, 55, 0.4);
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: pointer;
+}
+.congphap-slot.empty:hover:not(:disabled) {
+  border-color: var(--border-bright);
+  color: var(--fg-dim);
+}
+.congphap-slot.empty:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.congphap-slot.empty.picking {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold-glow);
+}
+.congphap-slot-plus {
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--gold-deep);
+}
+.congphap-slot-label {
+  font-size: 0.75rem;
+}
+.congphap-slot.filled {
+  border: 1px solid color-mix(in srgb, var(--rarity) 55%, transparent);
+  background: var(--surface);
+}
+.congphap-slot-glyph {
+  font-family: var(--font-mashan), serif;
+  font-size: 1.8rem;
+  color: var(--rarity);
+}
+.congphap-slot-name {
+  font-size: 0.85rem;
+  color: var(--fg);
+}
+.congphap-slot-power {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.7rem;
   color: var(--muted);
 }
 
-.admin-code-reward-remove:hover:not(:disabled) {
-  border-color: var(--red);
-  background: rgba(239, 68, 68, 0.12);
-  color: #f6b8b8;
+/* --- Slot picker --- */
+.congphap-picker {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.congphap-picker-title {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: 0.8rem;
+  color: var(--gold);
+}
+.congphap-picker-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+.congphap-picker-item {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--fg-dim);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.congphap-picker-item:hover:not(:disabled) {
+  border-color: var(--border-bright);
+  color: var(--fg);
 }
 
-.admin-code-add-reward {
-  align-self: flex-start;
-  margin-top: var(--space-1);
+/* --- Cards --- */
+.congphap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-4);
 }
-
-/* Footer actions sit on their own hairline-topped row, clearly ending the form. */
-.admin-code-form-footer {
+.congphap-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--rarity) 45%, transparent);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.congphap-card.disabled,
+.congphap-card.locked {
+  opacity: 0.55;
+}
+.congphap-card-head {
   display: flex;
   align-items: center;
   gap: var(--space-3);
+}
+.congphap-glyph {
+  font-family: var(--font-mashan), serif;
+  font-size: 1.9rem;
+  line-height: 1;
+  color: var(--rarity);
+}
+.congphap-card-title {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.congphap-name {
+  color: var(--fg);
+  font-size: 0.95rem;
+}
+.congphap-rarity {
+  color: var(--rarity);
+  font-size: 0.72rem;
+}
+.congphap-level {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.78rem;
+  color: var(--gold);
+  white-space: nowrap;
+}
+.congphap-level-max {
+  color: var(--muted-dim);
+}
+.congphap-badge-off {
+  align-self: flex-start;
+  padding: 2px var(--space-2);
+  border: 1px solid var(--red);
+  border-radius: var(--radius-sm);
+  color: var(--red);
+  font-size: 0.68rem;
+}
+.congphap-desc {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+.congphap-effects {
+  display: flex;
   flex-wrap: wrap;
-  padding-top: var(--space-5);
-  border-top: 1px solid var(--border);
+  gap: var(--space-2);
+}
+.congphap-effect {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  background: rgba(93, 217, 177, 0.12);
+  color: var(--jade);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.72rem;
+}
+.congphap-effect-note {
+  color: var(--muted-dim);
+  font-size: 0.7rem;
+  font-style: italic;
+}
+.congphap-card-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-2);
+}
+.congphap-btn {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--fg-dim);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+.congphap-btn:hover:not(:disabled) {
+  border-color: var(--border-bright);
+  color: var(--fg);
+}
+.congphap-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.congphap-btn-primary {
+  border-color: var(--border-bright);
+  color: var(--gold);
+}
+.congphap-btn-slim {
+  flex: none;
+  padding: 2px var(--space-2);
+  font-size: 0.72rem;
 }
 
 @media (max-width: 768px) {
-  .admin-code-layout {
+  .congphap-slot-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .congphap-grid {
     grid-template-columns: 1fr;
   }
-  .admin-code-list {
-    position: static;
-    max-height: none;
+  .congphap-purse {
+    margin-right: var(--space-2);
+    font-size: 0.75rem;
+  }
+}
+
+.admin-grant {
+  margin-top: var(--space-6);
+}
+.admin-grant-search {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 360px;
+  margin-bottom: var(--space-3);
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.admin-grant-results {
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-3);
+}
+.admin-grant-empty {
+  padding: var(--space-3);
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.admin-grant-user {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg-dim);
+  cursor: pointer;
+  text-align: left;
+}
+.admin-grant-user:last-child {
+  border-bottom: none;
+}
+.admin-grant-user:hover,
+.admin-grant-user[aria-current="true"] {
+  background: var(--surface-2);
+  color: var(--fg);
+}
+.admin-grant-user-name {
+  font-size: 0.85rem;
+}
+.admin-grant-user-meta {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.admin-grant-form {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr auto;
+  gap: var(--space-3);
+  align-items: end;
+}
+.admin-grant-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.admin-grant-ok {
+  margin-top: var(--space-3);
+  color: var(--jade);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+  .admin-grant-form {
+    grid-template-columns: 1fr;
   }
 }

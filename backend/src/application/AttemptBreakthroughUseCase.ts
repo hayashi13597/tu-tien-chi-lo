@@ -57,6 +57,7 @@ export class AttemptBreakthroughUseCase {
       await this.persist(character, currentLinhKhi, now, {
         realmMajor: character.realmMajor,
         realmSub: character.realmSub,
+        linhThach: character.linhThach,
         breakthroughFails: character.breakthroughFails,
         punishedUntil: character.punishedUntil,
         cultivationBuffMultiplier: character.cultivationBuffMultiplier,
@@ -70,6 +71,7 @@ export class AttemptBreakthroughUseCase {
       await this.persist(character, currentLinhKhi, now, {
         realmMajor: character.realmMajor,
         realmSub: character.realmSub,
+        linhThach: character.linhThach,
         breakthroughFails: character.breakthroughFails,
         punishedUntil: character.punishedUntil,
         cultivationBuffMultiplier: character.cultivationBuffMultiplier,
@@ -83,6 +85,7 @@ export class AttemptBreakthroughUseCase {
       await this.persist(character, currentLinhKhi, now, {
         realmMajor: character.realmMajor,
         realmSub: character.realmSub,
+        linhThach: character.linhThach,
         breakthroughFails: character.breakthroughFails,
         punishedUntil: character.punishedUntil,
         cultivationBuffMultiplier: character.cultivationBuffMultiplier,
@@ -106,6 +109,7 @@ export class AttemptBreakthroughUseCase {
       const updated = await this.persist(character, currentLinhKhi - stage.linhKhiRequired, now, {
         realmMajor,
         realmSub,
+        linhThach: character.linhThach,
         breakthroughFails: 0,
         punishedUntil: null,
         cultivationBuffMultiplier: character.cultivationBuffMultiplier,
@@ -118,6 +122,7 @@ export class AttemptBreakthroughUseCase {
     const updated = await this.persist(character, currentLinhKhi, now, {
       realmMajor: character.realmMajor,
       realmSub: character.realmSub,
+      linhThach: character.linhThach,
       breakthroughFails: character.breakthroughFails + 1,
       punishedUntil: new Date(now.getTime() + stage.punishmentSeconds * 1000),
       cultivationBuffMultiplier: character.cultivationBuffMultiplier,
@@ -131,7 +136,7 @@ export class AttemptBreakthroughUseCase {
     original: CharacterRecord,
     linhKhi: number,
     lastUpdateAt: Date,
-    rest: { realmMajor: number; realmSub: number; breakthroughFails: number; punishedUntil: Date | null; cultivationBuffMultiplier: number | null; cultivationBuffUntil: Date | null; breakthroughBonusPct: number },
+    rest: { realmMajor: number; realmSub: number; linhThach: number; breakthroughFails: number; punishedUntil: Date | null; cultivationBuffMultiplier: number | null; cultivationBuffUntil: Date | null; breakthroughBonusPct: number },
   ): Promise<CharacterRecord> {
     // Scoped to the lastUpdateAt read at the top of execute(): if another
     // request already wrote to this character first, lastUpdateAt on the row

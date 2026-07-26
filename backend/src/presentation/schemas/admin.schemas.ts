@@ -11,6 +11,14 @@ const subStageSchema = z.object({
   pityIncrement: z.number().min(0),
   maxSuccessRate: z.number().min(0).max(100),
   punishmentSeconds: z.number().int().min(0),
+  // Thuộc tính nền của sub-stage. Mặc định 0 để body của client cũ (chưa biết
+  // 6 trường này) vẫn hợp lệ thay vì bị 400.
+  baseKhiHuyet: z.number().min(0).default(0),
+  baseChanNguyen: z.number().min(0).default(0),
+  baseCongVatLy: z.number().min(0).default(0),
+  baseCongPhep: z.number().min(0).default(0),
+  basePhongThu: z.number().min(0).default(0),
+  baseTocDo: z.number().min(0).default(0),
 });
 
 const realmSchema = z.object({
@@ -47,3 +55,46 @@ export const createPillSchema = pillBodySchema.extend({
   id: z.string().min(1).regex(/^[a-z0-9-]+$/, 'id must be a kebab-case slug (a-z, 0-9, -)'),
 });
 export const updatePillSchema = pillBodySchema;
+
+// Công pháp bodies for POST/PUT /admin/congphap. Như pill: zod lo shape/range,
+// còn bất biến theo category (passive cần effects, active cần powerPerLevel…)
+// nằm ở domain validateCongPhapDefinition.
+const passiveEffectSchema = z.object({
+  attribute: z.enum(['khiHuyet', 'chanNguyen', 'congVatLy', 'congPhep', 'phongThu', 'tocDo']),
+  flatPerLevel: z.number(),
+  pctPerLevel: z.number(),
+});
+
+const congPhapBodySchema = z.object({
+  name: z.string().min(1),
+  glyph: z.string().min(1),
+  rarity: z.number().int(),
+  category: z.enum(['active', 'passive']),
+  desc: z.string().min(1),
+  active: z.boolean(),
+  maxLevel: z.number().int().min(1),
+  baseCost: z.number().int().min(0),
+  costGrowth: z.number().min(1),
+  effects: z.array(passiveEffectSchema).nullable(),
+  powerPerLevel: z.number().nullable(),
+  chanNguyenCost: z.number().nullable(),
+  dupRefundLinhThach: z.number().int().min(0).nullable(),
+});
+
+export const createCongPhapSchema = congPhapBodySchema.extend({
+  id: z.string().min(1).regex(/^[a-z0-9-]+$/, 'id must be a kebab-case slug (a-z, 0-9, -)'),
+});
+export const updateCongPhapSchema = congPhapBodySchema;
+
+// GET /admin/users?q=&limit= — query params luôn là string, nên coerce số.
+// Clamp thực sự nằm ở SearchUsersUseCase (một chỗ duy nhất).
+export const searchUsersQuerySchema = z.object({
+  q: z.string().optional(),
+  limit: z.coerce.number().int().optional(),
+});
+
+export const grantSchema = z.object({
+  userId: z.string().min(1),
+  congPhapId: z.string().regex(/^[a-z0-9-]+$/).optional(),
+  linhThach: z.number().int().optional(),
+});
