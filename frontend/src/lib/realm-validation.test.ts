@@ -13,6 +13,12 @@ function stage(
     pityIncrement: 10,
     maxSuccessRate: 95,
     punishmentSeconds: 300,
+    baseKhiHuyet: 40,
+    baseChanNguyen: 30,
+    baseCongVatLy: 6,
+    baseCongPhep: 6,
+    basePhongThu: 4,
+    baseTocDo: 2,
     ...overrides,
   };
 }
@@ -82,6 +88,20 @@ describe("validateRealmDraft", () => {
     expect(findError(errors, 0, 0, "maxSuccessRate")).toBeDefined();
     expect(findError(errors, 0, 0, "pityIncrement")).toBeDefined();
     expect(findError(errors, 0, 0, "punishmentSeconds")).toBeDefined();
+  });
+
+  it("rejects negative or NaN base attributes", () => {
+    const realms: RealmConfigDTO[] = [
+      {
+        name: "Phàm Nhân",
+        subStages: [stage({ baseKhiHuyet: Number.NaN, baseTocDo: -1 })],
+      },
+    ];
+    const errors = validateRealmDraft(realms);
+    expect(findError(errors, 0, 0, "baseKhiHuyet")).toBeDefined();
+    expect(findError(errors, 0, 0, "baseTocDo")).toBeDefined();
+    // A zero floor is legal (the backend column defaults to 0).
+    expect(findError(errors, 0, 0, "baseChanNguyen")).toBeUndefined();
   });
 
   it("rejects an empty sub-stage name", () => {

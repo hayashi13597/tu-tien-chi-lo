@@ -3029,3 +3029,9 @@ body {
     font-size: 0.75rem;
   }
 }
+
+/* Reward-kind selector sits before the value control in a code's reward row. */
+.admin-code-reward-kind {
+  flex: 0 0 auto;
+  min-width: 120px;
+}

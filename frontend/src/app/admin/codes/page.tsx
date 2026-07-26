@@ -5,14 +5,47 @@ import { CloseIcon } from "@/components/icons";
 import {
   createAdminCode,
   fetchAdminCodes,
+  fetchAdminCongPhap,
   fetchAdminPills,
   updateAdminCode,
 } from "@/lib/api";
+import { getCongPhapRarityMeta } from "@/lib/congphap-display";
 import { getRarityMeta } from "@/lib/pill-constants";
 import { findRedeemError, validateRedeemDraft } from "@/lib/redeem-validation";
-import type { AdminPillDTO, AdminRedeemCodeDTO } from "@/lib/types";
+import type {
+  AdminPillDTO,
+  AdminRedeemCodeDTO,
+  AdminRedeemRewardDTO,
+  CongPhapDTO,
+} from "@/lib/types";
 
 type CodeDraft = Omit<AdminRedeemCodeDTO, "redeemedCount">;
+
+// A reward carries exactly one kind; the selector below rewrites the row
+// wholesale when the kind changes so a stale key can never linger and trip the
+// backend's "exactly one" rule.
+type RewardKind = "pill" | "congphap" | "linhThach";
+
+const REWARD_KIND_LABEL: Record<RewardKind, string> = {
+  pill: "Đan dược",
+  congphap: "Công pháp",
+  linhThach: "Linh Thạch",
+};
+
+function rewardKind(r: AdminRedeemRewardDTO): RewardKind {
+  if (r.congPhapId !== undefined) return "congphap";
+  if (r.linhThach !== undefined) return "linhThach";
+  return "pill";
+}
+
+function emptyRewardOfKind(
+  kind: RewardKind,
+  quantity: number,
+): AdminRedeemRewardDTO {
+  if (kind === "congphap") return { congPhapId: "", quantity };
+  if (kind === "linhThach") return { linhThach: 100, quantity: 1 };
+  return { pillId: "", quantity };
+}
 
 // The single blocking reason a player would hit, in precedence order: an admin
 // switch-off wins over a passed expiry wins over a hit cap; otherwise live.
@@ -111,6 +144,7 @@ interface CodeFormProps {
   initial: CodeDraft;
   isNew: boolean;
   pills: AdminPillDTO[];
+  congphap: CongPhapDTO[];
   onSaved: (saved: AdminRedeemCodeDTO) => void;
   onCancel: () => void;
   onDirtyChange: (dirty: boolean) => void;
@@ -120,6 +154,7 @@ function CodeForm({
   initial,
   isNew,
   pills,
+  congphap,
   onSaved,
   onCancel,
   onDirtyChange,
@@ -145,13 +180,19 @@ function CodeForm({
   const set = <K extends keyof CodeDraft>(key: K, value: CodeDraft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
 
-  const setReward = (
-    idx: number,
-    patch: Partial<{ pillId: string; quantity: number }>,
-  ) =>
+  const setReward = (idx: number, patch: Partial<AdminRedeemRewardDTO>) =>
     setDraft((d) => ({
       ...d,
       rewards: d.rewards.map((r, i) => (i === idx ? { ...r, ...patch } : r)),
+    }));
+
+  // Replace (not merge) so the previous kind's key disappears entirely.
+  const setRewardKind = (idx: number, kind: RewardKind) =>
+    setDraft((d) => ({
+      ...d,
+      rewards: d.rewards.map((r, i) =>
+        i === idx ? emptyRewardOfKind(kind, r.quantity) : r,
+      ),
     }));
 
   const addReward = () =>
@@ -305,7 +346,7 @@ function CodeForm({
         <div className="admin-code-section-head">
           <h4 className="admin-code-section-title">Phần thưởng</h4>
           <span className="admin-code-section-hint">
-            Đan dược trao khi đổi mã
+            Đan dược, công pháp hoặc Linh Thạch trao khi đổi mã
           </span>
         </div>
         {rewardsError && (
@@ -313,15 +354,32 @@ function CodeForm({
         )}
         {draft.rewards.length === 0 && !rewardsError && (
           <p className="admin-code-rewards-empty">
-            Chưa có phần thưởng. Thêm ít nhất một đan dược để mã có hiệu lực.
+            Chưa có phần thưởng. Thêm ít nhất một phần thưởng để mã có hiệu lực.
           </p>
         )}
         <div className="admin-code-reward-list">
           {draft.rewards.map((r, i) => {
-            const selected = pills.find((p) => p.id === r.pillId);
-            const glyphColor = selected
-              ? getRarityMeta(selected.rarity).color
-              : "var(--muted)";
+            const kind = rewardKind(r);
+            const selectedPill = pills.find((p) => p.id === r.pillId);
+            const selectedCongPhap = congphap.find(
+              (cp) => cp.id === r.congPhapId,
+            );
+            const glyph =
+              kind === "linhThach"
+                ? "晶"
+                : kind === "congphap"
+                  ? (selectedCongPhap?.glyph ?? "?")
+                  : (selectedPill?.glyph ?? "?");
+            const glyphColor =
+              kind === "linhThach"
+                ? "var(--jade)"
+                : kind === "congphap"
+                  ? selectedCongPhap
+                    ? getCongPhapRarityMeta(selectedCongPhap.rarity).color
+                    : "var(--muted)"
+                  : selectedPill
+                    ? getRarityMeta(selectedPill.rarity).color
+                    : "var(--muted)";
             return (
               <div
                 // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional, no stable id
@@ -333,22 +391,75 @@ function CodeForm({
                   style={{ color: glyphColor }}
                   aria-hidden="true"
                 >
-                  {selected?.glyph ?? "?"}
+                  {glyph}
                 </span>
                 <select
-                  className="admin-input admin-code-reward-select"
-                  value={r.pillId}
-                  aria-label={`Đan dược hàng ${i + 1}`}
-                  onChange={(e) => setReward(i, { pillId: e.target.value })}
+                  className="admin-input admin-code-reward-kind"
+                  value={kind}
+                  aria-label={`Loại phần thưởng hàng ${i + 1}`}
+                  onChange={(e) =>
+                    setRewardKind(i, e.target.value as RewardKind)
+                  }
                 >
-                  <option value="">-- Chọn đan dược --</option>
-                  {pills.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
+                  {(Object.keys(REWARD_KIND_LABEL) as RewardKind[]).map((k) => (
+                    <option key={k} value={k}>
+                      {REWARD_KIND_LABEL[k]}
                     </option>
                   ))}
                 </select>
-                <div className="admin-code-reward-qty-wrap">
+                {kind === "pill" && (
+                  <select
+                    className="admin-input admin-code-reward-select"
+                    value={r.pillId ?? ""}
+                    aria-label={`Đan dược hàng ${i + 1}`}
+                    onChange={(e) => setReward(i, { pillId: e.target.value })}
+                  >
+                    <option value="">-- Chọn đan dược --</option>
+                    {pills.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {kind === "congphap" && (
+                  <select
+                    className="admin-input admin-code-reward-select"
+                    value={r.congPhapId ?? ""}
+                    aria-label={`Công pháp hàng ${i + 1}`}
+                    onChange={(e) =>
+                      setReward(i, { congPhapId: e.target.value })
+                    }
+                  >
+                    <option value="">-- Chọn công pháp --</option>
+                    {congphap.map((cp) => (
+                      <option key={cp.id} value={cp.id}>
+                        {cp.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {kind === "linhThach" && (
+                  <input
+                    type="number"
+                    className="admin-input admin-code-reward-select"
+                    min={1}
+                    aria-label={`Số Linh Thạch hàng ${i + 1}`}
+                    value={numericValue(r.linhThach ?? Number.NaN)}
+                    onChange={(e) =>
+                      setReward(i, {
+                        linhThach:
+                          e.target.value === ""
+                            ? Number.NaN
+                            : Number(e.target.value),
+                      })
+                    }
+                  />
+                )}
+                <div
+                  className="admin-code-reward-qty-wrap"
+                  hidden={kind === "linhThach"}
+                >
                   <span className="admin-code-reward-times" aria-hidden="true">
                     ×
                   </span>
@@ -416,6 +527,7 @@ function CodeForm({
 export default function AdminCodesPage() {
   const [codes, setCodes] = useState<AdminRedeemCodeDTO[] | null>(null);
   const [pills, setPills] = useState<AdminPillDTO[]>([]);
+  const [congphap, setCongPhap] = useState<CongPhapDTO[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [dirtyOpen, setDirtyOpen] = useState(false);
@@ -423,12 +535,15 @@ export default function AdminCodesPage() {
   const load = useCallback(async () => {
     setLoadError(null);
     try {
-      const [{ codes: list }, { pills: pillList }] = await Promise.all([
-        fetchAdminCodes(),
-        fetchAdminPills(),
-      ]);
+      const [{ codes: list }, { pills: pillList }, { congphap: cpList }] =
+        await Promise.all([
+          fetchAdminCodes(),
+          fetchAdminPills(),
+          fetchAdminCongPhap(),
+        ]);
       setCodes(list);
       setPills(pillList);
+      setCongPhap(cpList);
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : "Không tải được danh sách");
     }
@@ -606,6 +721,7 @@ export default function AdminCodesPage() {
                 }
                 isNew={openId === "new"}
                 pills={pills}
+                congphap={congphap}
                 onSaved={onSaved}
                 onCancel={() => setOpenId(null)}
                 onDirtyChange={setDirtyOpen}

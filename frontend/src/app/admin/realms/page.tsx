@@ -14,6 +14,13 @@ const NUMERIC_FIELDS: { key: keyof SubStageConfigDTO; label: string }[] = [
   { key: "pityIncrement", label: "Cộng dồn (%)" },
   { key: "maxSuccessRate", label: "Tỉ lệ tối đa (%)" },
   { key: "punishmentSeconds", label: "Phạt (giây)" },
+  // Attribute floor for the sub-stage; passive công pháp add on top of these.
+  { key: "baseKhiHuyet", label: "Khí huyết nền" },
+  { key: "baseChanNguyen", label: "Chân nguyên nền" },
+  { key: "baseCongVatLy", label: "Công vật lý nền" },
+  { key: "baseCongPhep", label: "Công phép nền" },
+  { key: "basePhongThu", label: "Phòng thủ nền" },
+  { key: "baseTocDo", label: "Tốc độ nền" },
 ];
 
 function emptyStage(): SubStageConfigDTO {
@@ -25,6 +32,13 @@ function emptyStage(): SubStageConfigDTO {
     pityIncrement: 10,
     maxSuccessRate: 95,
     punishmentSeconds: 300,
+    // Matches the backend's deriveBaseAttributes(cultivationRate = 1).
+    baseKhiHuyet: 40,
+    baseChanNguyen: 30,
+    baseCongVatLy: 6,
+    baseCongPhep: 6,
+    basePhongThu: 4,
+    baseTocDo: 2,
   };
 }
 

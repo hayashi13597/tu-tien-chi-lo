@@ -70,4 +70,66 @@ describe("validateRedeemDraft", () => {
     );
     expect(findRedeemError(errors, "rewards")).toBeDefined();
   });
+
+  it("accepts công pháp and Linh Thạch rewards", () => {
+    const errors = validateRedeemDraft(
+      draft({
+        rewards: [
+          { congPhapId: "thiet-cot-quyet", quantity: 1 },
+          { linhThach: 500, quantity: 1 },
+        ],
+      }),
+      { isNew: true },
+    );
+    expect(errors).toHaveLength(0);
+  });
+
+  it("rejects a reward with no kind, or with two kinds", () => {
+    expect(
+      findRedeemError(
+        validateRedeemDraft(draft({ rewards: [{ quantity: 1 }] }), {
+          isNew: true,
+        }),
+        "rewards",
+      ),
+    ).toBeDefined();
+    expect(
+      findRedeemError(
+        validateRedeemDraft(
+          draft({
+            rewards: [{ pillId: "p1", congPhapId: "cp1", quantity: 1 }],
+          }),
+          { isNew: true },
+        ),
+        "rewards",
+      ),
+    ).toBeDefined();
+  });
+
+  it("rejects a Linh Thạch amount below 1", () => {
+    expect(
+      findRedeemError(
+        validateRedeemDraft(
+          draft({ rewards: [{ linhThach: 0, quantity: 1 }] }),
+          {
+            isNew: true,
+          },
+        ),
+        "rewards",
+      ),
+    ).toBeDefined();
+  });
+
+  it("allows the same id across different reward kinds", () => {
+    const errors = validateRedeemDraft(
+      draft({
+        rewards: [
+          { pillId: "x", quantity: 1 },
+          { congPhapId: "x", quantity: 1 },
+        ],
+      }),
+      { isNew: true },
+    );
+    expect(errors).toHaveLength(0);
+  });
 });

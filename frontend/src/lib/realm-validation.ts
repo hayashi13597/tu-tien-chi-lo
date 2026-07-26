@@ -74,6 +74,21 @@ export function validateRealmDraft(
       )
         fail("punishmentSeconds", "Số nguyên ≥ 0");
 
+      // Attribute floors: the backend column is Float with .default(0), so any
+      // finite non-negative value is valid — an emptied input (NaN) is not.
+      for (const key of [
+        "baseKhiHuyet",
+        "baseChanNguyen",
+        "baseCongVatLy",
+        "baseCongPhep",
+        "basePhongThu",
+        "baseTocDo",
+      ] as const) {
+        if (!Number.isFinite(sub[key]) || sub[key] < 0) {
+          fail(key, "Phải là số ≥ 0");
+        }
+      }
+
       // Monotonic linh khí WITHIN the realm only — each new realm may reset
       // lower (the seeded balance does), matching the backend invariant.
       if (subIndex > 0) {
