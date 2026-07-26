@@ -559,7 +559,7 @@ rtk git commit -m "feat: add deterministic turn based combat domain"
 - Modify: `backend/src/app.ts`
 - Modify: `backend/src/domain/errors.ts`
 
-- [ ] **Step 1: Viết domain tests cho quota, scaling, reward và drop**
+- [x] **Step 1: Viết domain tests cho quota, scaling, reward và drop**
 
 Test:
 
@@ -572,13 +572,13 @@ Test:
 - normal/boss roll dùng cùng seed cho cùng payload;
 - branch reward chứa alchemy material branch và ba upgrade material weight table.
 
-- [ ] **Step 2: Chạy test domain để xác nhận thiếu implementation**
+- [x] **Step 2: Chạy test domain để xác nhận thiếu implementation**
 
 Run: `cd backend && rtk npm test -- src/domain/expedition/expedition.calc.test.ts`
 
 Expected: FAIL vì domain expedition chưa tồn tại.
 
-- [ ] **Step 3: Implement domain types và config calculation**
+- [x] **Step 3: Implement domain types và config calculation**
 
 `expedition.ts` định nghĩa `ExpeditionDuration`, `ExpeditionDifficultyKey`, `ExpeditionStatus`, branch/difficulty config, snapshot, battle outcome và reward payload. `expedition.calc.ts` export:
 
@@ -598,7 +598,7 @@ export function rollExpeditionRewards(input: RewardRollInput): RewardPayload;
 
 `rollExpeditionRewards` phải nhận `RandomSource`, không đọc DB và không cấp inventory. `simulateExpedition` gọi combat simulator ba lần, dừng kết quả chiến thuật ở trận thua nhưng vẫn tạo reward multiplier theo số wins.
 
-- [ ] **Step 4: Viết application tests bằng fake repositories**
+- [x] **Step 4: Viết application tests bằng fake repositories**
 
 Test:
 
@@ -610,13 +610,13 @@ Test:
 - concurrent start chỉ một fake transaction thắng;
 - GET current settle timer nhưng không tự claim.
 
-- [ ] **Step 5: Implement repository transaction**
+- [x] **Step 5: Implement repository transaction**
 
 `PrismaExpeditionRepository.start` lock/check quota ngày và active expedition trong `$transaction`, conditional increment `spentUnits`, tạo Expedition với result đã resolve. `getCurrent` settle status `running` → `completed` khi `completesAt <= now`; completed chưa claim vẫn giữ slot. `claim` dùng guard `status = completed AND claimedAt IS NULL`, grant stored `rewardResult` vào MaterialInventory/Character linh thạch và set `claimedAt/status` trong cùng transaction.
 
 `PrismaExpeditionConfigRepository` đọc 8 branch và 24 difficulty active rows theo thứ tự branch/difficulty.
 
-- [ ] **Step 6: Implement use cases/routes/app wiring**
+- [x] **Step 6: Implement use cases/routes/app wiring**
 
 Use case signatures:
 
@@ -636,7 +636,7 @@ Routes:
 
 Schema phải clamp duration bằng whitelist và validate branch id slug. Wire toàn bộ dependency trong `backend/src/app.ts` trước `errorHandler`.
 
-- [ ] **Step 7: Chạy integration gate và commit**
+- [x] **Step 7: Chạy integration gate và commit**
 
 Run:
 

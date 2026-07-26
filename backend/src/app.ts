@@ -15,6 +15,8 @@ import { PrismaOwnedCongPhapRepository } from './infrastructure/repositories/Pri
 import { PrismaMaterialRepository } from './infrastructure/repositories/PrismaMaterialRepository';
 import { PrismaAlchemyRepository } from './infrastructure/repositories/PrismaAlchemyRepository';
 import { PrismaProgressionRepository } from './infrastructure/repositories/PrismaProgressionRepository';
+import { PrismaExpeditionConfigRepository } from './infrastructure/repositories/PrismaExpeditionConfigRepository';
+import { PrismaExpeditionRepository } from './infrastructure/repositories/PrismaExpeditionRepository';
 import { PrismaAdminUserRepository } from './infrastructure/repositories/PrismaAdminUserRepository';
 import { RealmConfigProvider } from './infrastructure/config/RealmConfigProvider';
 import { BcryptPasswordHasher } from './infrastructure/auth/BcryptPasswordHasher';
@@ -52,6 +54,10 @@ import { GetMaterialInventoryUseCase } from './application/GetMaterialInventoryU
 import { ListAlchemyRecipesUseCase } from './application/ListAlchemyRecipesUseCase';
 import { GetAlchemyQueueUseCase } from './application/GetAlchemyQueueUseCase';
 import { QueueAlchemyUseCase } from './application/QueueAlchemyUseCase';
+import { ListExpeditionBranchesUseCase } from './application/ListExpeditionBranchesUseCase';
+import { GetCurrentExpeditionUseCase } from './application/GetCurrentExpeditionUseCase';
+import { StartExpeditionUseCase } from './application/StartExpeditionUseCase';
+import { ClaimExpeditionUseCase } from './application/ClaimExpeditionUseCase';
 import { createAuthRouter } from './presentation/routes/auth.routes';
 import { createCultivationRouter } from './presentation/routes/cultivation.routes';
 import { createPillsRouter } from './presentation/routes/pills.routes';
@@ -60,6 +66,7 @@ import { createRedeemRouter } from './presentation/routes/redeem.routes';
 import { createCongPhapRouter } from './presentation/routes/congphap.routes';
 import { createMaterialsRouter } from './presentation/routes/materials.routes';
 import { createAlchemyRouter } from './presentation/routes/alchemy.routes';
+import { createExpeditionsRouter } from './presentation/routes/expeditions.routes';
 import { createRequireAuth } from './presentation/middleware/auth';
 import { errorHandler } from './presentation/middleware/errorHandler';
 
@@ -86,6 +93,8 @@ export function createApp(overrides: AppOverrides = {}) {
   const materialRepository = new PrismaMaterialRepository(client);
   const alchemyRepository = new PrismaAlchemyRepository(client);
   const progressionRepository = new PrismaProgressionRepository(client);
+  const expeditionConfigRepository = new PrismaExpeditionConfigRepository(client);
+  const expeditionRepository = new PrismaExpeditionRepository(client);
   const adminUserRepository = new PrismaAdminUserRepository(client);
   const passwordHasher = new BcryptPasswordHasher();
 
@@ -156,6 +165,10 @@ export function createApp(overrides: AppOverrides = {}) {
   const listAlchemyRecipesUseCase = new ListAlchemyRecipesUseCase(alchemyRepository);
   const getAlchemyQueueUseCase = new GetAlchemyQueueUseCase(alchemyRepository);
   const queueAlchemyUseCase = new QueueAlchemyUseCase(alchemyRepository, materialRepository, characterRepository);
+  const listExpeditionBranchesUseCase = new ListExpeditionBranchesUseCase(expeditionConfigRepository);
+  const getCurrentExpeditionUseCase = new GetCurrentExpeditionUseCase(expeditionRepository);
+  const startExpeditionUseCase = new StartExpeditionUseCase(expeditionConfigRepository, expeditionRepository, getCultivationStateUseCase, ownedCongPhapRepository, randomSource);
+  const claimExpeditionUseCase = new ClaimExpeditionUseCase(expeditionRepository);
 
   const requireAuth = createRequireAuth(tokenService);
 
@@ -200,6 +213,7 @@ export function createApp(overrides: AppOverrides = {}) {
   app.use('/redeem', createRedeemRouter({ redeemCodeUseCase, requireAuth }));
   app.use('/materials', createMaterialsRouter({ getMaterialInventoryUseCase, requireAuth }));
   app.use('/alchemy', createAlchemyRouter({ listAlchemyRecipesUseCase, getAlchemyQueueUseCase, queueAlchemyUseCase, requireAuth }));
+  app.use('/expeditions', createExpeditionsRouter({ listExpeditionBranchesUseCase, getCurrentExpeditionUseCase, startExpeditionUseCase, claimExpeditionUseCase, requireAuth }));
   app.use(
     '/congphap',
     createCongPhapRouter({ listCongPhapUseCase, equipCongPhapUseCase, unequipCongPhapUseCase, levelUpCongPhapUseCase, requireAuth }),

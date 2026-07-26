@@ -101,7 +101,8 @@ A cultivation-game (gameplay rebuilt to 100% feature parity with Nhất Niệm T
 - API hiện tại: `GET /materials/inventory`, `GET /alchemy/recipes`, `GET /alchemy/queue`, `POST /alchemy/queue`; route lấy user từ `requireAuth`. Prisma repositories giữ spend material + Linh Thạch và output Pill trong transaction.
 - Level-up công pháp dùng `ProgressionRepository.levelUpWithCosts`: guard Linh Thạch, material và expected level trong một transaction serializable; kết quả race/thiếu từng resource được phân biệt, response có `material` balance.
 - Combat domain: `simulateBattle` là turn-based deterministic, thứ tự theo `tocDo`, skill theo slot/cooldown/Chân Nguyên; `SeededRandom` dùng integer seed, không gọi `Math.random()` trong domain.
-- Backend gate hiện tại: **384 tests**, `npm run build` pass. Integration cần `backend/.env` với PostgreSQL chạy ở `localhost:5432`.
+- Expedition domain/API: `simulateExpedition` chạy 2 normal + 1 boss, snapshot seed/reward trước claim; repository giữ quota 12 units/ngày, active/completed slot và claim idempotent. Routes: `GET /expeditions/branches`, `GET /expeditions/current`, `POST /expeditions/start`, `POST /expeditions/claim`.
+- Backend gate hiện tại: **400 tests**, `npm run build` pass. Integration cần `backend/.env` với PostgreSQL chạy ở `localhost:5432`.
 
 ## Security hardening (backend)
 
