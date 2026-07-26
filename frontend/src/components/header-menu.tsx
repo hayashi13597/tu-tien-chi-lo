@@ -8,12 +8,14 @@ import {
   GiftIcon,
   LogoutIcon,
   MenuIcon,
+  ScrollIcon,
   ShieldIcon,
 } from "@/components/icons";
 import { useAuth } from "@/lib/auth-context";
 
 interface HeaderMenuProps {
   onOpenPills: () => void;
+  onOpenCongPhap: () => void;
   onOpenRedeem: () => void;
   onLogout: () => void;
 }
@@ -25,6 +27,7 @@ interface HeaderMenuProps {
 // mismatch. The dropdown is only interactive on mobile where it's visible.
 export function HeaderMenu({
   onOpenPills,
+  onOpenCongPhap,
   onOpenRedeem,
   onLogout,
 }: HeaderMenuProps) {
@@ -42,6 +45,11 @@ export function HeaderMenu({
     close();
     onOpenPills();
   }, [close, onOpenPills]);
+
+  const handleCongPhap = useCallback(() => {
+    close();
+    onOpenCongPhap();
+  }, [close, onOpenCongPhap]);
 
   const handleRedeem = useCallback(() => {
     close();
@@ -85,6 +93,14 @@ export function HeaderMenu({
           <CauldronIcon />
           <span>Đan Phòng</span>
         </button>
+        <button
+          type="button"
+          className="header-action"
+          onClick={onOpenCongPhap}
+        >
+          <ScrollIcon />
+          <span>Công Pháp</span>
+        </button>
         <button type="button" className="header-action" onClick={onOpenRedeem}>
           <GiftIcon />
           <span>Nhập Code</span>
@@ -124,6 +140,15 @@ export function HeaderMenu({
             >
               <CauldronIcon />
               <span>Đan Phòng</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className="header-menu-item"
+              onClick={handleCongPhap}
+            >
+              <ScrollIcon />
+              <span>Công Pháp</span>
             </button>
             <button
               type="button"

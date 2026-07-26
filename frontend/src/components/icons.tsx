@@ -139,3 +139,17 @@ export function GiftIcon(props: IconProps) {
     </svg>
   );
 }
+
+export function ScrollIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <title>Công Pháp</title>
+      <path d="M8 3H5a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h3" />
+      <path d="M16 21h3a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2h-3" />
+      <path d="M8 3v16a2 2 0 0 0 2 2h6" />
+      <path d="M16 21V5a2 2 0 0 0-2-2H8" />
+      <line x1="11" y1="8" x2="13" y2="8" />
+      <line x1="11" y1="12" x2="13" y2="12" />
+    </svg>
+  );
+}

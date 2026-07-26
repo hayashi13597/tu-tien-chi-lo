@@ -2758,3 +2758,274 @@ body {
     max-height: none;
   }
 }
+
+/* ============================================================
+   Công Pháp modal — reuses .pill-overlay/.pill-panel chrome so
+   the two modals stay visually identical; only the inner layout
+   (slots, cards, picker) is new.
+   ============================================================ */
+.congphap-panel {
+  width: min(1040px, 100%);
+}
+.congphap-purse {
+  margin-left: auto;
+  margin-right: var(--space-4);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.congphap-purse strong {
+  color: var(--jade);
+}
+.congphap-section {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin: var(--space-5) 0 var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.25);
+  font-family:
+    var(--font-serif-vi), var(--font-mashan), "Cormorant Garamond", serif;
+  font-size: 1.1rem;
+  color: var(--gold);
+}
+.congphap-section-note {
+  font-family: inherit;
+  font-size: 0.75rem;
+  color: var(--muted-dim);
+}
+.congphap-empty {
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding: var(--space-3) 0;
+}
+
+/* --- Four active slots --- */
+.congphap-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+}
+.congphap-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 130px;
+  padding: var(--space-3);
+  border-radius: var(--radius);
+  text-align: center;
+}
+.congphap-slot.empty {
+  border: 1px dashed rgba(212, 175, 55, 0.4);
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: pointer;
+}
+.congphap-slot.empty:hover:not(:disabled) {
+  border-color: var(--border-bright);
+  color: var(--fg-dim);
+}
+.congphap-slot.empty:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.congphap-slot.empty.picking {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold-glow);
+}
+.congphap-slot-plus {
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--gold-deep);
+}
+.congphap-slot-label {
+  font-size: 0.75rem;
+}
+.congphap-slot.filled {
+  border: 1px solid color-mix(in srgb, var(--rarity) 55%, transparent);
+  background: var(--surface);
+}
+.congphap-slot-glyph {
+  font-family: var(--font-mashan), serif;
+  font-size: 1.8rem;
+  color: var(--rarity);
+}
+.congphap-slot-name {
+  font-size: 0.85rem;
+  color: var(--fg);
+}
+.congphap-slot-power {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+/* --- Slot picker --- */
+.congphap-picker {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.congphap-picker-title {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: 0.8rem;
+  color: var(--gold);
+}
+.congphap-picker-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+.congphap-picker-item {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--fg-dim);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.congphap-picker-item:hover:not(:disabled) {
+  border-color: var(--border-bright);
+  color: var(--fg);
+}
+
+/* --- Cards --- */
+.congphap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-4);
+}
+.congphap-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--rarity) 45%, transparent);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.congphap-card.disabled,
+.congphap-card.locked {
+  opacity: 0.55;
+}
+.congphap-card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.congphap-glyph {
+  font-family: var(--font-mashan), serif;
+  font-size: 1.9rem;
+  line-height: 1;
+  color: var(--rarity);
+}
+.congphap-card-title {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.congphap-name {
+  color: var(--fg);
+  font-size: 0.95rem;
+}
+.congphap-rarity {
+  color: var(--rarity);
+  font-size: 0.72rem;
+}
+.congphap-level {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.78rem;
+  color: var(--gold);
+  white-space: nowrap;
+}
+.congphap-level-max {
+  color: var(--muted-dim);
+}
+.congphap-badge-off {
+  align-self: flex-start;
+  padding: 2px var(--space-2);
+  border: 1px solid var(--red);
+  border-radius: var(--radius-sm);
+  color: var(--red);
+  font-size: 0.68rem;
+}
+.congphap-desc {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+.congphap-effects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.congphap-effect {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  background: rgba(93, 217, 177, 0.12);
+  color: var(--jade);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.72rem;
+}
+.congphap-effect-note {
+  color: var(--muted-dim);
+  font-size: 0.7rem;
+  font-style: italic;
+}
+.congphap-card-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-2);
+}
+.congphap-btn {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--fg-dim);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+.congphap-btn:hover:not(:disabled) {
+  border-color: var(--border-bright);
+  color: var(--fg);
+}
+.congphap-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.congphap-btn-primary {
+  border-color: var(--border-bright);
+  color: var(--gold);
+}
+.congphap-btn-slim {
+  flex: none;
+  padding: 2px var(--space-2);
+  font-size: 0.72rem;
+}
+
+@media (max-width: 768px) {
+  .congphap-slot-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .congphap-grid {
+    grid-template-columns: 1fr;
+  }
+  .congphap-purse {
+    margin-right: var(--space-2);
+    font-size: 0.75rem;
+  }
+}
