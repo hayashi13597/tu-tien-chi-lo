@@ -677,7 +677,7 @@ rtk git commit -m "feat: add idle expedition lifecycle"
 - Test: `backend/src/application/admin.expedition-catalog.test.ts`
 - Test: `backend/src/infrastructure/repositories/admin.expedition-catalog.repo.integration.test.ts`
 
-- [ ] **Step 1: Viết validation tests trước**
+- [x] **Step 1: Viết validation tests trước**
 
 Test reject:
 
@@ -688,11 +688,11 @@ Test reject:
 - drop weight âm, reward multiplier không dương, duration ngoài whitelist;
 - update không làm mất active material đã có inventory.
 
-- [ ] **Step 2: Implement full-replace admin use cases theo pattern realm config**
+- [x] **Step 2: Implement full-replace admin use cases theo pattern realm config**
 
 Dùng transaction full replace ở từng catalog, validate domain trước delete/create, rồi reload config provider nếu repository có cache. Chỉ route qua `requireAuth` + `requireAdmin`. Không cho admin sửa `Pill.id`, `CongPhap.id` hoặc material id sau khi đã tham chiếu.
 
-- [ ] **Step 3: Thêm route contract và integration tests**
+- [x] **Step 3: Thêm route contract và integration tests**
 
 Expose:
 
@@ -702,7 +702,7 @@ Expose:
 
 Assert role user nhận 403, admin update được live config và player GET routes thấy dữ liệu mới.
 
-- [ ] **Step 4: Chạy backend gate và commit**
+- [x] **Step 4: Chạy backend gate và commit**
 
 Run: `cd backend && rtk npm test -- src/application/admin.expedition-catalog.test.ts src/infrastructure/repositories/admin.expedition-catalog.repo.integration.test.ts && rtk npm run build`
 

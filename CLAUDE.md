@@ -26,7 +26,7 @@ A cultivation-game (gameplay rebuilt to 100% feature parity with Nhất Niệm T
 - Backend env: `JWT_SECRET`, `JWT_REFRESH_SECRET`, `CORS_ORIGIN=http://localhost:3000`, `PORT=5000`. Frontend: `NEXT_PUBLIC_API_BASE=http://localhost:5000` in `frontend/.env.local`.
 - Docker/Prisma gotcha: `node:20-alpine` needs `openssl` in the image + `linux-musl-openssl-3.0.x` binary target in `prisma/schema.prisma`, or the query engine fails to load.
 - Integration-test gotchas: pre-warm Prisma connections before racing concurrent requests (cold pool makes races non-deterministic); usernames must satisfy `registerSchema` `min(3)`.
-- Current test counts: **backend 353, frontend 101**.
+- Current test counts: **backend 410, frontend 101**.
 
 ## Backend: Phase 1 (core) + Phase 2 (cookie auth)
 
@@ -99,6 +99,7 @@ A cultivation-game (gameplay rebuilt to 100% feature parity with Nhất Niệm T
 - `CongPhapRecord` và Prisma mappers giữ `upgradeMaterialId`, `baseMaterialCost`, `materialCostGrowth`, `cooldownRounds`; migration `bi_canh_materials_alchemy_expedition` đã áp dụng.
 - Domain materials/alchemy: `ticketCostForDuration` dùng 1/2/4 units cho 30m/2h/8h, quota ngày là 12 units; `materialCostAtLevel` và `canSpendMaterials` là pure helpers. `settleAlchemyQueue` resolve job hoàn tất offline và chỉ tạo output grant một lần.
 - API hiện tại: `GET /materials/inventory`, `GET /alchemy/recipes`, `GET /alchemy/queue`, `POST /alchemy/queue`; route lấy user từ `requireAuth`. Prisma repositories giữ spend material + Linh Thạch và output Pill trong transaction.
+- Admin catalog API: `GET/PUT /admin/materials`, `GET/PUT /admin/alchemy/recipes`, `GET/PUT /admin/expeditions`; full-replace transaction, validate duplicate/foreign/config rows trước khi ghi, chỉ admin được gọi. Material rows không xóa material đã tham chiếu bởi inventory.
 - Level-up công pháp dùng `ProgressionRepository.levelUpWithCosts`: guard Linh Thạch, material và expected level trong một transaction serializable; kết quả race/thiếu từng resource được phân biệt, response có `material` balance.
 - Combat domain: `simulateBattle` là turn-based deterministic, thứ tự theo `tocDo`, skill theo slot/cooldown/Chân Nguyên; `SeededRandom` dùng integer seed, không gọi `Math.random()` trong domain.
 - Expedition domain/API: `simulateExpedition` chạy 2 normal + 1 boss, snapshot seed/reward trước claim; repository giữ quota 12 units/ngày, active/completed slot và claim idempotent. Routes: `GET /expeditions/branches`, `GET /expeditions/current`, `POST /expeditions/start`, `POST /expeditions/claim`.

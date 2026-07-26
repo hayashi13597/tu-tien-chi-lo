@@ -17,6 +17,9 @@ import { PrismaAlchemyRepository } from './infrastructure/repositories/PrismaAlc
 import { PrismaProgressionRepository } from './infrastructure/repositories/PrismaProgressionRepository';
 import { PrismaExpeditionConfigRepository } from './infrastructure/repositories/PrismaExpeditionConfigRepository';
 import { PrismaExpeditionRepository } from './infrastructure/repositories/PrismaExpeditionRepository';
+import { PrismaMaterialCatalogAdminRepository } from './infrastructure/repositories/PrismaMaterialCatalogAdminRepository';
+import { PrismaAlchemyCatalogAdminRepository } from './infrastructure/repositories/PrismaAlchemyCatalogAdminRepository';
+import { PrismaExpeditionCatalogAdminRepository } from './infrastructure/repositories/PrismaExpeditionCatalogAdminRepository';
 import { PrismaAdminUserRepository } from './infrastructure/repositories/PrismaAdminUserRepository';
 import { RealmConfigProvider } from './infrastructure/config/RealmConfigProvider';
 import { BcryptPasswordHasher } from './infrastructure/auth/BcryptPasswordHasher';
@@ -58,6 +61,12 @@ import { ListExpeditionBranchesUseCase } from './application/ListExpeditionBranc
 import { GetCurrentExpeditionUseCase } from './application/GetCurrentExpeditionUseCase';
 import { StartExpeditionUseCase } from './application/StartExpeditionUseCase';
 import { ClaimExpeditionUseCase } from './application/ClaimExpeditionUseCase';
+import { ListMaterialAdminUseCase } from './application/ListMaterialAdminUseCase';
+import { UpdateMaterialAdminUseCase } from './application/UpdateMaterialAdminUseCase';
+import { ListAlchemyRecipeAdminUseCase } from './application/ListAlchemyRecipeAdminUseCase';
+import { UpdateAlchemyRecipeAdminUseCase } from './application/UpdateAlchemyRecipeAdminUseCase';
+import { ListExpeditionConfigAdminUseCase } from './application/ListExpeditionConfigAdminUseCase';
+import { UpdateExpeditionConfigAdminUseCase } from './application/UpdateExpeditionConfigAdminUseCase';
 import { createAuthRouter } from './presentation/routes/auth.routes';
 import { createCultivationRouter } from './presentation/routes/cultivation.routes';
 import { createPillsRouter } from './presentation/routes/pills.routes';
@@ -95,6 +104,9 @@ export function createApp(overrides: AppOverrides = {}) {
   const progressionRepository = new PrismaProgressionRepository(client);
   const expeditionConfigRepository = new PrismaExpeditionConfigRepository(client);
   const expeditionRepository = new PrismaExpeditionRepository(client);
+  const materialCatalogAdminRepository = new PrismaMaterialCatalogAdminRepository(client);
+  const alchemyCatalogAdminRepository = new PrismaAlchemyCatalogAdminRepository(client);
+  const expeditionCatalogAdminRepository = new PrismaExpeditionCatalogAdminRepository(client);
   const adminUserRepository = new PrismaAdminUserRepository(client);
   const passwordHasher = new BcryptPasswordHasher();
 
@@ -169,6 +181,12 @@ export function createApp(overrides: AppOverrides = {}) {
   const getCurrentExpeditionUseCase = new GetCurrentExpeditionUseCase(expeditionRepository);
   const startExpeditionUseCase = new StartExpeditionUseCase(expeditionConfigRepository, expeditionRepository, getCultivationStateUseCase, ownedCongPhapRepository, randomSource);
   const claimExpeditionUseCase = new ClaimExpeditionUseCase(expeditionRepository);
+  const listMaterialAdminUseCase = new ListMaterialAdminUseCase(materialCatalogAdminRepository);
+  const updateMaterialAdminUseCase = new UpdateMaterialAdminUseCase(materialCatalogAdminRepository);
+  const listAlchemyRecipeAdminUseCase = new ListAlchemyRecipeAdminUseCase(alchemyCatalogAdminRepository);
+  const updateAlchemyRecipeAdminUseCase = new UpdateAlchemyRecipeAdminUseCase(alchemyCatalogAdminRepository);
+  const listExpeditionConfigAdminUseCase = new ListExpeditionConfigAdminUseCase(expeditionCatalogAdminRepository);
+  const updateExpeditionConfigAdminUseCase = new UpdateExpeditionConfigAdminUseCase(expeditionCatalogAdminRepository);
 
   const requireAuth = createRequireAuth(tokenService);
 
@@ -220,7 +238,7 @@ export function createApp(overrides: AppOverrides = {}) {
   );
   app.use(
     '/admin',
-    createAdminRouter({ updateRealmConfigUseCase, getAdminStatsUseCase, listPillsAdminUseCase, createPillUseCase, updatePillUseCase, realmConfigSource: realmConfigProvider, realmConfigReloader: realmConfigProvider, listRedeemCodesUseCase, createRedeemCodeUseCase, updateRedeemCodeUseCase, listCongPhapAdminUseCase, createCongPhapUseCase, updateCongPhapUseCase, grantUseCase, searchUsersUseCase, requireAuth }),
+    createAdminRouter({ updateRealmConfigUseCase, getAdminStatsUseCase, listPillsAdminUseCase, createPillUseCase, updatePillUseCase, realmConfigSource: realmConfigProvider, realmConfigReloader: realmConfigProvider, listRedeemCodesUseCase, createRedeemCodeUseCase, updateRedeemCodeUseCase, listCongPhapAdminUseCase, createCongPhapUseCase, updateCongPhapUseCase, grantUseCase, searchUsersUseCase, requireAuth, listMaterialAdminUseCase, updateMaterialAdminUseCase, listAlchemyRecipeAdminUseCase, updateAlchemyRecipeAdminUseCase, listExpeditionConfigAdminUseCase, updateExpeditionConfigAdminUseCase }),
   );
 
   app.use(errorHandler);
