@@ -32,7 +32,7 @@
 - Modify: `backend/src/infrastructure/repositories/PrismaOwnedCongPhapRepository.ts`
 - Test: `backend/src/infrastructure/repositories/congphap.repo.integration.test.ts`
 
-- [ ] **Step 1: Viết test schema/seed integration thất bại trước**
+- [x] **Step 1: Viết test schema/seed integration thất bại trước**
 
 Thêm một describe vào `backend/src/infrastructure/repositories/congphap.repo.integration.test.ts` kiểm tra một công pháp trả về cấu hình nguyên liệu:
 
@@ -61,13 +61,13 @@ it('round-trip được material upgrade trên CongPhap', async () => {
 });
 ```
 
-- [ ] **Step 2: Chạy test để xác nhận schema chưa có**
+- [x] **Step 2: Chạy test để xác nhận schema chưa có**
 
 Run: `cd backend && rtk npm test -- src/infrastructure/repositories/congphap.repo.integration.test.ts`
 
 Expected: FAIL vì Prisma client chưa có `material` và `CongPhap` chưa có các field upgrade-material.
 
-- [ ] **Step 3: Thêm Prisma models và relation**
+- [x] **Step 3: Thêm Prisma models và relation**
 
 Trong `backend/prisma/schema.prisma` thêm:
 
@@ -83,7 +83,7 @@ Trong `backend/prisma/schema.prisma` thêm:
 
 Mở rộng `CongPhap` với `upgradeMaterialId`, `baseMaterialCost`, `materialCostGrowth`, `cooldownRounds` và relation named riêng để Prisma không nhập nhằng giữa branch-material và upgrade-material.
 
-- [ ] **Step 4: Tạo migration, generate client và chạy test schema**
+- [x] **Step 4: Tạo migration, generate client và chạy test schema**
 
 Run:
 
@@ -96,7 +96,7 @@ rtk npm test -- src/infrastructure/repositories/congphap.repo.integration.test.t
 
 Expected: migration apply thành công, test round-trip pass.
 
-- [ ] **Step 5: Thêm catalog seed đầy đủ và test idempotency**
+- [x] **Step 5: Thêm catalog seed đầy đủ và test idempotency**
 
 Trong `backend/prisma/seed.ts` tạo các constant explicit:
 
@@ -119,7 +119,7 @@ Run: `cd backend && rtk npm run db:seed`
 
 Expected: 11 Material, 8 AlchemyRecipe, 8 ExpeditionBranch, 24 ExpeditionDifficulty và recipe ingredient rows xuất hiện; chạy lại không tăng số row.
 
-- [ ] **Step 6: Mở rộng domain record và mapper**
+- [x] **Step 6: Mở rộng domain record và mapper**
 
 Trong `backend/src/domain/congphap/congphap.ts` thêm:
 
@@ -135,7 +135,7 @@ export interface CongPhapRecord {
 
 Trong `PrismaOwnedCongPhapRepository.toEntry` map ba field mới và cập nhật mọi fixture `CongPhapRecord` trong `backend/src/application/congphap.usecases.test.ts` và domain tests.
 
-- [ ] **Step 7: Chạy gate và commit**
+- [x] **Step 7: Chạy gate và commit**
 
 Run: `cd backend && rtk npm test && rtk npm run build`
 
@@ -163,7 +163,7 @@ rtk git commit -m "feat: add material alchemy and expedition schema"
 - Create: `backend/src/domain/ports/MaterialRepository.ts`
 - Create: `backend/src/domain/ports/AlchemyRepository.ts`
 
-- [ ] **Step 1: Viết test cho điểm vé và chi phí material**
+- [x] **Step 1: Viết test cho điểm vé và chi phí material**
 
 Định nghĩa trước các hàm `ticketCostForDuration(durationSec)`, `availableTicketUnits(quota)`, `materialCostAtLevel(base, growth, level)` và test:
 
@@ -178,13 +178,13 @@ expect(materialCostAtLevel(2, 1.5, 3)).toBe(5);
 
 Thêm test reject duration ngoài `{1800, 7200, 28800}` và cost âm.
 
-- [ ] **Step 2: Chạy test để xác nhận thiếu implementation**
+- [x] **Step 2: Chạy test để xác nhận thiếu implementation**
 
 Run: `cd backend && rtk npm test -- src/domain/materials/material.calc.test.ts`
 
 Expected: FAIL vì các hàm chưa tồn tại.
 
-- [ ] **Step 3: Implement materials domain**
+- [x] **Step 3: Implement materials domain**
 
 `material.ts` định nghĩa `MaterialKind`, `MaterialRecord`, `MaterialInventoryRecord` và `MaterialSpendLine`. `material.calc.ts` export:
 
@@ -197,7 +197,7 @@ export function canSpendMaterials(balance: ReadonlyMap<string, number>, lines: r
 
 Không import Prisma. `ticketCostForDuration` throw `DomainError('INVALID_EXPEDITION_CONFIG', ...)` cho duration ngoài whitelist.
 
-- [ ] **Step 4: Viết test queue settlement trước**
+- [x] **Step 4: Viết test queue settlement trước**
 
 Test `settleAlchemyQueue` với queue gồm một job running và hai job queued. Assert rằng `now` hoàn thành đúng các job đã hết giờ, tính `outputGrantedAt` đúng một lần và job sau không bắt đầu trước job trước.
 
@@ -210,7 +210,7 @@ expect(settled.outputGrants).toEqual([{ pillId: 'hoi-khi-dan', quantity: 2 }]);
 
 Test thêm queue rỗng, recipe inactive, quantity bằng 0 và nhiều job đã hoàn tất khi người chơi offline lâu.
 
-- [ ] **Step 5: Implement alchemy domain và ports**
+- [x] **Step 5: Implement alchemy domain và ports**
 
 `alchemy.ts` định nghĩa `AlchemyRecipeRecord`, `AlchemyIngredientLine`, `AlchemyJobRecord`, `AlchemyJobStatus` và output settlement. `alchemy.calc.ts` export:
 
@@ -233,7 +233,7 @@ enqueue(input: { userId: string; characterId: string; recipeId: string; quantity
 settleCompleted(userId: string, now: Date): Promise<AlchemyQueueOutput>;
 ```
 
-- [ ] **Step 6: Chạy domain gate và commit**
+- [x] **Step 6: Chạy domain gate và commit**
 
 Run: `cd backend && rtk npm test -- src/domain/materials src/domain/alchemy`
 

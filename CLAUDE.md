@@ -97,7 +97,8 @@ A cultivation-game (gameplay rebuilt to 100% feature parity with Nhất Niệm T
 - Prisma schema đã có `Material`/`MaterialInventory`, `AlchemyRecipe`/`AlchemyJob`, `ExpeditionBranch`/`ExpeditionDifficulty`/`ExpeditionUpgradeMaterialWeight`, `ExpeditionDailyQuota` và `Expedition`; `CongPhap` có thêm cấu hình material nâng cấp và cooldown.
 - Catalog seed idempotent trong `backend/prisma/seed.ts`: 11 material, 8 recipe (16 ingredient rows), 8 branch, 24 difficulty và 24 weight rows. Seed là công cụ reset, có thể ghi đè chỉnh sửa catalog.
 - `CongPhapRecord` và Prisma mappers giữ `upgradeMaterialId`, `baseMaterialCost`, `materialCostGrowth`, `cooldownRounds`; migration `bi_canh_materials_alchemy_expedition` đã áp dụng.
-- Backend gate hiện tại: **354 tests**, `npm run build` pass. Integration cần `backend/.env` với PostgreSQL chạy ở `localhost:5432`.
+- Domain materials/alchemy: `ticketCostForDuration` dùng 1/2/4 units cho 30m/2h/8h, quota ngày là 12 units; `materialCostAtLevel` và `canSpendMaterials` là pure helpers. `settleAlchemyQueue` resolve job hoàn tất offline và chỉ tạo output grant một lần.
+- Backend gate hiện tại: **363 tests**, `npm run build` pass. Integration cần `backend/.env` với PostgreSQL chạy ở `localhost:5432`.
 
 ## Security hardening (backend)
 
