@@ -388,9 +388,9 @@ function CongPhapForm({
       {/* Passive effects editor — the list the domain requires to be non-empty. */}
       {draft.category === "passive" && (
         <div className="admin-congphap-effects">
-          <div className="admin-code-section-head">
-            <h4 className="admin-code-section-title">Hiệu ứng bị động</h4>
-            <span className="admin-code-section-hint">
+          <div className="admin-form-section-head">
+            <h4 className="admin-form-section-title">Hiệu ứng bị động</h4>
+            <span className="admin-form-section-hint">
               cộng phẳng trước, phần trăm sau — nhân với cấp
             </span>
           </div>
@@ -549,9 +549,9 @@ function GrantPanel({ catalog }: { catalog: CongPhapDTO[] }) {
 
   return (
     <section className="admin-panel admin-grant">
-      <div className="admin-code-section-head">
-        <h3 className="admin-code-section-title">Cấp thưởng</h3>
-        <span className="admin-code-section-hint">
+      <div className="admin-form-section-head">
+        <h3 className="admin-form-section-title">Cấp thưởng</h3>
+        <span className="admin-form-section-hint">
           cấp trực tiếp công pháp và/hoặc Linh Thạch cho một người chơi
         </span>
       </div>
