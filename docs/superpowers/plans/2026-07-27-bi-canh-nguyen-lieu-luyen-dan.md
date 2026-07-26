@@ -462,7 +462,7 @@ rtk git commit -m "feat: require materials for cong phap upgrades"
 - Modify: `backend/src/domain/congphap/congphap.ts`
 - Modify: `backend/src/infrastructure/repositories/PrismaOwnedCongPhapRepository.ts`
 
-- [ ] **Step 1: Viết test simulator trước**
+- [x] **Step 1: Viết test simulator trước**
 
 Test các invariant:
 
@@ -483,13 +483,13 @@ expect(result.turns[0].action).toBe('liet-hoa-tam');
 expect(result.winner).toBe('player');
 ```
 
-- [ ] **Step 2: Chạy test để xác nhận simulator chưa tồn tại**
+- [x] **Step 2: Chạy test để xác nhận simulator chưa tồn tại**
 
 Run: `cd backend && rtk npm test -- src/domain/combat`
 
 Expected: FAIL vì các type/function combat chưa tồn tại.
 
-- [ ] **Step 3: Định nghĩa type và simulator thuần**
+- [x] **Step 3: Định nghĩa type và simulator thuần**
 
 `combat.ts` định nghĩa:
 
@@ -520,11 +520,11 @@ export function simulateBattle(input: {
 
 `combat.calc.ts` triển khai thứ tự theo `tocDo`, basic damage từ `congVatLy/congPhep`, defense từ `phongThu`, resource/cooldown theo round và turn log. `seeded-random.ts` là PRNG thuần từ integer seed, implement `RandomSource`; không thêm dependency.
 
-- [ ] **Step 4: Bổ sung cooldown vào CongPhap config**
+- [x] **Step 4: Bổ sung cooldown vào CongPhap config**
 
 Seed `Liệt Hỏa Trảm` với `cooldownRounds = 2`, passive dùng `null`, rồi cập nhật mọi fixture compile-time và mapper đã được tạo ở Task 1.
 
-- [ ] **Step 5: Chạy domain combat gate và commit**
+- [x] **Step 5: Chạy domain combat gate và commit**
 
 Run: `cd backend && rtk npm test -- src/domain/combat src/domain/congphap && rtk npm run build`
 
