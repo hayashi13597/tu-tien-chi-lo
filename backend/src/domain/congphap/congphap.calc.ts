@@ -1,4 +1,5 @@
 import { CongPhapRecord } from './congphap';
+import { materialCostAtLevel } from '../materials/material.calc';
 
 // Chi phí Linh Thạch để đi từ currentLevel -> currentLevel+1. Level bắt đầu = 1,
 // nên level 1->2 = baseCost * costGrowth^0 = baseCost. Lũy tiến hình học theo level.
@@ -9,4 +10,9 @@ export function levelUpCost(def: CongPhapRecord, currentLevel: number): number {
 // Linh Thạch quy đổi khi redeem cấp công pháp đã sở hữu. Mặc định = baseCost.
 export function duplicateRefund(def: CongPhapRecord): number {
   return def.dupRefundLinhThach ?? def.baseCost;
+}
+
+export function materialUpgradeCost(def: CongPhapRecord, currentLevel: number): number {
+  if (!def.upgradeMaterialId) return 0;
+  return materialCostAtLevel(def.baseMaterialCost, def.materialCostGrowth, currentLevel);
 }

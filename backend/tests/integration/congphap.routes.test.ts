@@ -86,6 +86,7 @@ describe('congphap routes', () => {
     await prisma.ownedCongPhap.create({ data: { userId, congPhapId: 'thiet-cot-quyet' } });
     // thiet-cot-quyet: baseCost 100 => level 1->2 costs exactly 100.
     await prisma.character.update({ where: { userId }, data: { linhThach: 100 } });
+    await prisma.materialInventory.create({ data: { userId, materialId: 'linh-tai-khi-huyet', quantity: 2 } });
 
     const res = await agent.post('/congphap/levelup').send({ congPhapId: 'thiet-cot-quyet' });
     expect(res.status).toBe(200);

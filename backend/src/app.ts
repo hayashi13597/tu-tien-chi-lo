@@ -14,6 +14,7 @@ import { PrismaCongPhapRepository } from './infrastructure/repositories/PrismaCo
 import { PrismaOwnedCongPhapRepository } from './infrastructure/repositories/PrismaOwnedCongPhapRepository';
 import { PrismaMaterialRepository } from './infrastructure/repositories/PrismaMaterialRepository';
 import { PrismaAlchemyRepository } from './infrastructure/repositories/PrismaAlchemyRepository';
+import { PrismaProgressionRepository } from './infrastructure/repositories/PrismaProgressionRepository';
 import { PrismaAdminUserRepository } from './infrastructure/repositories/PrismaAdminUserRepository';
 import { RealmConfigProvider } from './infrastructure/config/RealmConfigProvider';
 import { BcryptPasswordHasher } from './infrastructure/auth/BcryptPasswordHasher';
@@ -84,6 +85,7 @@ export function createApp(overrides: AppOverrides = {}) {
   const ownedCongPhapRepository = new PrismaOwnedCongPhapRepository(client);
   const materialRepository = new PrismaMaterialRepository(client);
   const alchemyRepository = new PrismaAlchemyRepository(client);
+  const progressionRepository = new PrismaProgressionRepository(client);
   const adminUserRepository = new PrismaAdminUserRepository(client);
   const passwordHasher = new BcryptPasswordHasher();
 
@@ -144,7 +146,7 @@ export function createApp(overrides: AppOverrides = {}) {
   const listCongPhapUseCase = new ListCongPhapUseCase(ownedCongPhapRepository, congPhapRepository);
   const equipCongPhapUseCase = new EquipCongPhapUseCase(ownedCongPhapRepository, congPhapRepository);
   const unequipCongPhapUseCase = new UnequipCongPhapUseCase(ownedCongPhapRepository);
-  const levelUpCongPhapUseCase = new LevelUpCongPhapUseCase(ownedCongPhapRepository, congPhapRepository, characterRepository);
+  const levelUpCongPhapUseCase = new LevelUpCongPhapUseCase(ownedCongPhapRepository, congPhapRepository, characterRepository, progressionRepository);
   const listCongPhapAdminUseCase = new ListCongPhapAdminUseCase(congPhapRepository);
   const createCongPhapUseCase = new CreateCongPhapUseCase(congPhapRepository);
   const updateCongPhapUseCase = new UpdateCongPhapUseCase(congPhapRepository);

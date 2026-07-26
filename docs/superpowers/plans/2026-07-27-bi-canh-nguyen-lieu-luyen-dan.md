@@ -367,7 +367,7 @@ rtk git commit -m "feat: add material inventory and alchemy API"
 - Modify: `backend/src/infrastructure/repositories/congphap.repo.integration.test.ts`
 - Modify: `backend/src/app.ts`
 
-- [ ] **Step 1: Viết test cost và spend kép trước**
+- [x] **Step 1: Viết test cost và spend kép trước**
 
 Thêm `materialCostAtLevel` tests và mở rộng `LevelUpCongPhapUseCase` tests:
 
@@ -386,13 +386,13 @@ it('thiếu material không trừ Linh Thạch', async () => {
 
 Thêm integration test hai request level-up cùng expected level: một request thành công, một request `CONCURRENT_MODIFICATION`, cả hai tài nguyên không bị partial spend.
 
-- [ ] **Step 2: Chạy test để xác nhận contract cũ chưa đủ**
+- [x] **Step 2: Chạy test để xác nhận contract cũ chưa đủ**
 
 Run: `cd backend && rtk npm test -- src/application/congphap.usecases.test.ts`
 
 Expected: FAIL vì fake character/owned repository chưa expose material-aware atomic operation.
 
-- [ ] **Step 3: Thêm domain contract và cost helper**
+- [x] **Step 3: Thêm domain contract và cost helper**
 
 Trong `congphap.calc.ts` thêm:
 
@@ -423,11 +423,11 @@ interface ProgressionRepository {
 }
 ```
 
-- [ ] **Step 4: Implement Prisma transaction**
+- [x] **Step 4: Implement Prisma transaction**
 
 `PrismaProgressionRepository.levelUpWithCosts` thực hiện trong một `$transaction`: conditional decrement Character theo `linhThach >= cost`, conditional decrement MaterialInventory theo `quantity >= cost`, conditional increment OwnedCongPhap theo `level = expectedLevel`; nếu bất kỳ guard nào fail thì rollback và trả đúng `kind`. Không dùng saga bù cho operation này vì cả ba row nằm trong cùng Prisma transaction.
 
-- [ ] **Step 5: Refactor use case và app wiring**
+- [x] **Step 5: Refactor use case và app wiring**
 
 `LevelUpCongPhapUseCase` vẫn đọc character/owned definition để validate active/owned/max, tính `levelUpCost` + `materialUpgradeCost`, sau đó gọi `ProgressionRepository`. Response mở rộng:
 
@@ -437,7 +437,7 @@ interface ProgressionRepository {
 
 Wire repository mới trong `backend/src/app.ts`; cập nhật fake repository tests và route integration.
 
-- [ ] **Step 6: Chạy gate và commit**
+- [x] **Step 6: Chạy gate và commit**
 
 Run: `cd backend && rtk npm test -- src/application/congphap.usecases.test.ts src/infrastructure/repositories/congphap.repo.integration.test.ts && rtk npm run build`
 

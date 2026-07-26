@@ -99,7 +99,8 @@ A cultivation-game (gameplay rebuilt to 100% feature parity with Nhất Niệm T
 - `CongPhapRecord` và Prisma mappers giữ `upgradeMaterialId`, `baseMaterialCost`, `materialCostGrowth`, `cooldownRounds`; migration `bi_canh_materials_alchemy_expedition` đã áp dụng.
 - Domain materials/alchemy: `ticketCostForDuration` dùng 1/2/4 units cho 30m/2h/8h, quota ngày là 12 units; `materialCostAtLevel` và `canSpendMaterials` là pure helpers. `settleAlchemyQueue` resolve job hoàn tất offline và chỉ tạo output grant một lần.
 - API hiện tại: `GET /materials/inventory`, `GET /alchemy/recipes`, `GET /alchemy/queue`, `POST /alchemy/queue`; route lấy user từ `requireAuth`. Prisma repositories giữ spend material + Linh Thạch và output Pill trong transaction.
-- Backend gate hiện tại: **372 tests**, `npm run build` pass. Integration cần `backend/.env` với PostgreSQL chạy ở `localhost:5432`.
+- Level-up công pháp dùng `ProgressionRepository.levelUpWithCosts`: guard Linh Thạch, material và expected level trong một transaction serializable; kết quả race/thiếu từng resource được phân biệt, response có `material` balance.
+- Backend gate hiện tại: **377 tests**, `npm run build` pass. Integration cần `backend/.env` với PostgreSQL chạy ở `localhost:5432`.
 
 ## Security hardening (backend)
 
