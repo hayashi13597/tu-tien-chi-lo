@@ -1,3 +1,15 @@
+// The 6 character attributes. Keys are used verbatim by the backend
+// (domain/attributes/attributes.ts) — do not localize them here.
+export type AttributeKey =
+  | "khiHuyet"
+  | "chanNguyen"
+  | "congVatLy"
+  | "congPhep"
+  | "phongThu"
+  | "tocDo";
+
+export type AttributeSet = Record<AttributeKey, number>;
+
 export interface CultivationState {
   realmMajor: number;
   realmSub: number;
@@ -13,6 +25,12 @@ export interface CultivationState {
   breakthroughBonusPct: number;
   /** Success chance (%) the next breakthrough would use: base + pity + boost. */
   breakthroughSuccessRate: number;
+  /** Currency for levelling công pháp (redeem codes + admin grants). */
+  linhThach: number;
+  /** `base` = realm stage floor; `final` = after passive công pháp bonuses. */
+  attributes: { base: AttributeSet; final: AttributeSet };
+  /** Weighted sum of the final attributes; active công pháp do not count. */
+  battlePower: number;
 }
 
 export interface Me {
@@ -42,6 +60,13 @@ export interface SubStageConfigDTO {
   pityIncrement: number;
   maxSuccessRate: number;
   punishmentSeconds: number;
+  // Attribute floor for this sub-stage, before passive công pháp bonuses.
+  baseKhiHuyet: number;
+  baseChanNguyen: number;
+  baseCongVatLy: number;
+  baseCongPhep: number;
+  basePhongThu: number;
+  baseTocDo: number;
 }
 
 export interface RealmConfigDTO {
@@ -119,8 +144,12 @@ export interface AdminPillDTO {
   starterQuantity: number;
 }
 
+export type RedeemRewardKind = "pill" | "congphap" | "linhThach";
+
 export interface RedeemRewardDTO {
-  pillId: string;
+  kind: RedeemRewardKind;
+  /** pillId / congPhapId / the literal "linh-thach". */
+  id: string;
   name: string;
   glyph: string;
   quantity: number;
@@ -130,6 +159,15 @@ export interface RedeemResult {
   rewards: RedeemRewardDTO[];
 }
 
+// A code reward carries exactly one of pillId / congPhapId / linhThach; the
+// backend rejects zero or two kinds (validateRedeemCodeDefinition).
+export interface AdminRedeemRewardDTO {
+  pillId?: string;
+  congPhapId?: string;
+  linhThach?: number;
+  quantity: number;
+}
+
 export interface AdminRedeemCodeDTO {
   id: string;
   code: string;
@@ -137,5 +175,63 @@ export interface AdminRedeemCodeDTO {
   maxRedemptions: number;
   redeemedCount: number;
   expiresAt: string | null; // ISO 8601 or null
-  rewards: Array<{ pillId: string; quantity: number }>;
+  rewards: AdminRedeemRewardDTO[];
+}
+
+export type CongPhapCategory = "active" | "passive";
+
+export interface PassiveEffectDTO {
+  attribute: AttributeKey;
+  flatPerLevel: number;
+  pctPerLevel: number;
+}
+
+// A công pháp definition (GET /congphap catalog, and the admin catalog).
+// `rarity` is a plain Int on the backend — not bounded to 0–4 like pills —
+// so presentation must clamp it (see getCongPhapRarityMeta).
+export interface CongPhapDTO {
+  id: string;
+  name: string;
+  glyph: string;
+  rarity: number;
+  category: CongPhapCategory;
+  desc: string;
+  active: boolean;
+  maxLevel: number;
+  baseCost: number;
+  costGrowth: number;
+  /** Passive only: ≥1 entry. Null for active công pháp. */
+  effects: PassiveEffectDTO[] | null;
+  /** Active only: skill power = powerPerLevel × level (stored, not yet applied). */
+  powerPerLevel: number | null;
+  chanNguyenCost: number | null;
+  dupRefundLinhThach: number | null;
+}
+
+export interface OwnedCongPhapDTO {
+  def: CongPhapDTO;
+  level: number;
+  /** 0..3 when an active công pháp is equipped; null otherwise. */
+  equippedSlot: number | null;
+}
+
+export interface CongPhapListResult {
+  /** Owned entries keep inactive definitions so the UI can flag them. */
+  owned: OwnedCongPhapDTO[];
+  /** Catalog is active-only. */
+  catalog: CongPhapDTO[];
+}
+
+export interface LevelUpResult {
+  level: number;
+  linhThach: number;
+}
+
+export interface AdminUserDTO {
+  id: string;
+  username: string;
+  role: string;
+  realmMajor: number;
+  realmSub: number;
+  linhThach: number;
 }
