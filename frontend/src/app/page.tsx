@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AlchemyCard } from "@/components/alchemy-card";
+import { AlchemyDrawer } from "@/components/alchemy-drawer";
 import { AttributePanel } from "@/components/attribute-panel";
 import { BreakthroughButton } from "@/components/breakthrough-button";
 import {
@@ -11,6 +13,8 @@ import {
 import { CongPhapModal } from "@/components/congphap-modal";
 import { CosmicBackground } from "@/components/cosmic-background";
 import { DantianFormation } from "@/components/dantian-formation";
+import { ExpeditionCard } from "@/components/expedition-card";
+import { ExpeditionDrawer } from "@/components/expedition-drawer";
 import { HeaderMenu } from "@/components/header-menu";
 import { LingqiBar } from "@/components/lingqi-bar";
 import { LoadingScreen } from "@/components/loading-screen";
@@ -23,8 +27,11 @@ import { RealmPath } from "@/components/realm-path";
 import { RedeemModal } from "@/components/redeem-modal";
 import { StatsPanel } from "@/components/stats-panel";
 import { ToastContainer } from "@/components/toast-container";
+import { useAlchemyQueue } from "@/hooks/use-alchemy-queue";
 import { useCongPhap } from "@/hooks/use-congphap";
 import { useCultivationState } from "@/hooks/use-cultivation-state";
+import { useExpedition } from "@/hooks/use-expedition";
+import { useMaterialInventory } from "@/hooks/use-material-inventory";
 import { usePillInventory } from "@/hooks/use-pill-inventory";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth-context";
@@ -36,6 +43,7 @@ import type {
   BreakthroughResult,
   PillEffectKind,
   RedeemResult,
+  StartExpeditionInput,
 } from "@/lib/types";
 
 export default function Home() {
@@ -60,6 +68,11 @@ export default function Home() {
   const [pillModalOpen, setPillModalOpen] = useState(false);
   const [redeemModalOpen, setRedeemModalOpen] = useState(false);
   const [congPhapModalOpen, setCongPhapModalOpen] = useState(false);
+  const [expeditionDrawerOpen, setExpeditionDrawerOpen] = useState(false);
+  const [alchemyDrawerOpen, setAlchemyDrawerOpen] = useState(false);
+  const [expeditionBusy, setExpeditionBusy] = useState(false);
+  const [alchemyBusy, setAlchemyBusy] = useState(false);
+  const [now, setNow] = useState(() => new Date());
   // One in-flight công pháp mutation at a time: every action re-reads the
   // list, so overlapping writes would race their own refetches.
   const [congPhapBusy, setCongPhapBusy] = useState(false);
@@ -80,6 +93,31 @@ export default function Home() {
     unequip: unequipCongPhapAction,
     levelUp: levelUpCongPhapAction,
   } = useCongPhap(congPhapModalOpen);
+  const {
+    branches: expeditionBranches,
+    current: currentExpedition,
+    loading: expeditionLoading,
+    error: expeditionError,
+    refetch: refetchExpedition,
+    start: startExpeditionAction,
+    claim: claimExpeditionAction,
+  } = useExpedition(isAuthenticated);
+  const {
+    inventory: materialInventory,
+    loading: materialLoading,
+    error: materialError,
+    refetch: refetchMaterials,
+  } = useMaterialInventory(
+    isAuthenticated && (expeditionDrawerOpen || alchemyDrawerOpen),
+  );
+  const {
+    recipes: alchemyRecipes,
+    queue: alchemyQueue,
+    loading: alchemyLoading,
+    error: alchemyError,
+    refetch: refetchAlchemy,
+    enqueue: enqueueAlchemyAction,
+  } = useAlchemyQueue(alchemyDrawerOpen);
   const particleRef = useRef<ParticleCanvasHandle>(null);
   // The POST result/error is stashed here while the tribulation animation plays,
   // then read in handleTribulationComplete to resolve success/failure.
@@ -104,10 +142,81 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [isAuthenticated, state, phase]);
 
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleLogout = useCallback(async () => {
     await logout();
     router.replace("/login");
   }, [logout, router]);
+
+  const handleStartExpedition = useCallback(
+    async (input: StartExpeditionInput) => {
+      setExpeditionBusy(true);
+      try {
+        await startExpeditionAction(input);
+        addToast(
+          "Bí Cảnh",
+          "Đã khởi hành, chuyến đi vẫn tiếp tục khi bạn offline.",
+          "purple",
+        );
+      } catch (err) {
+        addToast(
+          "Lỗi",
+          err instanceof Error ? err.message : "Khởi hành thất bại",
+          "danger",
+        );
+      } finally {
+        setExpeditionBusy(false);
+      }
+    },
+    [addToast, startExpeditionAction],
+  );
+
+  const handleClaimExpedition = useCallback(async () => {
+    setExpeditionBusy(true);
+    try {
+      const result = await claimExpeditionAction();
+      await refetch();
+      await refetchMaterials();
+      addToast(
+        "Nhận thưởng bí cảnh",
+        `Linh Thạch +${result.reward.linhThach} · ${result.reward.materials.length} loại nguyên liệu`,
+        "success",
+      );
+    } catch (err) {
+      addToast(
+        "Lỗi",
+        err instanceof Error ? err.message : "Nhận thưởng thất bại",
+        "danger",
+      );
+    } finally {
+      setExpeditionBusy(false);
+    }
+  }, [addToast, claimExpeditionAction, refetch, refetchMaterials]);
+
+  const handleEnqueueAlchemy = useCallback(
+    async (recipeId: string, quantity: number) => {
+      setAlchemyBusy(true);
+      try {
+        await enqueueAlchemyAction(recipeId, quantity);
+        await refetchMaterials();
+        await refetch();
+        addToast("Luyện Đan", `Đã xếp ${quantity} mẻ vào hàng đợi.`, "purple");
+      } catch (err) {
+        addToast(
+          "Lỗi",
+          err instanceof Error ? err.message : "Xếp hàng luyện đan thất bại",
+          "danger",
+        );
+      } finally {
+        setAlchemyBusy(false);
+      }
+    },
+    [addToast, enqueueAlchemyAction, refetch, refetchMaterials],
+  );
 
   const handleSuccess = useCallback((result: BreakthroughResult) => {
     breakthroughResultRef.current = result;
@@ -426,6 +535,26 @@ export default function Home() {
 
           <div className="hud-col hud-col-right">
             <RealmPath currentRealmMajor={state.realmMajor} />
+            <ExpeditionCard
+              current={currentExpedition}
+              loading={expeditionLoading}
+              error={expeditionError}
+              now={now}
+              onOpen={() => setExpeditionDrawerOpen(true)}
+              onRetry={refetchExpedition}
+            />
+            <AlchemyCard
+              queue={alchemyQueue}
+              inventory={materialInventory}
+              loading={alchemyLoading}
+              error={alchemyError ?? materialError}
+              now={now}
+              onOpen={() => setAlchemyDrawerOpen(true)}
+              onRetry={() => {
+                void refetchAlchemy();
+                void refetchMaterials();
+              }}
+            />
           </div>
         </div>
       </main>
@@ -466,6 +595,38 @@ export default function Home() {
         open={redeemModalOpen}
         onClose={() => setRedeemModalOpen(false)}
         onSuccess={handleRedeemSuccess}
+      />
+
+      <ExpeditionDrawer
+        open={expeditionDrawerOpen}
+        branches={expeditionBranches}
+        current={currentExpedition}
+        loading={expeditionLoading}
+        error={expeditionError}
+        busy={expeditionBusy}
+        now={now}
+        onRetry={refetchExpedition}
+        onClose={() => setExpeditionDrawerOpen(false)}
+        onStart={handleStartExpedition}
+        onClaim={handleClaimExpedition}
+      />
+
+      <AlchemyDrawer
+        open={alchemyDrawerOpen}
+        recipes={alchemyRecipes}
+        queue={alchemyQueue}
+        inventory={materialInventory}
+        linhThach={state.linhThach}
+        loading={alchemyLoading || materialLoading}
+        error={alchemyError ?? materialError}
+        busy={alchemyBusy}
+        now={now}
+        onRetry={() => {
+          void refetchAlchemy();
+          void refetchMaterials();
+        }}
+        onClose={() => setAlchemyDrawerOpen(false)}
+        onEnqueue={handleEnqueueAlchemy}
       />
     </>
   );

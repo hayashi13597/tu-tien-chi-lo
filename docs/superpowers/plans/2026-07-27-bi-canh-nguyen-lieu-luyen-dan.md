@@ -800,7 +800,7 @@ rtk git commit -m "feat: add expedition and alchemy frontend data layer"
 - Modify: `frontend/src/components/icons.tsx`
 - Modify: `frontend/src/lib/expedition-display.test.ts`
 
-- [ ] **Step 1: Viết pure component-state tests trước**
+- [x] **Step 1: Viết pure component-state tests trước**
 
 Test các trạng thái không phụ thuộc GSAP/DOM:
 
@@ -810,15 +810,15 @@ Test các trạng thái không phụ thuộc GSAP/DOM:
 - thiếu điểm/input: disable start/enqueue và hiển thị lý do;
 - queue completed được settle sau refetch.
 
-- [ ] **Step 2: Implement `ExpeditionCard` và `AlchemyCard`**
+- [x] **Step 2: Implement `ExpeditionCard` và `AlchemyCard`**
 
 Dùng class/pattern `.panel`, `.panel-title`, `.stat-row` hiện có. Card chỉ nhận DTO và callbacks, không gọi `apiFetch` trực tiếp. Props phải bao gồm `loading`, `error`, `now`, `onOpen`, `onRetry` để page giữ orchestration.
 
-- [ ] **Step 3: Implement drawer/tab content**
+- [x] **Step 3: Implement drawer/tab content**
 
 `ExpeditionDrawer` render branch list → difficulty → duration → reward preview → start. `AlchemyDrawer` render 8 recipe cards, material balances, duration/cost, quantity input, queue rows và ETA. Backdrop là `<button>` accessible; Escape/outside click theo pattern `PillModal`/`CongPhapModal`.
 
-- [ ] **Step 4: Integrate page và server-authoritative refetch**
+- [x] **Step 4: Integrate page và server-authoritative refetch**
 
 Trong `frontend/src/app/page.tsx`:
 
@@ -830,11 +830,11 @@ Trong `frontend/src/app/page.tsx`:
 
 Đặt card Bí cảnh và Luyện đan vào HUD/dashboard mà không làm thay đổi `DantianFormation`, `LingqiBar`, `StatsPanel` hoặc `RealmPath`.
 
-- [ ] **Step 5: Thêm CSS responsive và accessibility**
+- [x] **Step 5: Thêm CSS responsive và accessibility**
 
 Trong `frontend/src/app/globals.css` thêm class names có namespace `.expedition-*` và `.alchemy-*`; desktop dùng card/grid, mobile chuyển drawer thành full-width panel. Tất cả icon button có `aria-label`; modal tab có focus/escape behavior.
 
-- [ ] **Step 6: Chạy frontend gate và commit**
+- [x] **Step 6: Chạy frontend gate và commit**
 
 Run:
 

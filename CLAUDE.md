@@ -104,7 +104,8 @@ A cultivation-game (gameplay rebuilt to 100% feature parity with Nhất Niệm T
 - Combat domain: `simulateBattle` là turn-based deterministic, thứ tự theo `tocDo`, skill theo slot/cooldown/Chân Nguyên; `SeededRandom` dùng integer seed, không gọi `Math.random()` trong domain.
 - Expedition domain/API: `simulateExpedition` chạy 2 normal + 1 boss, snapshot seed/reward trước claim; repository giữ quota 12 units/ngày, active/completed slot và claim idempotent. Routes: `GET /expeditions/branches`, `GET /expeditions/current`, `POST /expeditions/start`, `POST /expeditions/claim`.
 - Frontend data layer: `useExpedition`, `useMaterialInventory`, `useAlchemyQueue` lazy-load server state and refetch after mutations; `lib/expedition-display.ts` formats duration/ticket cost/reward percentage and clamps countdowns.
-- Backend gate hiện tại: **410 tests**, frontend **108 tests**, backend `npm run build`, frontend lint/typecheck pass. Integration cần `backend/.env` với PostgreSQL chạy ở `localhost:5432`.
+- Frontend UI: `ExpeditionCard`/`ExpeditionDrawer` và `AlchemyCard`/`AlchemyDrawer` dùng server-authoritative mutations, local countdown, accessible backdrop/Escape và responsive layout; page refetches cultivation/material balances after claim/enqueue.
+- Backend gate hiện tại: **410 tests**, frontend **111 tests**, backend `npm run build`, frontend lint/typecheck/build pass. Integration cần `backend/.env` với PostgreSQL chạy ở `localhost:5432`.
 
 ## Security hardening (backend)
 
