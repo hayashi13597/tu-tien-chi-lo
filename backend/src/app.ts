@@ -39,6 +39,10 @@ import { ListCongPhapUseCase } from './application/ListCongPhapUseCase';
 import { EquipCongPhapUseCase } from './application/EquipCongPhapUseCase';
 import { UnequipCongPhapUseCase } from './application/UnequipCongPhapUseCase';
 import { LevelUpCongPhapUseCase } from './application/LevelUpCongPhapUseCase';
+import { ListCongPhapAdminUseCase } from './application/ListCongPhapAdminUseCase';
+import { CreateCongPhapUseCase } from './application/CreateCongPhapUseCase';
+import { UpdateCongPhapUseCase } from './application/UpdateCongPhapUseCase';
+import { GrantUseCase } from './application/GrantUseCase';
 import { createAuthRouter } from './presentation/routes/auth.routes';
 import { createCultivationRouter } from './presentation/routes/cultivation.routes';
 import { createPillsRouter } from './presentation/routes/pills.routes';
@@ -128,6 +132,10 @@ export function createApp(overrides: AppOverrides = {}) {
   const equipCongPhapUseCase = new EquipCongPhapUseCase(ownedCongPhapRepository, congPhapRepository);
   const unequipCongPhapUseCase = new UnequipCongPhapUseCase(ownedCongPhapRepository);
   const levelUpCongPhapUseCase = new LevelUpCongPhapUseCase(ownedCongPhapRepository, congPhapRepository, characterRepository);
+  const listCongPhapAdminUseCase = new ListCongPhapAdminUseCase(congPhapRepository);
+  const createCongPhapUseCase = new CreateCongPhapUseCase(congPhapRepository);
+  const updateCongPhapUseCase = new UpdateCongPhapUseCase(congPhapRepository);
+  const grantUseCase = new GrantUseCase(ownedCongPhapRepository, characterRepository);
 
   const requireAuth = createRequireAuth(tokenService);
 
@@ -176,7 +184,7 @@ export function createApp(overrides: AppOverrides = {}) {
   );
   app.use(
     '/admin',
-    createAdminRouter({ updateRealmConfigUseCase, getAdminStatsUseCase, listPillsAdminUseCase, createPillUseCase, updatePillUseCase, realmConfigSource: realmConfigProvider, realmConfigReloader: realmConfigProvider, listRedeemCodesUseCase, createRedeemCodeUseCase, updateRedeemCodeUseCase, requireAuth }),
+    createAdminRouter({ updateRealmConfigUseCase, getAdminStatsUseCase, listPillsAdminUseCase, createPillUseCase, updatePillUseCase, realmConfigSource: realmConfigProvider, realmConfigReloader: realmConfigProvider, listRedeemCodesUseCase, createRedeemCodeUseCase, updateRedeemCodeUseCase, listCongPhapAdminUseCase, createCongPhapUseCase, updateCongPhapUseCase, grantUseCase, requireAuth }),
   );
 
   app.use(errorHandler);
