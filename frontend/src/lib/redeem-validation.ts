@@ -10,7 +10,8 @@ export function validateRedeemDraft(
   opts: { isNew: boolean },
 ): RedeemDraftError[] {
   const errors: RedeemDraftError[] = [];
-  const fail = (field: string, message: string) => errors.push({ field, message });
+  const fail = (field: string, message: string) =>
+    errors.push({ field, message });
 
   if (opts.isNew && !/^[a-z0-9-]+$/.test(draft.id)) {
     fail("id", "Chỉ gồm a-z, 0-9 và dấu gạch ngang");

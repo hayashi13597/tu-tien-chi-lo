@@ -245,7 +245,9 @@ export function grantToUser(body: {
 }
 
 // GET /admin/users — search players by username for the grant picker.
-export function searchAdminUsers(q: string): Promise<{ users: AdminUserDTO[] }> {
+export function searchAdminUsers(
+  q: string,
+): Promise<{ users: AdminUserDTO[] }> {
   return apiFetch<{ users: AdminUserDTO[] }>(
     `/admin/users?q=${encodeURIComponent(q)}`,
   );

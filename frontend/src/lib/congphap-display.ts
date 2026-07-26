@@ -30,7 +30,8 @@ export function passiveBonusAt(
   level: number,
 ): Partial<Record<AttributeKey, { flat: number; pct: number }>> {
   if (def.category !== "passive" || !def.effects) return {};
-  const bonus: Partial<Record<AttributeKey, { flat: number; pct: number }>> = {};
+  const bonus: Partial<Record<AttributeKey, { flat: number; pct: number }>> =
+    {};
   for (const e of def.effects) {
     const current = bonus[e.attribute] ?? { flat: 0, pct: 0 };
     bonus[e.attribute] = {
