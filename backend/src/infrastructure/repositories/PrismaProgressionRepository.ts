@@ -24,6 +24,12 @@ export class PrismaProgressionRepository implements ProgressionRepository {
 
     try {
       return await this.client.$transaction(async (tx) => {
+        const owned = await tx.ownedCongPhap.updateMany({
+          where: { userId: input.userId, congPhapId: input.congPhapId, level: input.expectedLevel },
+          data: { level: { increment: 1 } },
+        });
+        if (owned.count !== 1) throw new ProgressionSignal({ kind: 'concurrent' });
+
         const character = await tx.character.updateMany({
           where: { userId: input.userId, linhThach: { gte: input.linhThachCost } },
           data: { linhThach: { decrement: input.linhThachCost } },
@@ -37,12 +43,6 @@ export class PrismaProgressionRepository implements ProgressionRepository {
           });
           if (material.count !== 1) throw new ProgressionSignal({ kind: 'insufficient-materials' });
         }
-
-        const owned = await tx.ownedCongPhap.updateMany({
-          where: { userId: input.userId, congPhapId: input.congPhapId, level: input.expectedLevel },
-          data: { level: { increment: 1 } },
-        });
-        if (owned.count !== 1) throw new ProgressionSignal({ kind: 'concurrent' });
 
         const [updatedCharacter, materialInventory] = await Promise.all([
           tx.character.findUniqueOrThrow({ where: { userId: input.userId } }),
