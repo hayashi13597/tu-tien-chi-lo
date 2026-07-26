@@ -1,13 +1,20 @@
 import { RedeemCodeRepository } from '../domain/ports/RedeemCodeRepository';
 import { PillRepository } from '../domain/ports/PillRepository';
-import { RedeemResultDto } from '../domain/redeem/redeemCode';
+import { CongPhapRepository } from '../domain/ports/CongPhapRepository';
+import { OwnedCongPhapRepository } from '../domain/ports/OwnedCongPhapRepository';
+import { CharacterRepository } from '../domain/ports/CharacterRepository';
+import { RedeemResultDto, RedeemRewardResult } from '../domain/redeem/redeemCode';
 import { normalizeCode } from '../domain/redeem/redeemCode.validate';
+import { duplicateRefund } from '../domain/congphap/congphap.calc';
 import { DomainError } from '../domain/errors';
 
 export class RedeemCodeUseCase {
   constructor(
     private readonly codes: RedeemCodeRepository,
     private readonly pills: PillRepository,
+    private readonly congphap: CongPhapRepository,
+    private readonly owned: OwnedCongPhapRepository,
+    private readonly characters: CharacterRepository,
   ) {}
 
   async execute(input: { userId: string; code: string }): Promise<RedeemResultDto> {
@@ -32,16 +39,35 @@ export class RedeemCodeUseCase {
       throw new DomainError('REDEEM_CODE_EXHAUSTED', 'Mã đã hết lượt đổi');
     }
 
-    await this.codes.grantRewards(input.userId, code.rewards);
+    // Linh Thạch (cấp thẳng lẫn hoàn khi công pháp trùng) ghi lên Character.
+    const character = await this.characters.findByUserId(input.userId);
+    if (!character) {
+      throw new DomainError('CHARACTER_NOT_FOUND', 'Character not found');
+    }
 
-    // Enrich each reward with the pill's name/glyph for the success toast. A pill
-    // hard-deleted after the code was authored falls back to its id (still granted).
-    const rewards = await Promise.all(
-      code.rewards.map(async (r) => {
+    const results: RedeemRewardResult[] = [];
+    for (const r of code.rewards) {
+      if (r.pillId) {
+        // Đường cũ: cộng dồn vào inventory (increment-or-create).
+        await this.codes.grantRewards(input.userId, [{ pillId: r.pillId, quantity: r.quantity }]);
         const pill = await this.pills.findById(r.pillId);
-        return { pillId: r.pillId, name: pill?.name ?? r.pillId, glyph: pill?.glyph ?? '?', quantity: r.quantity };
-      }),
-    );
-    return { rewards };
+        results.push({ kind: 'pill', id: r.pillId, name: pill?.name ?? r.pillId, glyph: pill?.glyph ?? '?', quantity: r.quantity });
+      } else if (r.congPhapId) {
+        const def = await this.congphap.findById(r.congPhapId);
+        const isNew = await this.owned.grant(input.userId, r.congPhapId);
+        if (isNew) {
+          results.push({ kind: 'congphap', id: r.congPhapId, name: def?.name ?? r.congPhapId, glyph: def?.glyph ?? '?', quantity: 1 });
+        } else {
+          // Đã sở hữu -> quy đổi thành Linh Thạch (spec).
+          const refund = def ? duplicateRefund(def) : 0;
+          if (refund > 0) await this.characters.addLinhThach(character.id, refund);
+          results.push({ kind: 'linhThach', id: 'linh-thach', name: 'Linh Thạch', glyph: '晶', quantity: refund });
+        }
+      } else if (r.linhThach) {
+        await this.characters.addLinhThach(character.id, r.linhThach);
+        results.push({ kind: 'linhThach', id: 'linh-thach', name: 'Linh Thạch', glyph: '晶', quantity: r.linhThach });
+      }
+    }
+    return { rewards: results };
   }
 }
