@@ -3,15 +3,23 @@ import type {
   AdminRedeemCodeDTO,
   AdminStats,
   AdminUserDTO,
+  AlchemyQueueDTO,
+  AlchemyRecipeDTO,
   ApiError,
   CongPhapDTO,
   CongPhapListResult,
   CultivationState,
+  CurrentExpeditionDTO,
+  ExpeditionBranchDTO,
+  ExpeditionClaimDTO,
+  ExpeditionDTO,
   LevelUpResult,
+  MaterialInventoryDTO,
   Me,
   PillInventoryItem,
   RealmConfigDTO,
   RedeemResult,
+  StartExpeditionInput,
 } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:5000";
@@ -89,6 +97,59 @@ export function consumePill(pillId: string): Promise<CultivationState> {
   return apiFetch<CultivationState>("/pills/consume", {
     method: "POST",
     body: JSON.stringify({ pillId }),
+  });
+}
+
+// GET /materials/inventory — the player's active material balances.
+export function fetchMaterials(): Promise<MaterialInventoryDTO[]> {
+  return apiFetch<MaterialInventoryDTO[]>("/materials/inventory");
+}
+
+// GET /alchemy/recipes — active recipes available to the player.
+export function fetchAlchemyRecipes(): Promise<AlchemyRecipeDTO[]> {
+  return apiFetch<AlchemyRecipeDTO[]>("/alchemy/recipes");
+}
+
+// GET /alchemy/queue — settles completed jobs before returning the queue.
+export function fetchAlchemyQueue(): Promise<AlchemyQueueDTO> {
+  return apiFetch<AlchemyQueueDTO>("/alchemy/queue");
+}
+
+// POST /alchemy/queue — spends the requested recipe inputs server-side.
+export function queueAlchemy(
+  recipeId: string,
+  quantity: number,
+): Promise<AlchemyQueueDTO> {
+  return apiFetch<AlchemyQueueDTO>("/alchemy/queue", {
+    method: "POST",
+    body: JSON.stringify({ recipeId, quantity }),
+  });
+}
+
+// GET /expeditions/branches — active branch and difficulty configuration.
+export function fetchExpeditionBranches(): Promise<ExpeditionBranchDTO[]> {
+  return apiFetch<ExpeditionBranchDTO[]>("/expeditions/branches");
+}
+
+// GET /expeditions/current — quota and the single active/completed expedition.
+export function fetchCurrentExpedition(): Promise<CurrentExpeditionDTO> {
+  return apiFetch<CurrentExpeditionDTO>("/expeditions/current");
+}
+
+// POST /expeditions/start — creates a server-snapshotted expedition.
+export function startExpedition(
+  input: StartExpeditionInput,
+): Promise<ExpeditionDTO> {
+  return apiFetch<ExpeditionDTO>("/expeditions/start", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+// POST /expeditions/claim — atomically grants the stored reward.
+export function claimExpedition(): Promise<ExpeditionClaimDTO> {
+  return apiFetch<ExpeditionClaimDTO>("/expeditions/claim", {
+    method: "POST",
   });
 }
 

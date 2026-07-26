@@ -728,7 +728,7 @@ rtk git commit -m "feat: add admin expedition and alchemy catalog API"
 - Create: `frontend/src/hooks/use-alchemy-queue.ts`
 - Modify: `frontend/src/lib/api.test.ts`
 
-- [ ] **Step 1: Viết pure display tests trước**
+- [x] **Step 1: Viết pure display tests trước**
 
 Test duration labels/cost, reward multiplier, countdown clamp về 0, ticket remaining và queue ETA:
 
@@ -739,13 +739,13 @@ expect(rewardPercentForWins(2)).toBe(75);
 expect(secondsRemaining('2026-07-27T00:00:10Z', new Date('2026-07-27T00:00:20Z'))).toBe(0);
 ```
 
-- [ ] **Step 2: Chạy frontend test để xác nhận helper chưa tồn tại**
+- [x] **Step 2: Chạy frontend test để xác nhận helper chưa tồn tại**
 
 Run: `cd frontend && rtk npm test -- src/lib/expedition-display.test.ts`
 
 Expected: FAIL vì file/helper chưa tồn tại.
 
-- [ ] **Step 3: Thêm DTO types và API functions**
+- [x] **Step 3: Thêm DTO types và API functions**
 
 Trong `frontend/src/lib/types.ts` định nghĩa `MaterialDTO`, `MaterialInventoryDTO`, `AlchemyRecipeDTO`, `AlchemyJobDTO`, `ExpeditionBranchDTO`, `ExpeditionDifficultyDTO`, `CurrentExpeditionDTO`, `ExpeditionDTO`, `ExpeditionClaimDTO` và enum unions khớp backend.
 
@@ -762,13 +762,13 @@ export function startExpedition(input: StartExpeditionInput): Promise<Expedition
 export function claimExpedition(): Promise<ExpeditionClaimDTO>;
 ```
 
-- [ ] **Step 4: Implement display helpers và hooks**
+- [x] **Step 4: Implement display helpers và hooks**
 
 `useExpedition(enabled)` lazy-load branch/current state, exposes `refetch`, `start`, `claim`, `loading`, `error`; mọi mutation `try/finally refetch`.
 
 `useMaterialInventory(enabled)` fetches `/materials/inventory`; `useAlchemyQueue(enabled)` fetches recipes/queue and refetches sau enqueue. Hook không tự cấp resource hoặc tự đánh dấu completed; chỉ render server payload + local countdown.
 
-- [ ] **Step 5: Chạy frontend unit/type gate và commit**
+- [x] **Step 5: Chạy frontend unit/type gate và commit**
 
 Run:
 
