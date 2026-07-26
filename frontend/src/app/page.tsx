@@ -108,7 +108,8 @@ export default function Home() {
     error: materialError,
     refetch: refetchMaterials,
   } = useMaterialInventory(
-    isAuthenticated && (expeditionDrawerOpen || alchemyDrawerOpen),
+    isAuthenticated &&
+      (expeditionDrawerOpen || alchemyDrawerOpen || congPhapModalOpen),
   );
   const {
     recipes: alchemyRecipes,
@@ -290,6 +291,7 @@ export default function Home() {
       setCongPhapBusy(true);
       try {
         const result = await levelUpCongPhapAction(congPhapId);
+        await refetchMaterials();
         await refetch();
         if (entry) {
           particleRef.current?.spawnBurst(
@@ -312,7 +314,7 @@ export default function Home() {
         setCongPhapBusy(false);
       }
     },
-    [congPhapOwned, levelUpCongPhapAction, refetch, addToast],
+    [congPhapOwned, levelUpCongPhapAction, refetchMaterials, refetch, addToast],
   );
 
   const handleEquipCongPhap = useCallback(
@@ -581,6 +583,7 @@ export default function Home() {
         owned={congPhapOwned}
         catalog={congPhapCatalog}
         linhThach={state.linhThach}
+        materialInventory={materialInventory}
         loading={congPhapLoading}
         error={congPhapError}
         busy={congPhapBusy}

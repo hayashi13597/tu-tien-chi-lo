@@ -200,6 +200,9 @@ export interface CongPhapDTO {
   maxLevel: number;
   baseCost: number;
   costGrowth: number;
+  upgradeMaterialId: string | null;
+  baseMaterialCost: number;
+  materialCostGrowth: number;
   /** Passive only: ≥1 entry. Null for active công pháp. */
   effects: PassiveEffectDTO[] | null;
   /** Active only: skill power = powerPerLevel × level (stored, not yet applied). */
@@ -225,6 +228,7 @@ export interface CongPhapListResult {
 export interface LevelUpResult {
   level: number;
   linhThach: number;
+  material: { id: string; quantity: number } | null;
 }
 
 export interface AdminUserDTO {

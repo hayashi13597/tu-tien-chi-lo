@@ -432,12 +432,20 @@ describe("congphap api", () => {
   it("levelUpCongPhap returns the new level and Linh Thạch", async () => {
     const fetchMock = vi.fn(
       async (_input: RequestInfo | URL, _init?: RequestInit) =>
-        jsonResponse(200, { level: 3, linhThach: 40 }),
+        jsonResponse(200, {
+          level: 3,
+          linhThach: 40,
+          material: { id: "xich-viem-tinh", quantity: 2 },
+        }),
     );
     vi.stubGlobal("fetch", fetchMock);
     const { levelUpCongPhap } = await import("./api");
     const res = await levelUpCongPhap("thiet-cot-quyet");
-    expect(res).toEqual({ level: 3, linhThach: 40 });
+    expect(res).toEqual({
+      level: 3,
+      linhThach: 40,
+      material: { id: "xich-viem-tinh", quantity: 2 },
+    });
     expect(String(fetchMock.mock.calls[0][0])).toContain("/congphap/levelup");
   });
 
@@ -453,6 +461,9 @@ describe("congphap api", () => {
       maxLevel: 5,
       baseCost: 100,
       costGrowth: 1.5,
+      upgradeMaterialId: null,
+      baseMaterialCost: 0,
+      materialCostGrowth: 1,
       effects: [
         { attribute: "tocDo" as const, flatPerLevel: 1, pctPerLevel: 0 },
       ],

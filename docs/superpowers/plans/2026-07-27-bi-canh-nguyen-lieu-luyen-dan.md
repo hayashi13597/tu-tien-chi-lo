@@ -867,7 +867,7 @@ rtk git commit -m "feat: add expedition and alchemy dashboard UI"
 - Modify: `frontend/src/app/page.tsx`
 - Modify: `frontend/src/hooks/use-material-inventory.ts`
 
-- [ ] **Step 1: Viết display tests**
+- [x] **Step 1: Viết display tests**
 
 Thêm test `materialUpgradeCost`, format thiếu/đủ material và label:
 
@@ -876,15 +876,15 @@ expect(materialUpgradeCost(def, 1)).toBe(2);
 expect(formatUpgradeCost({ linhThach: 100, material: 3 })).toBe('100 Linh Thạch · 3 Xích Viêm Tinh');
 ```
 
-- [ ] **Step 2: Mở rộng DTO/format/card**
+- [x] **Step 2: Mở rộng DTO/format/card**
 
 `CongPhapDTO` nhận `upgradeMaterialId`, `baseMaterialCost`, `materialCostGrowth`; `LevelUpResult` nhận material balance sau mutation. `CongPhapCard` nhận material map và disable button nếu thiếu một trong hai resource, nhưng vẫn cho server quyết định cuối.
 
-- [ ] **Step 3: Đồng bộ modal/page và xử lý 409**
+- [x] **Step 3: Đồng bộ modal/page và xử lý 409**
 
 `CongPhapModal` hiển thị Linh Thạch + material tương ứng ở mỗi card. Sau level-up, refetch congphap, materials và cultivation state trong `finally`; error 409 hiển thị message server và không phát animation success.
 
-- [ ] **Step 4: Chạy gate và commit**
+- [x] **Step 4: Chạy gate và commit**
 
 Run: `cd frontend && rtk npm test && rtk npm run lint && rtk npx tsc --noEmit`
 

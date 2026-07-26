@@ -2778,6 +2778,32 @@ body {
   font-size: 0.7rem;
   font-style: italic;
 }
+.congphap-upgrade-cost {
+  background: var(--surface-2);
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: var(--space-2);
+}
+.congphap-cost-label {
+  color: var(--muted-dim);
+  font-size: 0.64rem;
+}
+.congphap-cost-value {
+  color: var(--gold);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.68rem;
+}
+.congphap-material-balance {
+  color: var(--jade);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.65rem;
+}
+.congphap-material-balance.insufficient {
+  color: #ff9b9b;
+}
 .congphap-card-actions {
   display: flex;
   gap: var(--space-2);

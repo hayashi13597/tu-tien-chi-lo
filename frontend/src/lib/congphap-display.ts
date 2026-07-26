@@ -19,6 +19,37 @@ export function levelUpCost(def: CongPhapDTO, currentLevel: number): number {
   return Math.round(def.baseCost * def.costGrowth ** (currentLevel - 1));
 }
 
+/** Material cost for currentLevel → currentLevel + 1, mirroring the backend. */
+export function materialUpgradeCost(
+  def: CongPhapDTO,
+  currentLevel: number,
+): number {
+  if (!def.upgradeMaterialId) return 0;
+  return Math.round(
+    def.baseMaterialCost * def.materialCostGrowth ** (currentLevel - 1),
+  );
+}
+
+export function formatUpgradeCost(input: {
+  linhThach: number;
+  material: number;
+  materialName?: string | null;
+}): string {
+  const materialPart =
+    input.material > 0
+      ? ` · ${input.material} ${input.materialName ?? "Nguyên liệu"}`
+      : "";
+  return `${input.linhThach} Linh Thạch${materialPart}`;
+}
+
+export function formatMaterialBalance(
+  available: number,
+  required: number,
+  materialName: string,
+): string {
+  return `${available}/${required} ${materialName}`;
+}
+
 /**
  * What this one passive công pháp contributes at `level`, per attribute.
  * Flat and percent are kept apart because the backend applies all flats first

@@ -59,6 +59,9 @@ function emptyCongPhap(): CongPhapDTO {
     maxLevel: 10,
     baseCost: 100,
     costGrowth: 1.5,
+    upgradeMaterialId: null,
+    baseMaterialCost: 0,
+    materialCostGrowth: 1,
     dupRefundLinhThach: null,
     ...fieldsForCategory("passive"),
   };
