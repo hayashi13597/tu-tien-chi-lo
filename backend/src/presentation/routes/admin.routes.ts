@@ -1,5 +1,5 @@
 import { Router, RequestHandler } from 'express';
-import { updateRealmsSchema, createPillSchema, updatePillSchema, createCongPhapSchema, updateCongPhapSchema, grantSchema } from '../schemas/admin.schemas';
+import { updateRealmsSchema, createPillSchema, updatePillSchema, createCongPhapSchema, updateCongPhapSchema, grantSchema, searchUsersQuerySchema } from '../schemas/admin.schemas';
 import { createRedeemCodeSchema, updateRedeemCodeSchema } from '../schemas/redeem.schemas';
 import { UpdateRealmConfigUseCase } from '../../application/UpdateRealmConfigUseCase';
 import { GetAdminStatsUseCase } from '../../application/GetAdminStatsUseCase';
@@ -13,6 +13,7 @@ import { ListCongPhapAdminUseCase } from '../../application/ListCongPhapAdminUse
 import { CreateCongPhapUseCase } from '../../application/CreateCongPhapUseCase';
 import { UpdateCongPhapUseCase } from '../../application/UpdateCongPhapUseCase';
 import { GrantUseCase } from '../../application/GrantUseCase';
+import { SearchUsersUseCase } from '../../application/SearchUsersUseCase';
 import { RealmConfigSource } from '../../domain/ports/RealmConfigSource';
 import { RealmConfigReloader } from '../../domain/ports/RealmConfigReloader';
 import { requireAdmin } from '../middleware/requireAdmin';
@@ -31,6 +32,7 @@ export interface AdminRouterDeps {
   createCongPhapUseCase: CreateCongPhapUseCase;
   updateCongPhapUseCase: UpdateCongPhapUseCase;
   grantUseCase: GrantUseCase;
+  searchUsersUseCase: SearchUsersUseCase;
   // Domain ports, not the concrete provider: reads the current config to serve
   // GET /realms, and invalidates the cache after PUT /realms.
   realmConfigSource: RealmConfigSource;
@@ -201,6 +203,18 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
       }
       await deps.grantUseCase.execute(parsed.data);
       res.status(200).json({ ok: true });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get('/users', async (req, res, next) => {
+    try {
+      const parsed = searchUsersQuerySchema.safeParse(req.query);
+      if (!parsed.success) {
+        throw new DomainError('INVALID_INPUT', parsed.error.issues[0].message);
+      }
+      res.status(200).json({ users: await deps.searchUsersUseCase.execute(parsed.data) });
     } catch (err) {
       next(err);
     }

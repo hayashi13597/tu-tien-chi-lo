@@ -12,6 +12,7 @@ import { PrismaStatsRepository } from './infrastructure/repositories/PrismaStats
 import { PrismaRedeemCodeRepository } from './infrastructure/repositories/PrismaRedeemCodeRepository';
 import { PrismaCongPhapRepository } from './infrastructure/repositories/PrismaCongPhapRepository';
 import { PrismaOwnedCongPhapRepository } from './infrastructure/repositories/PrismaOwnedCongPhapRepository';
+import { PrismaAdminUserRepository } from './infrastructure/repositories/PrismaAdminUserRepository';
 import { RealmConfigProvider } from './infrastructure/config/RealmConfigProvider';
 import { BcryptPasswordHasher } from './infrastructure/auth/BcryptPasswordHasher';
 import { JwtTokenService } from './infrastructure/auth/JwtTokenService';
@@ -43,6 +44,7 @@ import { ListCongPhapAdminUseCase } from './application/ListCongPhapAdminUseCase
 import { CreateCongPhapUseCase } from './application/CreateCongPhapUseCase';
 import { UpdateCongPhapUseCase } from './application/UpdateCongPhapUseCase';
 import { GrantUseCase } from './application/GrantUseCase';
+import { SearchUsersUseCase } from './application/SearchUsersUseCase';
 import { createAuthRouter } from './presentation/routes/auth.routes';
 import { createCultivationRouter } from './presentation/routes/cultivation.routes';
 import { createPillsRouter } from './presentation/routes/pills.routes';
@@ -72,6 +74,7 @@ export function createApp(overrides: AppOverrides = {}) {
   const redeemCodeRepository = new PrismaRedeemCodeRepository(client);
   const congPhapRepository = new PrismaCongPhapRepository(client);
   const ownedCongPhapRepository = new PrismaOwnedCongPhapRepository(client);
+  const adminUserRepository = new PrismaAdminUserRepository(client);
   const passwordHasher = new BcryptPasswordHasher();
 
   const jwtSecret = process.env.JWT_SECRET as string;
@@ -136,6 +139,7 @@ export function createApp(overrides: AppOverrides = {}) {
   const createCongPhapUseCase = new CreateCongPhapUseCase(congPhapRepository);
   const updateCongPhapUseCase = new UpdateCongPhapUseCase(congPhapRepository);
   const grantUseCase = new GrantUseCase(ownedCongPhapRepository, characterRepository);
+  const searchUsersUseCase = new SearchUsersUseCase(adminUserRepository);
 
   const requireAuth = createRequireAuth(tokenService);
 
@@ -184,7 +188,7 @@ export function createApp(overrides: AppOverrides = {}) {
   );
   app.use(
     '/admin',
-    createAdminRouter({ updateRealmConfigUseCase, getAdminStatsUseCase, listPillsAdminUseCase, createPillUseCase, updatePillUseCase, realmConfigSource: realmConfigProvider, realmConfigReloader: realmConfigProvider, listRedeemCodesUseCase, createRedeemCodeUseCase, updateRedeemCodeUseCase, listCongPhapAdminUseCase, createCongPhapUseCase, updateCongPhapUseCase, grantUseCase, requireAuth }),
+    createAdminRouter({ updateRealmConfigUseCase, getAdminStatsUseCase, listPillsAdminUseCase, createPillUseCase, updatePillUseCase, realmConfigSource: realmConfigProvider, realmConfigReloader: realmConfigProvider, listRedeemCodesUseCase, createRedeemCodeUseCase, updateRedeemCodeUseCase, listCongPhapAdminUseCase, createCongPhapUseCase, updateCongPhapUseCase, grantUseCase, searchUsersUseCase, requireAuth }),
   );
 
   app.use(errorHandler);

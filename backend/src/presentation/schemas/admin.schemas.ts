@@ -86,6 +86,13 @@ export const createCongPhapSchema = congPhapBodySchema.extend({
 });
 export const updateCongPhapSchema = congPhapBodySchema;
 
+// GET /admin/users?q=&limit= — query params luôn là string, nên coerce số.
+// Clamp thực sự nằm ở SearchUsersUseCase (một chỗ duy nhất).
+export const searchUsersQuerySchema = z.object({
+  q: z.string().optional(),
+  limit: z.coerce.number().int().optional(),
+});
+
 export const grantSchema = z.object({
   userId: z.string().min(1),
   congPhapId: z.string().regex(/^[a-z0-9-]+$/).optional(),
