@@ -1,8 +1,6 @@
 "use client";
 
 import { DiamondMarker } from "@/components/icons";
-import { ATTRIBUTE_LABELS, ATTRIBUTE_ORDER } from "@/lib/attribute-constants";
-import { attributeDelta } from "@/lib/congphap-display";
 import { formatNum, formatSeconds } from "@/lib/format";
 import { getRealmMeta, getSubStageName } from "@/lib/realm-constants";
 import type { CultivationState } from "@/lib/types";
@@ -22,9 +20,6 @@ export function StatsPanel({
   const meta = getRealmMeta(state.realmMajor);
   const subName = getSubStageName(state.realmSub);
   const progress = ((state.linhKhi / state.linhKhiRequired) * 100).toFixed(1);
-  // Gain contributed by passive công pháp, shown as a gold suffix next to the
-  // final value — same visual language as the breakthrough boost's (+N%).
-  const delta = attributeDelta(state.attributes.base, state.attributes.final);
 
   return (
     <aside className="panel">
@@ -101,33 +96,6 @@ export function StatsPanel({
           <span className="stat-value">Đang tu luyện</span>
         )}
       </div>
-
-      {/* Combat-side stats. Kept in the same panel but visually separated:
-          these come from realm base attributes + passive công pháp, not from
-          the cultivation loop above. */}
-      <div className="stat-divider">Chiến Lực &amp; Thuộc Tính</div>
-      <div className="stat-battle-power">
-        <span className="stat-label">Chiến lực</span>
-        <span className="stat-battle-power-value">
-          {formatNum(state.battlePower)}
-        </span>
-      </div>
-      <div className="stat-row">
-        <span className="stat-label">Linh Thạch</span>
-        <span className="stat-value jade">{formatNum(state.linhThach)}</span>
-      </div>
-      {ATTRIBUTE_ORDER.map((key) => {
-        const gain = Math.round(delta[key]);
-        return (
-          <div className="stat-row" key={key}>
-            <span className="stat-label">{ATTRIBUTE_LABELS[key]}</span>
-            <span className="stat-value">
-              {formatNum(state.attributes.final[key])}
-              {gain > 0 && <span className="stat-value gold"> (+{gain})</span>}
-            </span>
-          </div>
-        );
-      })}
     </aside>
   );
 }

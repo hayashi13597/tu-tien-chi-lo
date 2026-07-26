@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AttributePanel } from "@/components/attribute-panel";
 import { BreakthroughButton } from "@/components/breakthrough-button";
 import {
   BreakthroughOverlay,
@@ -391,6 +392,7 @@ export default function Home() {
                 )}
               </div>
             )}
+            <AttributePanel state={state} />
           </div>
 
           <section className="cultivation-stage">
