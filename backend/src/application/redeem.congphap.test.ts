@@ -3,7 +3,7 @@ import { RedeemCodeUseCase } from './RedeemCodeUseCase';
 import { CongPhapRecord } from '../domain/congphap/congphap';
 import { RewardEntry } from '../domain/redeem/redeemCode';
 
-const cp: CongPhapRecord = { id: 'cp1', name: 'CP', glyph: 'c', rarity: 2, category: 'passive', desc: 'd', active: true, maxLevel: 5, baseCost: 100, costGrowth: 1.5, effects: [{ attribute: 'khiHuyet', flatPerLevel: 10, pctPerLevel: 0 }], powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: 250 };
+const cp: CongPhapRecord = { id: 'cp1', name: 'CP', glyph: 'c', rarity: 2, category: 'passive', desc: 'd', active: true, maxLevel: 5, baseCost: 100, costGrowth: 1.5, effects: [{ attribute: 'khiHuyet', flatPerLevel: 10, pctPerLevel: 0 }], powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: 250, upgradeMaterialId: null, baseMaterialCost: 0, materialCostGrowth: 1, cooldownRounds: null };
 
 function build(rewards: RewardEntry[], ownedAlready: string[] = []) {
   let refund = 0;

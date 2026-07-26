@@ -92,6 +92,13 @@ A cultivation-game (gameplay rebuilt to 100% feature parity with Nhất Niệm T
 - Gotcha: `db:seed` upsert cả `CongPhap` (3 mẫu) — đè chỉnh sửa admin, dùng như công cụ reset.
 - Prisma gotcha: cột `Json?` phải set `Prisma.DbNull` để xóa giá trị khi update — bỏ trống key nghĩa là "không đổi", nên passive→active sẽ còn sót `effects` cũ.
 
+## Bí cảnh, nguyên liệu và luyện đan (schema/catalog)
+
+- Prisma schema đã có `Material`/`MaterialInventory`, `AlchemyRecipe`/`AlchemyJob`, `ExpeditionBranch`/`ExpeditionDifficulty`/`ExpeditionUpgradeMaterialWeight`, `ExpeditionDailyQuota` và `Expedition`; `CongPhap` có thêm cấu hình material nâng cấp và cooldown.
+- Catalog seed idempotent trong `backend/prisma/seed.ts`: 11 material, 8 recipe (16 ingredient rows), 8 branch, 24 difficulty và 24 weight rows. Seed là công cụ reset, có thể ghi đè chỉnh sửa catalog.
+- `CongPhapRecord` và Prisma mappers giữ `upgradeMaterialId`, `baseMaterialCost`, `materialCostGrowth`, `cooldownRounds`; migration `bi_canh_materials_alchemy_expedition` đã áp dụng.
+- Backend gate hiện tại: **354 tests**, `npm run build` pass. Integration cần `backend/.env` với PostgreSQL chạy ở `localhost:5432`.
+
 ## Security hardening (backend)
 
 - Rate limit: `authRateLimiter` (express-rate-limit v8, 20 req/IP/15min) on `POST /auth/register|login|refresh` only; skipped when `NODE_ENV==='test'`; 429 uses the shared `{ error: { code, message } }` shape. Not behind a proxy (no `trust proxy`).

@@ -25,6 +25,8 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  await prisma.congPhap.updateMany({ where: { id: 'test-passive' }, data: { upgradeMaterialId: null } });
+  await prisma.material.deleteMany({ where: { id: 'test-material-upgrade' } });
   await prisma.user.delete({ where: { id: userId } }).catch(() => {});
   await prisma.$disconnect();
 });
@@ -51,5 +53,25 @@ describe('OwnedCongPhap + Linh Thạch', () => {
     expect(await owned.setSlot(userId, 'test-passive', 0)).toBe(true);
     await owned.clearSlot(userId, 0);
     expect((await owned.getOne(userId, 'test-passive'))?.equippedSlot).toBeNull();
+  });
+
+  it('round-trip được material upgrade trên CongPhap', async () => {
+    await prisma.material.upsert({
+      where: { id: 'test-material-upgrade' },
+      create: { id: 'test-material-upgrade', name: 'Test', glyph: 'T', rarity: 1, description: 'd', active: true },
+      update: {},
+    });
+    await prisma.congPhap.update({
+      where: { id: 'test-passive' },
+      data: {
+        upgradeMaterialId: 'test-material-upgrade',
+        baseMaterialCost: 2,
+        materialCostGrowth: 1.5,
+      },
+    });
+
+    const entry = await owned.getOne(userId, 'test-passive');
+    expect(entry?.def.upgradeMaterialId).toBe('test-material-upgrade');
+    expect(entry?.def.baseMaterialCost).toBe(2);
   });
 });

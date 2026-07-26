@@ -79,6 +79,10 @@ const congPhapBodySchema = z.object({
   powerPerLevel: z.number().nullable(),
   chanNguyenCost: z.number().nullable(),
   dupRefundLinhThach: z.number().int().min(0).nullable(),
+  upgradeMaterialId: z.string().regex(/^[a-z0-9-]+$/).nullable().default(null),
+  baseMaterialCost: z.number().int().min(0).default(0),
+  materialCostGrowth: z.number().min(1).default(1),
+  cooldownRounds: z.number().int().min(0).nullable().default(null),
 });
 
 export const createCongPhapSchema = congPhapBodySchema.extend({

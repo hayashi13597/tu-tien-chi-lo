@@ -6,8 +6,8 @@ import { ListCongPhapUseCase } from './ListCongPhapUseCase';
 import { CongPhapRecord, OwnedCongPhapEntry } from '../domain/congphap/congphap';
 import { DomainError } from '../domain/errors';
 
-const passive: CongPhapRecord = { id: 'p', name: 'P', glyph: 'p', rarity: 1, category: 'passive', desc: 'd', active: true, maxLevel: 3, baseCost: 100, costGrowth: 1.5, effects: [{ attribute: 'khiHuyet', flatPerLevel: 10, pctPerLevel: 0 }], powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null };
-const active: CongPhapRecord = { id: 'a', name: 'A', glyph: 'a', rarity: 2, category: 'active', desc: 'd', active: true, maxLevel: 3, baseCost: 100, costGrowth: 1.5, effects: null, powerPerLevel: 100, chanNguyenCost: 10, dupRefundLinhThach: null };
+const passive: CongPhapRecord = { id: 'p', name: 'P', glyph: 'p', rarity: 1, category: 'passive', desc: 'd', active: true, maxLevel: 3, baseCost: 100, costGrowth: 1.5, effects: [{ attribute: 'khiHuyet', flatPerLevel: 10, pctPerLevel: 0 }], powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null, upgradeMaterialId: null, baseMaterialCost: 0, materialCostGrowth: 1, cooldownRounds: null };
+const active: CongPhapRecord = { id: 'a', name: 'A', glyph: 'a', rarity: 2, category: 'active', desc: 'd', active: true, maxLevel: 3, baseCost: 100, costGrowth: 1.5, effects: null, powerPerLevel: 100, chanNguyenCost: 10, dupRefundLinhThach: null, upgradeMaterialId: null, baseMaterialCost: 0, materialCostGrowth: 1, cooldownRounds: null };
 
 function fakes(opts: { owned?: OwnedCongPhapEntry[]; linhThach?: number } = {}) {
   const defs = new Map([['p', passive], ['a', active]]);

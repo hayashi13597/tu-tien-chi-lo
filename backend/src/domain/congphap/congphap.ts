@@ -22,6 +22,10 @@ export interface CongPhapRecord {
   powerPerLevel: number | null;
   chanNguyenCost: number | null;   // chủ động, để dành combat
   dupRefundLinhThach: number | null;
+  upgradeMaterialId: string | null;
+  baseMaterialCost: number;
+  materialCostGrowth: number;
+  cooldownRounds: number | null;
 }
 
 // Một công pháp người chơi sở hữu (kèm định nghĩa).

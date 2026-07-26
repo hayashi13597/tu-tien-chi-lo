@@ -4,7 +4,7 @@ import { UpdateCongPhapUseCase } from './UpdateCongPhapUseCase';
 import { GrantUseCase } from './GrantUseCase';
 import { CongPhapRecord } from '../domain/congphap/congphap';
 
-const valid: CongPhapRecord = { id: 'new-cp', name: 'N', glyph: 'n', rarity: 1, category: 'passive', desc: 'd', active: true, maxLevel: 5, baseCost: 100, costGrowth: 1.5, effects: [{ attribute: 'tocDo', flatPerLevel: 1, pctPerLevel: 0 }], powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null };
+const valid: CongPhapRecord = { id: 'new-cp', name: 'N', glyph: 'n', rarity: 1, category: 'passive', desc: 'd', active: true, maxLevel: 5, baseCost: 100, costGrowth: 1.5, effects: [{ attribute: 'tocDo', flatPerLevel: 1, pctPerLevel: 0 }], powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null, upgradeMaterialId: null, baseMaterialCost: 0, materialCostGrowth: 1, cooldownRounds: null };
 
 function repoFakes(existing: CongPhapRecord[] = []) {
   const m = new Map(existing.map((d) => [d.id, d]));
