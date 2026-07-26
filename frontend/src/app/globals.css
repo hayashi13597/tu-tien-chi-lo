@@ -2776,6 +2776,91 @@ body {
   grid-column: 1 / -1;
 }
 
+.admin-curve {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 22px;
+}
+
+.admin-curve--lg {
+  height: 40px;
+}
+
+.admin-curve-bar {
+  flex: 1 1 0;
+  min-height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(180deg, var(--jade), rgba(93, 217, 177, 0.25));
+}
+
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.admin-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--fg-dim);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.admin-tab:hover:not(:disabled) {
+  border-color: var(--border-bright);
+  color: var(--fg);
+}
+
+.admin-tab[aria-current="true"] {
+  border-color: var(--gold);
+  background: rgba(251, 191, 36, 0.1);
+  color: var(--gold);
+}
+
+.admin-tab:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.admin-err-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  flex: none;
+}
+
+.admin-detail-name-input {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.admin-substage-id {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-5);
+}
+
+.admin-substage-name {
+  flex: 1 1 240px;
+}
+
+.admin-dirty {
+  font-size: 0.8rem;
+  color: var(--gold);
+}
+
 /* ==== Redeem code: phần riêng của trang mã đổi thưởng ==== */
 
 /* Chuỗi mã là nhân vật chính — mono chữ số đều, giãn chữ, màu vàng. */
