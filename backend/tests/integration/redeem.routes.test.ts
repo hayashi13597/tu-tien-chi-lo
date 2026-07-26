@@ -78,6 +78,57 @@ describe('POST /redeem', () => {
     expect(res2.body.error.code).toBe('REDEEM_CODE_ALREADY_USED');
   });
 
+  it('grants a công pháp reward, and refunds Linh Thạch on a duplicate', async () => {
+    const adminCookies = await registerAdminAndLogin('rt-cp-admin');
+    const created = await request(app).post('/admin/codes').set('Cookie', adminCookies)
+      .send(redeemBody({ rewards: [{ congPhapId: 'thiet-cot-quyet', quantity: 1 }] }));
+    expect(created.status).toBe(201);
+
+    const cookies = await registerAndLogin('rt-cp-player');
+    const res = await request(app).post('/redeem').set('Cookie', cookies).send({ code: 'RTEST' });
+    expect(res.status).toBe(200);
+    expect(res.body.rewards[0].kind).toBe('congphap');
+    expect(res.body.rewards[0].id).toBe('thiet-cot-quyet');
+
+    const owned = await request(app).get('/congphap').set('Cookie', cookies);
+    expect(owned.body.owned.map((o: { def: { id: string } }) => o.def.id)).toContain('thiet-cot-quyet');
+
+    // Second code granting the same công pháp converts to Linh Thạch instead.
+    await request(app).post('/admin/codes').set('Cookie', adminCookies)
+      .send(redeemBody({ id: 'rt-code-dup', code: 'RTESTDUP', rewards: [{ congPhapId: 'thiet-cot-quyet', quantity: 1 }] }));
+    const dup = await request(app).post('/redeem').set('Cookie', cookies).send({ code: 'RTESTDUP' });
+    expect(dup.status).toBe(200);
+    expect(dup.body.rewards[0].kind).toBe('linhThach');
+    // thiet-cot-quyet has no dupRefundLinhThach, so the refund falls back to baseCost (100).
+    expect(dup.body.rewards[0].quantity).toBe(100);
+
+    const state = await request(app).get('/cultivation/state').set('Cookie', cookies);
+    expect(state.body.linhThach).toBe(100);
+  });
+
+  it('grants a direct Linh Thạch reward', async () => {
+    const adminCookies = await registerAdminAndLogin('rt-lt-admin');
+    await request(app).post('/admin/codes').set('Cookie', adminCookies)
+      .send(redeemBody({ rewards: [{ linhThach: 5000, quantity: 1 }] }));
+
+    const cookies = await registerAndLogin('rt-lt-player');
+    const res = await request(app).post('/redeem').set('Cookie', cookies).send({ code: 'RTEST' });
+    expect(res.status).toBe(200);
+    expect(res.body.rewards[0].kind).toBe('linhThach');
+    expect(res.body.rewards[0].quantity).toBe(5000);
+
+    const state = await request(app).get('/cultivation/state').set('Cookie', cookies);
+    expect(state.body.linhThach).toBe(5000);
+  });
+
+  it('rejects a reward that mixes two kinds (400 INVALID_REDEEM_CODE)', async () => {
+    const adminCookies = await registerAdminAndLogin('rt-mix-admin');
+    const res = await request(app).post('/admin/codes').set('Cookie', adminCookies)
+      .send(redeemBody({ rewards: [{ pillId: 'hoi-khi-dan', congPhapId: 'thiet-cot-quyet', quantity: 1 }] }));
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('INVALID_REDEEM_CODE');
+  });
+
   it('returns 409 REDEEM_CODE_EXHAUSTED when cap reached', async () => {
     const adminCookies = await registerAdminAndLogin('rt-admin3');
     await request(app).post('/admin/codes').set('Cookie', adminCookies).send(redeemBody({ maxRedemptions: 1 }));

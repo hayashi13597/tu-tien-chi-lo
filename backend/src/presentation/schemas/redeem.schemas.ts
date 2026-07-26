@@ -4,8 +4,13 @@ export const redeemCodeSchema = z.object({
   code: z.string().min(1),
 });
 
+// Một reward là ĐÚNG MỘT trong ba loại. zod chỉ nới shape (cả ba optional);
+// bất biến "đúng một loại" + chống trùng đã nằm ở domain
+// validateRedeemCodeDefinition — không nhân đôi rule ở đây.
 const rewardSchema = z.object({
-  pillId: z.string().min(1),
+  pillId: z.string().min(1).optional(),
+  congPhapId: z.string().regex(/^[a-z0-9-]+$/).optional(),
+  linhThach: z.number().int().min(1).optional(),
   quantity: z.number().int().min(1),
 });
 
