@@ -266,7 +266,7 @@ rtk git commit -m "feat: add material and alchemy domain rules"
 - Modify: `backend/src/app.ts`
 - Modify: `backend/src/domain/errors.ts`
 
-- [ ] **Step 1: Viết application tests bằng fake repositories**
+- [x] **Step 1: Viết application tests bằng fake repositories**
 
 Test các use case với fake Map-backed repositories:
 
@@ -276,13 +276,13 @@ Test các use case với fake Map-backed repositories:
 - enqueue quantity `0`, âm hoặc recipe inactive trả `ALCHEMY_QUEUE_INVALID`;
 - queue use case settle output đã hết hạn đúng một lần trước khi trả.
 
-- [ ] **Step 2: Chạy test để xác nhận use case chưa tồn tại**
+- [x] **Step 2: Chạy test để xác nhận use case chưa tồn tại**
 
 Run: `cd backend && rtk npm test -- src/application/materials.alchemy.usecases.test.ts`
 
 Expected: FAIL vì use case/repository contracts chưa tồn tại.
 
-- [ ] **Step 3: Implement Prisma repositories với transaction boundary**
+- [x] **Step 3: Implement Prisma repositories với transaction boundary**
 
 Trong `PrismaMaterialRepository` implement:
 
@@ -296,7 +296,7 @@ increment(userId: string, materialId: string, quantity: number): Promise<void>;
 
 Trong `PrismaAlchemyRepository`, `enqueue` phải settle queue trong `$transaction`, tính `startsAt` từ job cuối, decrement material + Linh Thạch trong cùng transaction, rồi create job. `settleCompleted` chỉ cấp Pill khi `outputGrantedAt IS NULL`, sau đó set timestamp trong transaction.
 
-- [ ] **Step 4: Implement use cases và lỗi**
+- [x] **Step 4: Implement use cases và lỗi**
 
 Tạo use cases với public signatures:
 
@@ -317,7 +317,7 @@ export class QueueAlchemyUseCase {
 
 `QueueAlchemyUseCase` lấy character, recipe active, settle queue, tính input theo quantity, rồi gọi repository transaction. Map các lỗi `ALCHEMY_RECIPE_NOT_FOUND`, `ALCHEMY_QUEUE_INVALID`, `INSUFFICIENT_MATERIALS`, `INSUFFICIENT_LINH_THACH` vào `DomainError`.
 
-- [ ] **Step 5: Tạo routes và schemas**
+- [x] **Step 5: Tạo routes và schemas**
 
 `materials.routes.ts` expose `GET /materials/inventory`. `alchemy.routes.ts` expose `GET /alchemy/recipes`, `GET /alchemy/queue`, `POST /alchemy/queue`.
 
@@ -332,7 +332,7 @@ z.object({
 
 Tất cả route dùng `requireAuth`, route chỉ parse/map, không chứa business logic.
 
-- [ ] **Step 6: Wire app và chạy integration test**
+- [x] **Step 6: Wire app và chạy integration test**
 
 Trong `backend/src/app.ts` instantiate repositories/use cases/routes cạnh các nhóm `pills` và `congphap`. Thêm `app.use('/materials', ...)` và `app.use('/alchemy', ...)` trước `errorHandler`.
 
@@ -346,7 +346,7 @@ rtk npm run build
 
 Expected: use case, repository và route integration pass.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 rtk git add backend/src/application backend/src/domain/errors.ts backend/src/infrastructure/repositories/PrismaMaterialRepository.ts backend/src/infrastructure/repositories/PrismaAlchemyRepository.ts backend/src/presentation/routes/materials.routes.ts backend/src/presentation/routes/alchemy.routes.ts backend/src/presentation/schemas/alchemy.schemas.ts backend/src/app.ts

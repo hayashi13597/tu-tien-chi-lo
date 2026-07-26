@@ -38,6 +38,11 @@ const STATUS_BY_CODE: Record<string, number> = {
   INVALID_CONGPHAP_CONFIG: 400,
   CONGPHAP_ID_TAKEN: 409,
   INVALID_GRANT: 400,
+  INVALID_MATERIAL_CONFIG: 400,
+  ALCHEMY_RECIPE_INVALID: 400,
+  ALCHEMY_QUEUE_INVALID: 400,
+  ALCHEMY_RECIPE_NOT_FOUND: 404,
+  INSUFFICIENT_MATERIALS: 409,
 };
 
 export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction) {
