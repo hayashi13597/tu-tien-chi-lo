@@ -6,11 +6,11 @@ import { OwnedCongPhapEntry } from '../domain/congphap/congphap';
 const cfg = defaultRealmConfigSet();
 
 const passiveOwned: OwnedCongPhapEntry = {
-  def: { id: 'p', name: 'P', glyph: 'p', rarity: 1, category: 'passive', desc: 'd', active: true, maxLevel: 10, baseCost: 100, costGrowth: 1.5, effects: [{ attribute: 'khiHuyet', flatPerLevel: 100, pctPerLevel: 0 }], powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null },
+  def: { id: 'p', name: 'P', glyph: 'p', rarity: 1, category: 'passive', desc: 'd', active: true, maxLevel: 10, baseCost: 100, costGrowth: 1.5, effects: [{ attribute: 'khiHuyet', flatPerLevel: 100, pctPerLevel: 0 }], powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null, upgradeMaterialId: null, baseMaterialCost: 0, materialCostGrowth: 1, cooldownRounds: null },
   level: 2, equippedSlot: null,
 };
 const activeOwned: OwnedCongPhapEntry = {
-  def: { id: 'a', name: 'A', glyph: 'a', rarity: 3, category: 'active', desc: 'd', active: true, maxLevel: 10, baseCost: 200, costGrowth: 1.6, effects: null, powerPerLevel: 120, chanNguyenCost: 30, dupRefundLinhThach: null },
+  def: { id: 'a', name: 'A', glyph: 'a', rarity: 3, category: 'active', desc: 'd', active: true, maxLevel: 10, baseCost: 200, costGrowth: 1.6, effects: null, powerPerLevel: 120, chanNguyenCost: 30, dupRefundLinhThach: null, upgradeMaterialId: null, baseMaterialCost: 0, materialCostGrowth: 1, cooldownRounds: null },
   level: 5, equippedSlot: 0,
 };
 

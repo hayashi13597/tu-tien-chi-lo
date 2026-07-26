@@ -8,11 +8,13 @@ const passive: CongPhapRecord = {
   desc: 'd', active: true, maxLevel: 10, baseCost: 100, costGrowth: 1.5,
   effects: [{ attribute: 'khiHuyet', flatPerLevel: 50, pctPerLevel: 0 }],
   powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null,
+  upgradeMaterialId: null, baseMaterialCost: 0, materialCostGrowth: 1, cooldownRounds: null,
 };
 const active: CongPhapRecord = {
   id: 'liet-hoa', name: 'Liệt Hỏa', glyph: '火', rarity: 3, category: 'active',
   desc: 'd', active: true, maxLevel: 10, baseCost: 200, costGrowth: 1.6,
   effects: null, powerPerLevel: 120, chanNguyenCost: 30, dupRefundLinhThach: null,
+  upgradeMaterialId: null, baseMaterialCost: 0, materialCostGrowth: 1, cooldownRounds: null,
 };
 
 function expectFail(def: CongPhapRecord) {

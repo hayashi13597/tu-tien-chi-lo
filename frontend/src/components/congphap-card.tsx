@@ -3,13 +3,21 @@
 import type { CSSProperties } from "react";
 import { ATTRIBUTE_LABELS } from "@/lib/attribute-constants";
 import {
+  formatMaterialBalance,
+  formatUpgradeCost,
   getCongPhapRarityMeta,
   levelUpCost,
+  materialUpgradeCost,
   passiveBonusAt,
   skillPowerAt,
 } from "@/lib/congphap-display";
 import { formatNum } from "@/lib/format";
-import type { AttributeKey, CongPhapDTO, OwnedCongPhapDTO } from "@/lib/types";
+import type {
+  AttributeKey,
+  CongPhapDTO,
+  MaterialInventoryDTO,
+  OwnedCongPhapDTO,
+} from "@/lib/types";
 
 interface CongPhapCardProps {
   entry: OwnedCongPhapDTO;
@@ -17,6 +25,7 @@ interface CongPhapCardProps {
   linhThach: number;
   /** True while a mutation for this card is in flight. */
   busy: boolean;
+  materialInventory: MaterialInventoryDTO[];
   onLevelUp: (congPhapId: string) => void;
   /** Only passed for active công pháp; absent hides the equip controls. */
   onEquip?: (congPhapId: string) => void;
@@ -39,6 +48,7 @@ export function CongPhapCard({
   entry,
   linhThach,
   busy,
+  materialInventory,
   onLevelUp,
   onEquip,
   onUnequip,
@@ -51,7 +61,19 @@ export function CongPhapCard({
   // A công pháp the admin soft-disabled stays owned but can't be used: the
   // backend rejects level-up/equip with CONGPHAP_NOT_FOUND, so mirror that here.
   const disabledDef = !def.active;
-  const affordable = cost !== null && linhThach >= cost;
+  const materialRequired = cost === null ? 0 : materialUpgradeCost(def, level);
+  const materialEntry = def.upgradeMaterialId
+    ? materialInventory.find(
+        (item) => item.materialId === def.upgradeMaterialId,
+      )
+    : undefined;
+  const materialAvailable = materialEntry?.quantity ?? 0;
+  const materialName =
+    materialEntry?.material?.name ?? def.upgradeMaterialId ?? "Nguyên liệu";
+  const affordable =
+    cost !== null && linhThach >= cost && materialAvailable >= materialRequired;
+  const missingLinhThach = cost !== null && linhThach < cost;
+  const missingMaterial = cost !== null && materialAvailable < materialRequired;
 
   // `cost` is null exactly when atMax, but the two branches below are computed
   // separately, so bind it once here to keep the narrowing explicit.
@@ -61,8 +83,12 @@ export function CongPhapCard({
     : atMax
       ? "Đạt cấp tối đa"
       : affordable
-        ? `Nâng cấp · ${costLabel} Linh Thạch`
-        : `Thiếu Linh Thạch (${costLabel})`;
+        ? "Nâng cấp"
+        : missingLinhThach
+          ? `Thiếu Linh Thạch (${costLabel})`
+          : missingMaterial
+            ? `Thiếu ${materialName}`
+            : "Không thể nâng cấp";
 
   return (
     <div
@@ -108,6 +134,32 @@ export function CongPhapCard({
           </>
         )}
       </div>
+
+      {!atMax && !disabledDef && cost !== null && (
+        <div className="congphap-upgrade-cost">
+          <span className="congphap-cost-label">Chi phí nâng cấp</span>
+          <span className="congphap-cost-value">
+            {formatUpgradeCost({
+              linhThach: cost,
+              material: materialRequired,
+              materialName,
+            })}
+          </span>
+          {def.upgradeMaterialId && (
+            <span
+              className={`congphap-material-balance${
+                missingMaterial ? " insufficient" : ""
+              }`}
+            >
+              {formatMaterialBalance(
+                materialAvailable,
+                materialRequired,
+                materialName,
+              )}
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="congphap-card-actions">
         <button

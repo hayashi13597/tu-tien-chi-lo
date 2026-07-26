@@ -14,33 +14,37 @@ generator client {
 }
 
 model User {
-  id           String     @id @default(uuid())
-  username     String     @unique
-  passwordHash String
-  role         String     @default("user") // "user" | "admin"
+  id                    String                 @id @default(uuid())
+  username              String                 @unique
+  passwordHash          String
+  role                  String                 @default("user") // "user" | "admin"
   // Bumped on logout to revoke every outstanding refresh token for this user
   // (logout-everywhere). A refresh token carries the tokenVersion it was signed
   // with; RefreshAccessTokenUseCase rejects it once this counter has moved on.
-  tokenVersion Int        @default(0)
-  createdAt    DateTime   @default(now())
-  character    Character?
-  inventory    InventoryItem[]
-  redemptions  Redemption[]
-  ownedCongPhap OwnedCongPhap[]
+  tokenVersion          Int                    @default(0)
+  createdAt             DateTime               @default(now())
+  character             Character?
+  inventory             InventoryItem[]
+  redemptions           Redemption[]
+  ownedCongPhap         OwnedCongPhap[]
+  materialInventory     MaterialInventory[]
+  alchemyJobs           AlchemyJob[]
+  expeditionDailyQuotas ExpeditionDailyQuota[]
+  expeditions           Expedition[]
 }
 
 model Character {
-  id                String    @id @default(uuid())
-  userId            String    @unique
+  id     String @id @default(uuid())
+  userId String @unique
   // Cascade: deleting a User removes their Character automatically.
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  realmMajor        Int       @default(0)
-  realmSub          Int       @default(0)
-  linhKhi           Float     @default(0)
+  realmMajor   Int      @default(0)
+  realmSub     Int      @default(0)
+  linhKhi      Float    @default(0)
   // Currency dùng để nâng cấp công pháp. Cấp qua redeem code + admin.
-  linhThach         Int       @default(0)
-  lastUpdateAt      DateTime  @default(now())
+  linhThach    Int      @default(0)
+  lastUpdateAt DateTime @default(now())
 
   breakthroughFails Int       @default(0)
   punishedUntil     DateTime?
@@ -52,30 +56,32 @@ model Character {
 
   // Pending one-shot breakthrough success-rate bonus (percentage points) from a
   // consumed pill; added to the next attempt's rate, then reset to 0.
-  breakthroughBonusPct      Float     @default(0)
+  breakthroughBonusPct Float @default(0)
 
-  createdAt         DateTime  @default(now())
+  createdAt   DateTime     @default(now())
+  alchemyJobs AlchemyJob[]
 }
 
 model Pill {
-  id          String          @id
-  name        String
-  glyph       String
-  rarity      Int
-  effectKind  String
-  amount      Float?
-  multiplier  Float?
-  durationSec Int?
-  bonusPct    Float?
-  desc        String
+  id              String             @id
+  name            String
+  glyph           String
+  rarity          Int
+  effectKind      String
+  amount          Float?
+  multiplier      Float?
+  durationSec     Int?
+  bonusPct        Float?
+  desc            String
   // Soft-disable: an inactive pill is hidden from player inventories and cannot
   // be consumed, but InventoryItem rows survive — re-enabling restores holdings.
-  active      Boolean         @default(true)
+  active          Boolean            @default(true)
   // Quantity granted to a newly registered user (0 = not part of the starter kit).
   // Replaces the old hardcoded STARTER_INVENTORY constant.
-  starterQuantity Int         @default(0)
-  inventory   InventoryItem[]
-  redeemRewards RedeemCodeReward[]
+  starterQuantity Int                @default(0)
+  inventory       InventoryItem[]
+  redeemRewards   RedeemCodeReward[]
+  alchemyRecipe   AlchemyRecipe?
 }
 
 model InventoryItem {
@@ -103,24 +109,24 @@ model RealmStage {
   maxSuccessRate    Float
   punishmentSeconds Int
   // Thuộc tính nền của sub-stage (trước bonus công pháp bị động). Admin chỉnh.
-  baseKhiHuyet      Float     @default(0)
-  baseChanNguyen    Float     @default(0)
-  baseCongVatLy     Float     @default(0)
-  baseCongPhep      Float     @default(0)
-  basePhongThu      Float     @default(0)
-  baseTocDo         Float     @default(0)
+  baseKhiHuyet      Float  @default(0)
+  baseChanNguyen    Float  @default(0)
+  baseCongVatLy     Float  @default(0)
+  baseCongPhep      Float  @default(0)
+  basePhongThu      Float  @default(0)
+  baseTocDo         Float  @default(0)
 
   @@unique([realmMajor, realmSub])
 }
 
 model RedeemCode {
-  id             String   @id @default(uuid())
-  code           String   @unique
-  active         Boolean  @default(true)
+  id             String             @id @default(uuid())
+  code           String             @unique
+  active         Boolean            @default(true)
   maxRedemptions Int
-  redeemedCount  Int      @default(0)
+  redeemedCount  Int                @default(0)
   expiresAt      DateTime?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime           @default(now())
   rewards        RedeemCodeReward[]
   redemptions    Redemption[]
 }
@@ -150,13 +156,13 @@ model Redemption {
 }
 
 model CongPhap {
-  id                 String            @id
+  id                 String             @id
   name               String
   glyph              String
   rarity             Int
-  category           String            // "active" | "passive"
+  category           String // "active" | "passive"
   desc               String
-  active             Boolean           @default(true)
+  active             Boolean            @default(true)
   maxLevel           Int
   baseCost           Int
   costGrowth         Float
@@ -167,6 +173,11 @@ model CongPhap {
   chanNguyenCost     Float?
   // Linh Thạch quy đổi khi redeem trùng; null => dùng baseCost.
   dupRefundLinhThach Int?
+  upgradeMaterialId  String?
+  upgradeMaterial    Material?          @relation("CongPhapUpgradeMaterial", fields: [upgradeMaterialId], references: [id])
+  baseMaterialCost   Int                @default(0)
+  materialCostGrowth Float              @default(1)
+  cooldownRounds     Int?
   owned              OwnedCongPhap[]
   redeemRewards      RedeemCodeReward[]
 }
@@ -182,4 +193,141 @@ model OwnedCongPhap {
   equippedSlot Int?
 
   @@unique([userId, congPhapId])
+}
+
+model Material {
+  id                       String                            @id
+  name                     String
+  glyph                    String
+  rarity                   Int
+  description              String
+  active                   Boolean                           @default(true)
+  inventories              MaterialInventory[]
+  recipeIngredients        AlchemyRecipeIngredient[]
+  branchAlchemyMaterial    ExpeditionBranch?                 @relation("BranchAlchemyMaterial")
+  upgradeCongPhaps         CongPhap[]                        @relation("CongPhapUpgradeMaterial")
+  expeditionUpgradeWeights ExpeditionUpgradeMaterialWeight[]
+}
+
+model MaterialInventory {
+  id         String   @id @default(uuid())
+  userId     String
+  materialId String
+  quantity   Int      @default(0)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material   Material @relation(fields: [materialId], references: [id])
+
+  @@unique([userId, materialId])
+}
+
+model AlchemyRecipe {
+  id            String                    @id
+  pillId        String                    @unique
+  durationSec   Int
+  linhThachCost Int
+  active        Boolean                   @default(true)
+  pill          Pill                      @relation(fields: [pillId], references: [id])
+  ingredients   AlchemyRecipeIngredient[]
+  jobs          AlchemyJob[]
+}
+
+model AlchemyRecipeIngredient {
+  id         String        @id @default(uuid())
+  recipeId   String
+  materialId String
+  quantity   Int
+  recipe     AlchemyRecipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  material   Material      @relation(fields: [materialId], references: [id])
+
+  @@unique([recipeId, materialId])
+}
+
+model AlchemyJob {
+  id              String        @id @default(uuid())
+  userId          String
+  characterId     String
+  recipeId        String
+  quantity        Int
+  queuedAt        DateTime
+  startsAt        DateTime
+  completesAt     DateTime
+  completedAt     DateTime?
+  outputGrantedAt DateTime?
+  status          String        @default("queued")
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  character       Character     @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  recipe          AlchemyRecipe @relation(fields: [recipeId], references: [id])
+
+  @@index([userId, status, startsAt])
+}
+
+model ExpeditionBranch {
+  id                String                            @id
+  name              String
+  glyph             String
+  description       String
+  basePower         Float
+  alchemyMaterialId String                            @unique
+  alchemyMaterial   Material                          @relation("BranchAlchemyMaterial", fields: [alchemyMaterialId], references: [id])
+  difficulties      ExpeditionDifficulty[]
+  upgradeWeights    ExpeditionUpgradeMaterialWeight[]
+  expeditions       Expedition[]
+}
+
+model ExpeditionDifficulty {
+  id                  String           @id @default(uuid())
+  branchId            String
+  key                 String
+  enemyMultiplier     Float
+  normalDropRate      Float
+  bossDropRate        Float
+  rewardMultiplier    Float
+  adaptiveCoefficient Float
+  branch              ExpeditionBranch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  expeditions         Expedition[]
+
+  @@unique([branchId, key])
+}
+
+model ExpeditionUpgradeMaterialWeight {
+  id         String           @id @default(uuid())
+  branchId   String
+  materialId String
+  weight     Float
+  branch     ExpeditionBranch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  material   Material         @relation(fields: [materialId], references: [id])
+
+  @@unique([branchId, materialId])
+}
+
+model ExpeditionDailyQuota {
+  id         String @id @default(uuid())
+  userId     String
+  gameDay    String
+  spentUnits Int    @default(0)
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gameDay])
+}
+
+model Expedition {
+  id              String               @id @default(uuid())
+  userId          String
+  branchId        String
+  difficultyId    String
+  durationSec     Int
+  ticketCostUnits Int
+  startedAt       DateTime
+  completesAt     DateTime
+  status          String               @default("running")
+  seed            String
+  combatSnapshot  Json
+  combatResult    Json
+  rewardResult    Json
+  claimedAt       DateTime?
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch          ExpeditionBranch     @relation(fields: [branchId], references: [id])
+  difficulty      ExpeditionDifficulty @relation(fields: [difficultyId], references: [id])
+
+  @@index([userId, status])
 }

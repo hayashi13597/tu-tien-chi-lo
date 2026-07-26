@@ -12,6 +12,14 @@ import { PrismaStatsRepository } from './infrastructure/repositories/PrismaStats
 import { PrismaRedeemCodeRepository } from './infrastructure/repositories/PrismaRedeemCodeRepository';
 import { PrismaCongPhapRepository } from './infrastructure/repositories/PrismaCongPhapRepository';
 import { PrismaOwnedCongPhapRepository } from './infrastructure/repositories/PrismaOwnedCongPhapRepository';
+import { PrismaMaterialRepository } from './infrastructure/repositories/PrismaMaterialRepository';
+import { PrismaAlchemyRepository } from './infrastructure/repositories/PrismaAlchemyRepository';
+import { PrismaProgressionRepository } from './infrastructure/repositories/PrismaProgressionRepository';
+import { PrismaExpeditionConfigRepository } from './infrastructure/repositories/PrismaExpeditionConfigRepository';
+import { PrismaExpeditionRepository } from './infrastructure/repositories/PrismaExpeditionRepository';
+import { PrismaMaterialCatalogAdminRepository } from './infrastructure/repositories/PrismaMaterialCatalogAdminRepository';
+import { PrismaAlchemyCatalogAdminRepository } from './infrastructure/repositories/PrismaAlchemyCatalogAdminRepository';
+import { PrismaExpeditionCatalogAdminRepository } from './infrastructure/repositories/PrismaExpeditionCatalogAdminRepository';
 import { PrismaAdminUserRepository } from './infrastructure/repositories/PrismaAdminUserRepository';
 import { RealmConfigProvider } from './infrastructure/config/RealmConfigProvider';
 import { BcryptPasswordHasher } from './infrastructure/auth/BcryptPasswordHasher';
@@ -45,12 +53,29 @@ import { CreateCongPhapUseCase } from './application/CreateCongPhapUseCase';
 import { UpdateCongPhapUseCase } from './application/UpdateCongPhapUseCase';
 import { GrantUseCase } from './application/GrantUseCase';
 import { SearchUsersUseCase } from './application/SearchUsersUseCase';
+import { GetMaterialInventoryUseCase } from './application/GetMaterialInventoryUseCase';
+import { ListAlchemyRecipesUseCase } from './application/ListAlchemyRecipesUseCase';
+import { GetAlchemyQueueUseCase } from './application/GetAlchemyQueueUseCase';
+import { QueueAlchemyUseCase } from './application/QueueAlchemyUseCase';
+import { ListExpeditionBranchesUseCase } from './application/ListExpeditionBranchesUseCase';
+import { GetCurrentExpeditionUseCase } from './application/GetCurrentExpeditionUseCase';
+import { StartExpeditionUseCase } from './application/StartExpeditionUseCase';
+import { ClaimExpeditionUseCase } from './application/ClaimExpeditionUseCase';
+import { ListMaterialAdminUseCase } from './application/ListMaterialAdminUseCase';
+import { UpdateMaterialAdminUseCase } from './application/UpdateMaterialAdminUseCase';
+import { ListAlchemyRecipeAdminUseCase } from './application/ListAlchemyRecipeAdminUseCase';
+import { UpdateAlchemyRecipeAdminUseCase } from './application/UpdateAlchemyRecipeAdminUseCase';
+import { ListExpeditionConfigAdminUseCase } from './application/ListExpeditionConfigAdminUseCase';
+import { UpdateExpeditionConfigAdminUseCase } from './application/UpdateExpeditionConfigAdminUseCase';
 import { createAuthRouter } from './presentation/routes/auth.routes';
 import { createCultivationRouter } from './presentation/routes/cultivation.routes';
 import { createPillsRouter } from './presentation/routes/pills.routes';
 import { createAdminRouter } from './presentation/routes/admin.routes';
 import { createRedeemRouter } from './presentation/routes/redeem.routes';
 import { createCongPhapRouter } from './presentation/routes/congphap.routes';
+import { createMaterialsRouter } from './presentation/routes/materials.routes';
+import { createAlchemyRouter } from './presentation/routes/alchemy.routes';
+import { createExpeditionsRouter } from './presentation/routes/expeditions.routes';
 import { createRequireAuth } from './presentation/middleware/auth';
 import { errorHandler } from './presentation/middleware/errorHandler';
 
@@ -74,6 +99,14 @@ export function createApp(overrides: AppOverrides = {}) {
   const redeemCodeRepository = new PrismaRedeemCodeRepository(client);
   const congPhapRepository = new PrismaCongPhapRepository(client);
   const ownedCongPhapRepository = new PrismaOwnedCongPhapRepository(client);
+  const materialRepository = new PrismaMaterialRepository(client);
+  const alchemyRepository = new PrismaAlchemyRepository(client);
+  const progressionRepository = new PrismaProgressionRepository(client);
+  const expeditionConfigRepository = new PrismaExpeditionConfigRepository(client);
+  const expeditionRepository = new PrismaExpeditionRepository(client);
+  const materialCatalogAdminRepository = new PrismaMaterialCatalogAdminRepository(client);
+  const alchemyCatalogAdminRepository = new PrismaAlchemyCatalogAdminRepository(client);
+  const expeditionCatalogAdminRepository = new PrismaExpeditionCatalogAdminRepository(client);
   const adminUserRepository = new PrismaAdminUserRepository(client);
   const passwordHasher = new BcryptPasswordHasher();
 
@@ -134,12 +167,26 @@ export function createApp(overrides: AppOverrides = {}) {
   const listCongPhapUseCase = new ListCongPhapUseCase(ownedCongPhapRepository, congPhapRepository);
   const equipCongPhapUseCase = new EquipCongPhapUseCase(ownedCongPhapRepository, congPhapRepository);
   const unequipCongPhapUseCase = new UnequipCongPhapUseCase(ownedCongPhapRepository);
-  const levelUpCongPhapUseCase = new LevelUpCongPhapUseCase(ownedCongPhapRepository, congPhapRepository, characterRepository);
+  const levelUpCongPhapUseCase = new LevelUpCongPhapUseCase(ownedCongPhapRepository, congPhapRepository, characterRepository, progressionRepository);
   const listCongPhapAdminUseCase = new ListCongPhapAdminUseCase(congPhapRepository);
   const createCongPhapUseCase = new CreateCongPhapUseCase(congPhapRepository);
   const updateCongPhapUseCase = new UpdateCongPhapUseCase(congPhapRepository);
   const grantUseCase = new GrantUseCase(ownedCongPhapRepository, characterRepository);
   const searchUsersUseCase = new SearchUsersUseCase(adminUserRepository);
+  const getMaterialInventoryUseCase = new GetMaterialInventoryUseCase(materialRepository);
+  const listAlchemyRecipesUseCase = new ListAlchemyRecipesUseCase(alchemyRepository);
+  const getAlchemyQueueUseCase = new GetAlchemyQueueUseCase(alchemyRepository);
+  const queueAlchemyUseCase = new QueueAlchemyUseCase(alchemyRepository, materialRepository, characterRepository);
+  const listExpeditionBranchesUseCase = new ListExpeditionBranchesUseCase(expeditionConfigRepository);
+  const getCurrentExpeditionUseCase = new GetCurrentExpeditionUseCase(expeditionRepository);
+  const startExpeditionUseCase = new StartExpeditionUseCase(expeditionConfigRepository, expeditionRepository, getCultivationStateUseCase, ownedCongPhapRepository, randomSource);
+  const claimExpeditionUseCase = new ClaimExpeditionUseCase(expeditionRepository);
+  const listMaterialAdminUseCase = new ListMaterialAdminUseCase(materialCatalogAdminRepository);
+  const updateMaterialAdminUseCase = new UpdateMaterialAdminUseCase(materialCatalogAdminRepository);
+  const listAlchemyRecipeAdminUseCase = new ListAlchemyRecipeAdminUseCase(alchemyCatalogAdminRepository);
+  const updateAlchemyRecipeAdminUseCase = new UpdateAlchemyRecipeAdminUseCase(alchemyCatalogAdminRepository);
+  const listExpeditionConfigAdminUseCase = new ListExpeditionConfigAdminUseCase(expeditionCatalogAdminRepository);
+  const updateExpeditionConfigAdminUseCase = new UpdateExpeditionConfigAdminUseCase(expeditionCatalogAdminRepository);
 
   const requireAuth = createRequireAuth(tokenService);
 
@@ -182,13 +229,16 @@ export function createApp(overrides: AppOverrides = {}) {
     createPillsRouter({ getInventoryUseCase, consumePillUseCase, requireAuth }),
   );
   app.use('/redeem', createRedeemRouter({ redeemCodeUseCase, requireAuth }));
+  app.use('/materials', createMaterialsRouter({ getMaterialInventoryUseCase, requireAuth }));
+  app.use('/alchemy', createAlchemyRouter({ listAlchemyRecipesUseCase, getAlchemyQueueUseCase, queueAlchemyUseCase, requireAuth }));
+  app.use('/expeditions', createExpeditionsRouter({ listExpeditionBranchesUseCase, getCurrentExpeditionUseCase, startExpeditionUseCase, claimExpeditionUseCase, requireAuth }));
   app.use(
     '/congphap',
     createCongPhapRouter({ listCongPhapUseCase, equipCongPhapUseCase, unequipCongPhapUseCase, levelUpCongPhapUseCase, requireAuth }),
   );
   app.use(
     '/admin',
-    createAdminRouter({ updateRealmConfigUseCase, getAdminStatsUseCase, listPillsAdminUseCase, createPillUseCase, updatePillUseCase, realmConfigSource: realmConfigProvider, realmConfigReloader: realmConfigProvider, listRedeemCodesUseCase, createRedeemCodeUseCase, updateRedeemCodeUseCase, listCongPhapAdminUseCase, createCongPhapUseCase, updateCongPhapUseCase, grantUseCase, searchUsersUseCase, requireAuth }),
+    createAdminRouter({ updateRealmConfigUseCase, getAdminStatsUseCase, listPillsAdminUseCase, createPillUseCase, updatePillUseCase, realmConfigSource: realmConfigProvider, realmConfigReloader: realmConfigProvider, listRedeemCodesUseCase, createRedeemCodeUseCase, updateRedeemCodeUseCase, listCongPhapAdminUseCase, createCongPhapUseCase, updateCongPhapUseCase, grantUseCase, searchUsersUseCase, requireAuth, listMaterialAdminUseCase, updateMaterialAdminUseCase, listAlchemyRecipeAdminUseCase, updateAlchemyRecipeAdminUseCase, listExpeditionConfigAdminUseCase, updateExpeditionConfigAdminUseCase }),
   );
 
   app.use(errorHandler);

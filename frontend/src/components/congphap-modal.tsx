@@ -5,7 +5,11 @@ import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { CongPhapCard } from "@/components/congphap-card";
 import { getCongPhapRarityMeta, skillPowerAt } from "@/lib/congphap-display";
 import { formatNum } from "@/lib/format";
-import type { CongPhapDTO, OwnedCongPhapDTO } from "@/lib/types";
+import type {
+  CongPhapDTO,
+  MaterialInventoryDTO,
+  OwnedCongPhapDTO,
+} from "@/lib/types";
 
 // Fixed number of active công pháp slots (backend ACTIVE_SLOTS = 4).
 const ACTIVE_SLOTS = 4;
@@ -15,6 +19,7 @@ interface CongPhapModalProps {
   owned: OwnedCongPhapDTO[];
   catalog: CongPhapDTO[];
   linhThach: number;
+  materialInventory: MaterialInventoryDTO[];
   loading: boolean;
   error: string | null;
   busy: boolean;
@@ -30,6 +35,7 @@ export function CongPhapModal({
   owned,
   catalog,
   linhThach,
+  materialInventory,
   loading,
   error,
   busy,
@@ -250,6 +256,7 @@ export function CongPhapModal({
                     key={entry.def.id}
                     entry={entry}
                     linhThach={linhThach}
+                    materialInventory={materialInventory}
                     busy={busy}
                     onLevelUp={onLevelUp}
                     onEquip={() => {
@@ -286,6 +293,7 @@ export function CongPhapModal({
                     key={entry.def.id}
                     entry={entry}
                     linhThach={linhThach}
+                    materialInventory={materialInventory}
                     busy={busy}
                     onLevelUp={onLevelUp}
                   />

@@ -200,6 +200,9 @@ export interface CongPhapDTO {
   maxLevel: number;
   baseCost: number;
   costGrowth: number;
+  upgradeMaterialId: string | null;
+  baseMaterialCost: number;
+  materialCostGrowth: number;
   /** Passive only: ≥1 entry. Null for active công pháp. */
   effects: PassiveEffectDTO[] | null;
   /** Active only: skill power = powerPerLevel × level (stored, not yet applied). */
@@ -225,6 +228,7 @@ export interface CongPhapListResult {
 export interface LevelUpResult {
   level: number;
   linhThach: number;
+  material: { id: string; quantity: number } | null;
 }
 
 export interface AdminUserDTO {
@@ -234,4 +238,186 @@ export interface AdminUserDTO {
   realmMajor: number;
   realmSub: number;
   linhThach: number;
+}
+
+export interface MaterialDTO {
+  id: string;
+  name: string;
+  glyph: string;
+  rarity: number;
+  description: string;
+  active: boolean;
+}
+
+export interface MaterialInventoryDTO {
+  materialId: string;
+  quantity: number;
+  material?: MaterialDTO;
+}
+
+export interface AlchemyIngredientDTO {
+  materialId: string;
+  quantity: number;
+}
+
+export interface AlchemyRecipeDTO {
+  id: string;
+  pillId: string;
+  durationSec: number;
+  linhThachCost: number;
+  active: boolean;
+  ingredients: AlchemyIngredientDTO[];
+}
+
+export type AlchemyJobStatus = "queued" | "running" | "completed";
+
+export interface AlchemyJobDTO {
+  id: string;
+  userId: string;
+  characterId: string;
+  recipeId: string;
+  quantity: number;
+  queuedAt: string;
+  startsAt: string;
+  completesAt: string;
+  completedAt: string | null;
+  outputGrantedAt: string | null;
+  status: AlchemyJobStatus;
+}
+
+export interface AlchemyOutputGrantDTO {
+  pillId: string;
+  quantity: number;
+}
+
+export interface AlchemyQueueDTO {
+  jobs: AlchemyJobDTO[];
+  outputGrants: AlchemyOutputGrantDTO[];
+}
+
+export type ExpeditionDurationSec = 1800 | 7200 | 28800;
+export type ExpeditionDifficultyKey = "easy" | "normal" | "hard";
+export type ExpeditionStatus = "running" | "completed" | "claimed";
+export type ExpeditionWins = 0 | 1 | 2 | 3;
+
+export interface ExpeditionUpgradeMaterialWeightDTO {
+  materialId: string;
+  weight: number;
+}
+
+export interface ExpeditionBranchConfigDTO {
+  id: string;
+  name: string;
+  glyph: string;
+  description: string;
+  basePower: number;
+  alchemyMaterialId: string;
+  upgradeMaterialWeights: ExpeditionUpgradeMaterialWeightDTO[];
+}
+
+export interface ExpeditionDifficultyDTO {
+  key: ExpeditionDifficultyKey;
+  enemyMultiplier: number;
+  normalDropRate: number;
+  bossDropRate: number;
+  rewardMultiplier: number;
+  adaptiveCoefficient: number;
+}
+
+export interface ExpeditionBranchDTO {
+  branch: ExpeditionBranchConfigDTO;
+  difficulties: ExpeditionDifficultyDTO[];
+}
+
+export interface ExpeditionRewardMaterialDTO {
+  materialId: string;
+  quantity: number;
+}
+
+export interface ExpeditionRewardDTO {
+  multiplier: number;
+  linhThach: number;
+  materials: ExpeditionRewardMaterialDTO[];
+}
+
+export interface CombatSkillDTO {
+  id: string;
+  power: number;
+  chanNguyenCost: number;
+  cooldownRounds: number;
+  slot: number;
+}
+
+export interface CombatantSnapshotDTO {
+  id: "player" | "enemy";
+  attributes: AttributeSet;
+  battlePower: number;
+  maxChanNguyen: number;
+  skills: CombatSkillDTO[];
+}
+
+export interface CombatTurnDTO {
+  round: number;
+  actor: "player" | "enemy";
+  target: "player" | "enemy";
+  action: string;
+  damage: number;
+  remainingHp: number;
+}
+
+export interface BattleResultDTO {
+  winner: "player" | "enemy" | "draw";
+  turns: CombatTurnDTO[];
+  rounds: number;
+  playerRemainingHp: number;
+  enemyRemainingHp: number;
+}
+
+export interface ExpeditionSimulationDTO {
+  encounters: { kind: "normal" | "boss"; result: BattleResultDTO }[];
+  wins: ExpeditionWins;
+  reward: ExpeditionRewardDTO;
+}
+
+export interface ExpeditionCombatSnapshotDTO {
+  player: CombatantSnapshotDTO;
+  realmMajor: number;
+  realmSub: number;
+  realmMultiplier: number;
+  realmReferencePower: number;
+}
+
+export interface ExpeditionDTO {
+  id: string;
+  userId: string;
+  branchId: string;
+  difficulty: ExpeditionDifficultyKey;
+  durationSec: ExpeditionDurationSec;
+  ticketCostUnits: 1 | 2 | 4;
+  startedAt: string;
+  completesAt: string;
+  status: ExpeditionStatus;
+  seed: number;
+  combatSnapshot: ExpeditionCombatSnapshotDTO;
+  combatResult: ExpeditionSimulationDTO;
+  rewardResult: ExpeditionRewardDTO;
+  claimedAt: string | null;
+}
+
+export interface CurrentExpeditionDTO {
+  expedition: ExpeditionDTO | null;
+  gameDay: string;
+  spentUnits: number;
+  remainingUnits: number;
+}
+
+export interface ExpeditionClaimDTO {
+  expedition: ExpeditionDTO;
+  reward: ExpeditionRewardDTO;
+}
+
+export interface StartExpeditionInput {
+  branchId: string;
+  difficulty: ExpeditionDifficultyKey;
+  durationSec: ExpeditionDurationSec;
 }

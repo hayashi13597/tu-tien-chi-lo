@@ -1,5 +1,5 @@
 import { Router, RequestHandler } from 'express';
-import { updateRealmsSchema, createPillSchema, updatePillSchema, createCongPhapSchema, updateCongPhapSchema, grantSchema, searchUsersQuerySchema } from '../schemas/admin.schemas';
+import { updateRealmsSchema, createPillSchema, updatePillSchema, createCongPhapSchema, updateCongPhapSchema, grantSchema, searchUsersQuerySchema, updateMaterialsSchema, updateAlchemyRecipesSchema, updateExpeditionConfigSchema } from '../schemas/admin.schemas';
 import { createRedeemCodeSchema, updateRedeemCodeSchema } from '../schemas/redeem.schemas';
 import { UpdateRealmConfigUseCase } from '../../application/UpdateRealmConfigUseCase';
 import { GetAdminStatsUseCase } from '../../application/GetAdminStatsUseCase';
@@ -18,6 +18,12 @@ import { RealmConfigSource } from '../../domain/ports/RealmConfigSource';
 import { RealmConfigReloader } from '../../domain/ports/RealmConfigReloader';
 import { requireAdmin } from '../middleware/requireAdmin';
 import { DomainError } from '../../domain/errors';
+import { ListMaterialAdminUseCase } from '../../application/ListMaterialAdminUseCase';
+import { UpdateMaterialAdminUseCase } from '../../application/UpdateMaterialAdminUseCase';
+import { ListAlchemyRecipeAdminUseCase } from '../../application/ListAlchemyRecipeAdminUseCase';
+import { UpdateAlchemyRecipeAdminUseCase } from '../../application/UpdateAlchemyRecipeAdminUseCase';
+import { ListExpeditionConfigAdminUseCase } from '../../application/ListExpeditionConfigAdminUseCase';
+import { UpdateExpeditionConfigAdminUseCase } from '../../application/UpdateExpeditionConfigAdminUseCase';
 
 export interface AdminRouterDeps {
   updateRealmConfigUseCase: UpdateRealmConfigUseCase;
@@ -38,6 +44,12 @@ export interface AdminRouterDeps {
   realmConfigSource: RealmConfigSource;
   realmConfigReloader: RealmConfigReloader;
   requireAuth: RequestHandler;
+  listMaterialAdminUseCase: ListMaterialAdminUseCase;
+  updateMaterialAdminUseCase: UpdateMaterialAdminUseCase;
+  listAlchemyRecipeAdminUseCase: ListAlchemyRecipeAdminUseCase;
+  updateAlchemyRecipeAdminUseCase: UpdateAlchemyRecipeAdminUseCase;
+  listExpeditionConfigAdminUseCase: ListExpeditionConfigAdminUseCase;
+  updateExpeditionConfigAdminUseCase: UpdateExpeditionConfigAdminUseCase;
 }
 
 export function createAdminRouter(deps: AdminRouterDeps): Router {
@@ -80,6 +92,42 @@ export function createAdminRouter(deps: AdminRouterDeps): Router {
     } catch (err) {
       next(err);
     }
+  });
+
+  router.get('/materials', async (_req, res, next) => {
+    try { res.status(200).json({ materials: await deps.listMaterialAdminUseCase.execute() }); } catch (error) { next(error); }
+  });
+
+  router.put('/materials', async (req, res, next) => {
+    try {
+      const parsed = updateMaterialsSchema.safeParse(req.body);
+      if (!parsed.success) throw new DomainError('INVALID_MATERIAL_CONFIG', parsed.error.issues[0].message);
+      res.status(200).json({ materials: await deps.updateMaterialAdminUseCase.execute(parsed.data.materials) });
+    } catch (error) { next(error); }
+  });
+
+  router.get('/alchemy/recipes', async (_req, res, next) => {
+    try { res.status(200).json({ recipes: await deps.listAlchemyRecipeAdminUseCase.execute() }); } catch (error) { next(error); }
+  });
+
+  router.put('/alchemy/recipes', async (req, res, next) => {
+    try {
+      const parsed = updateAlchemyRecipesSchema.safeParse(req.body);
+      if (!parsed.success) throw new DomainError('ALCHEMY_RECIPE_INVALID', parsed.error.issues[0].message);
+      res.status(200).json({ recipes: await deps.updateAlchemyRecipeAdminUseCase.execute(parsed.data.recipes) });
+    } catch (error) { next(error); }
+  });
+
+  router.get('/expeditions', async (_req, res, next) => {
+    try { res.status(200).json({ branches: await deps.listExpeditionConfigAdminUseCase.execute() }); } catch (error) { next(error); }
+  });
+
+  router.put('/expeditions', async (req, res, next) => {
+    try {
+      const parsed = updateExpeditionConfigSchema.safeParse(req.body);
+      if (!parsed.success) throw new DomainError('INVALID_EXPEDITION_CONFIG', parsed.error.issues[0].message);
+      res.status(200).json({ branches: await deps.updateExpeditionConfigAdminUseCase.execute(parsed.data.branches) });
+    } catch (error) { next(error); }
   });
 
   router.post('/pills', async (req, res, next) => {

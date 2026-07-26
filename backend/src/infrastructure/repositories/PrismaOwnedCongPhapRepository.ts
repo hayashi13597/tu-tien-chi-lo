@@ -9,7 +9,8 @@ function toEntry(r: {
     id: string; name: string; glyph: string; rarity: number; category: string; desc: string;
     active: boolean; maxLevel: number; baseCost: number; costGrowth: number;
     effects: unknown; powerPerLevel: number | null; chanNguyenCost: number | null;
-    dupRefundLinhThach: number | null;
+    dupRefundLinhThach: number | null; upgradeMaterialId: string | null;
+    baseMaterialCost: number; materialCostGrowth: number; cooldownRounds: number | null;
   };
 }): OwnedCongPhapEntry {
   return {
@@ -17,6 +18,10 @@ function toEntry(r: {
       ...r.congPhap,
       category: r.congPhap.category as CongPhapCategory,
       effects: (r.congPhap.effects as PassiveEffect[] | null) ?? null,
+      upgradeMaterialId: r.congPhap.upgradeMaterialId,
+      baseMaterialCost: r.congPhap.baseMaterialCost,
+      materialCostGrowth: r.congPhap.materialCostGrowth,
+      cooldownRounds: r.congPhap.cooldownRounds,
     },
     level: r.level,
     equippedSlot: r.equippedSlot,

@@ -79,6 +79,10 @@ const congPhapBodySchema = z.object({
   powerPerLevel: z.number().nullable(),
   chanNguyenCost: z.number().nullable(),
   dupRefundLinhThach: z.number().int().min(0).nullable(),
+  upgradeMaterialId: z.string().regex(/^[a-z0-9-]+$/).nullable().default(null),
+  baseMaterialCost: z.number().int().min(0).default(0),
+  materialCostGrowth: z.number().min(1).default(1),
+  cooldownRounds: z.number().int().min(0).nullable().default(null),
 });
 
 export const createCongPhapSchema = congPhapBodySchema.extend({
@@ -98,3 +102,41 @@ export const grantSchema = z.object({
   congPhapId: z.string().regex(/^[a-z0-9-]+$/).optional(),
   linhThach: z.number().int().optional(),
 });
+
+const materialCatalogRowSchema = z.object({
+  id: z.string().regex(/^[a-z0-9-]+$/),
+  name: z.string().min(1),
+  glyph: z.string().min(1),
+  rarity: z.number().int().min(0),
+  description: z.string().min(1),
+  active: z.boolean(),
+});
+export const updateMaterialsSchema = z.object({ materials: z.array(materialCatalogRowSchema).min(1) });
+
+const alchemyRecipeSchema = z.object({
+  id: z.string().regex(/^[a-z0-9-]+$/),
+  pillId: z.string().regex(/^[a-z0-9-]+$/),
+  durationSec: z.number().int().positive(),
+  linhThachCost: z.number().int().min(0),
+  active: z.boolean(),
+  ingredients: z.array(z.object({ materialId: z.string().regex(/^[a-z0-9-]+$/), quantity: z.number().int().positive() })).min(1),
+});
+export const updateAlchemyRecipesSchema = z.object({ recipes: z.array(alchemyRecipeSchema).min(1) });
+
+const expeditionDifficultySchema = z.object({
+  key: z.enum(['easy', 'normal', 'hard']),
+  enemyMultiplier: z.number().positive(),
+  normalDropRate: z.number().min(0).max(1),
+  bossDropRate: z.number().min(0).max(1),
+  rewardMultiplier: z.number().positive(),
+  adaptiveCoefficient: z.number().min(0),
+});
+const expeditionBranchSchema = z.object({
+  branch: z.object({
+    id: z.string().regex(/^[a-z0-9-]+$/), name: z.string().min(1), glyph: z.string().min(1), description: z.string().min(1),
+    basePower: z.number().positive(), alchemyMaterialId: z.string().regex(/^[a-z0-9-]+$/),
+    upgradeMaterialWeights: z.array(z.object({ materialId: z.string().regex(/^[a-z0-9-]+$/), weight: z.number().min(0) })).min(1),
+  }),
+  difficulties: z.array(expeditionDifficultySchema).min(1),
+});
+export const updateExpeditionConfigSchema = z.object({ branches: z.array(expeditionBranchSchema).min(1) });

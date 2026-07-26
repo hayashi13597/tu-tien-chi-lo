@@ -2778,6 +2778,32 @@ body {
   font-size: 0.7rem;
   font-style: italic;
 }
+.congphap-upgrade-cost {
+  background: var(--surface-2);
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: var(--space-2);
+}
+.congphap-cost-label {
+  color: var(--muted-dim);
+  font-size: 0.64rem;
+}
+.congphap-cost-value {
+  color: var(--gold);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.68rem;
+}
+.congphap-material-balance {
+  color: var(--jade);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.65rem;
+}
+.congphap-material-balance.insufficient {
+  color: #ff9b9b;
+}
 .congphap-card-actions {
   display: flex;
   gap: var(--space-2);
@@ -2904,5 +2930,635 @@ body {
 @media (max-width: 768px) {
   .admin-grant-form {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+   Bí cảnh + luyện đan dashboard cards and drawers
+   ============================================================ */
+.expedition-card,
+.alchemy-card {
+  padding: var(--space-4);
+}
+.expedition-card-title,
+.alchemy-card-title {
+  margin-bottom: var(--space-3);
+  font-size: 1rem;
+}
+.expedition-status,
+.alchemy-status {
+  margin-left: auto;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px var(--space-2);
+  color: var(--muted);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.expedition-status-running {
+  border-color: rgba(119, 181, 255, 0.45);
+  color: #9dcaff;
+}
+.expedition-status-claimable {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.expedition-ticket-row,
+.alchemy-card-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border-bottom: 1px dashed rgba(212, 175, 55, 0.18);
+  padding: var(--space-2) 0;
+}
+.expedition-ticket-value,
+.alchemy-card-stats strong {
+  color: var(--jade);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+.expedition-ticket-max {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+.expedition-current-summary,
+.alchemy-current-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-3) 0;
+}
+.expedition-summary-label,
+.alchemy-current-summary span {
+  overflow: hidden;
+  color: var(--fg);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.expedition-summary-meta,
+.alchemy-current-summary strong {
+  color: var(--muted);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.68rem;
+}
+.expedition-countdown,
+.expedition-active-countdown {
+  color: #9dcaff;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+.expedition-countdown-ready {
+  color: var(--gold);
+}
+.expedition-hint,
+.alchemy-hint {
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.55;
+  margin: var(--space-3) 0;
+}
+.expedition-empty,
+.alchemy-empty {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  text-align: center;
+}
+.expedition-empty p,
+.alchemy-empty p {
+  margin-bottom: var(--space-3);
+}
+.expedition-btn,
+.alchemy-btn {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--fg-dim);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: var(--space-2) var(--space-3);
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+.expedition-btn:hover:not(:disabled),
+.alchemy-btn:hover:not(:disabled) {
+  border-color: var(--border-bright);
+  color: var(--fg);
+}
+.expedition-btn:disabled,
+.alchemy-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.expedition-btn-primary,
+.alchemy-btn-primary {
+  border-color: var(--border-bright);
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  color: var(--gold);
+  width: 100%;
+}
+
+.expedition-overlay,
+.alchemy-overlay {
+  align-items: center;
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: var(--space-4);
+  position: fixed;
+  z-index: 60;
+}
+.expedition-backdrop,
+.alchemy-backdrop {
+  background: rgba(4, 2, 10, 0.76);
+  backdrop-filter: blur(7px);
+  border: none;
+  cursor: pointer;
+  inset: 0;
+  position: absolute;
+}
+.expedition-drawer,
+.alchemy-drawer {
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+  max-height: 90vh;
+  max-width: 720px;
+  overflow-y: auto;
+  padding: var(--space-6);
+  position: relative;
+  width: min(720px, 100%);
+  z-index: 1;
+}
+.expedition-drawer-header,
+.alchemy-drawer-header {
+  align-items: flex-start;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+}
+.expedition-kicker,
+.alchemy-kicker {
+  color: var(--jade);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  margin: 0 0 var(--space-1);
+}
+.expedition-drawer h2,
+.alchemy-drawer h2 {
+  color: var(--gold);
+  font-family: var(--font-serif-vi), var(--font-mashan), serif;
+  font-size: 1.7rem;
+  font-weight: 500;
+  margin: 0;
+}
+.expedition-close,
+.alchemy-close {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--fg-dim);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: var(--space-1) var(--space-3);
+}
+.expedition-close:hover,
+.alchemy-close:hover {
+  border-color: var(--border-bright);
+  color: var(--fg);
+}
+.expedition-quota,
+.alchemy-balance-strip {
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  display: flex;
+  font-size: 0.75rem;
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+  padding: var(--space-3);
+}
+.expedition-quota strong,
+.alchemy-balance-strip strong {
+  color: var(--jade);
+  font-family: var(--font-mono), monospace;
+}
+.expedition-drawer-section,
+.alchemy-drawer-section {
+  margin-top: var(--space-5);
+}
+.expedition-section-heading,
+.alchemy-section-heading {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.expedition-section-heading span,
+.alchemy-section-heading span {
+  color: var(--jade);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.65rem;
+}
+.expedition-section-heading h3,
+.alchemy-section-heading h3 {
+  color: var(--gold);
+  font-family: var(--font-serif-vi), serif;
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0;
+}
+.expedition-branch-list {
+  display: grid;
+  gap: var(--space-2);
+}
+.expedition-branch-item {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--fg-dim);
+  cursor: pointer;
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  text-align: left;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+  width: 100%;
+}
+.expedition-branch-item:hover,
+.expedition-branch-item.selected,
+.expedition-choice:hover,
+.expedition-choice.selected {
+  background: color-mix(in srgb, var(--gold) 9%, var(--surface));
+  border-color: var(--gold-deep);
+}
+.expedition-branch-glyph {
+  align-items: center;
+  background: color-mix(in srgb, var(--jade) 12%, transparent);
+  border-radius: 50%;
+  color: var(--jade);
+  display: flex;
+  flex: none;
+  font-family: var(--font-mashan), serif;
+  font-size: 1.35rem;
+  height: 42px;
+  justify-content: center;
+  width: 42px;
+}
+.expedition-branch-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.expedition-branch-copy strong {
+  color: var(--fg);
+  font-size: 0.82rem;
+}
+.expedition-branch-copy small,
+.expedition-branch-power {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+.expedition-branch-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.expedition-branch-power {
+  color: var(--gold);
+  font-family: var(--font-mono), monospace;
+  white-space: nowrap;
+}
+.expedition-choice-grid {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(3, 1fr);
+}
+.expedition-choice {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--fg-dim);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-3);
+  text-align: left;
+}
+.expedition-choice strong {
+  color: var(--fg);
+  font-size: 0.78rem;
+}
+.expedition-choice small {
+  color: var(--muted);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.65rem;
+}
+.expedition-reward-preview {
+  align-items: center;
+  background: color-mix(in srgb, var(--gold) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gold) 28%, transparent);
+  border-radius: var(--radius-sm);
+  display: flex;
+  gap: var(--space-3);
+  justify-content: space-between;
+  margin: var(--space-5) 0 var(--space-3);
+  padding: var(--space-3);
+}
+.expedition-reward-preview div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.expedition-reward-preview strong,
+.expedition-reward-note {
+  color: var(--gold);
+  font-size: 0.75rem;
+}
+.expedition-reward-note {
+  color: var(--muted);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.65rem;
+  text-align: right;
+}
+.expedition-start-btn {
+  font-size: 0.85rem;
+  padding: var(--space-3);
+}
+.expedition-drawer-error,
+.alchemy-drawer-error {
+  color: #ff9b9b;
+  font-size: 0.8rem;
+  text-align: center;
+}
+.expedition-drawer-error p,
+.alchemy-drawer-error p {
+  margin-bottom: var(--space-3);
+}
+.expedition-active-view {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+}
+.expedition-active-orb {
+  align-items: center;
+  border: 1px solid var(--gold-deep);
+  border-radius: 50%;
+  box-shadow: 0 0 28px var(--gold-glow);
+  color: var(--gold);
+  display: flex;
+  font-family: var(--font-mashan), serif;
+  font-size: 2rem;
+  height: 76px;
+  justify-content: center;
+  margin-bottom: var(--space-4);
+  width: 76px;
+}
+.expedition-active-view h3 {
+  color: var(--fg);
+  font-size: 1.1rem;
+  margin: 0 0 var(--space-1);
+}
+.expedition-active-meta {
+  color: var(--muted);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.72rem;
+  margin: 0;
+}
+.expedition-active-countdown {
+  font-size: 2rem;
+  margin: var(--space-5) 0 var(--space-2);
+}
+.expedition-active-view .expedition-hint {
+  max-width: 360px;
+}
+
+.alchemy-balance-strip {
+  gap: var(--space-3);
+  justify-content: flex-start;
+}
+.alchemy-balance-strip span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.alchemy-balance-strip span + span {
+  border-left: 1px solid var(--border);
+  padding-left: var(--space-3);
+}
+.alchemy-balance-strip strong {
+  color: var(--jade);
+  margin-left: 4px;
+}
+.alchemy-recipe-grid {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(2, 1fr);
+}
+.alchemy-recipe-item {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--fg-dim);
+  cursor: pointer;
+  display: flex;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-2);
+  text-align: left;
+}
+.alchemy-recipe-item:hover,
+.alchemy-recipe-item.selected {
+  background: color-mix(in srgb, var(--gold) 9%, var(--surface));
+  border-color: var(--gold-deep);
+}
+.alchemy-recipe-glyph {
+  color: var(--gold);
+  font-family: var(--font-mashan), serif;
+  font-size: 1.3rem;
+}
+.alchemy-recipe-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.alchemy-recipe-copy strong {
+  color: var(--fg);
+  font-size: 0.73rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.alchemy-recipe-copy small {
+  color: var(--muted);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.6rem;
+}
+.alchemy-form-panel {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-top: var(--space-4);
+  padding: var(--space-3);
+}
+.alchemy-form-detail,
+.alchemy-form-footer {
+  align-items: flex-end;
+  display: flex;
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+.alchemy-detail-label,
+.alchemy-quantity-field span {
+  color: var(--muted);
+  display: block;
+  font-size: 0.68rem;
+  margin-bottom: var(--space-2);
+}
+.alchemy-ingredient-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+.alchemy-ingredient {
+  background: rgba(93, 217, 177, 0.1);
+  border-radius: var(--radius-sm);
+  color: var(--jade);
+  font-size: 0.68rem;
+  padding: 3px var(--space-2);
+}
+.alchemy-quantity-field {
+  flex: none;
+}
+.alchemy-quantity-field input {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--fg);
+  font-family: var(--font-mono), monospace;
+  padding: var(--space-2);
+  width: 76px;
+}
+.alchemy-form-footer {
+  align-items: center;
+  border-top: 1px dashed var(--border);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+}
+.alchemy-form-footer > span {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+.alchemy-form-footer strong {
+  color: var(--gold);
+}
+.alchemy-form-footer .alchemy-btn {
+  width: auto;
+}
+.alchemy-insufficient {
+  color: #ffb0b0;
+  font-size: 0.68rem;
+  margin: var(--space-2) 0 0;
+}
+.alchemy-job-list {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.alchemy-job-row {
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+}
+.alchemy-job-row:last-child {
+  border-bottom: none;
+}
+.alchemy-job-dot {
+  background: var(--muted);
+  border-radius: 50%;
+  height: 6px;
+  width: 6px;
+}
+.alchemy-job-running {
+  background: #9dcaff;
+  box-shadow: 0 0 8px rgba(157, 202, 255, 0.6);
+}
+.alchemy-job-completed {
+  background: var(--jade);
+}
+.alchemy-job-name {
+  color: var(--fg-dim);
+  flex: 1;
+  font-size: 0.72rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.alchemy-job-quantity,
+.alchemy-job-time {
+  color: var(--muted);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.65rem;
+  white-space: nowrap;
+}
+.alchemy-job-time {
+  color: var(--jade);
+}
+.alchemy-empty-inline {
+  padding: var(--space-4);
+}
+
+@media (max-width: 768px) {
+  .expedition-drawer,
+  .alchemy-drawer {
+    border-radius: var(--radius);
+    max-height: 94vh;
+    padding: var(--space-4);
+  }
+  .expedition-choice-grid {
+    grid-template-columns: 1fr;
+  }
+  .alchemy-recipe-grid {
+    grid-template-columns: 1fr;
+  }
+  .expedition-reward-preview,
+  .alchemy-form-detail,
+  .alchemy-form-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .expedition-reward-note {
+    text-align: left;
+  }
+  .alchemy-quantity-field input {
+    box-sizing: border-box;
+    width: 100%;
+  }
+  .alchemy-form-footer .alchemy-btn {
+    width: 100%;
   }
 }

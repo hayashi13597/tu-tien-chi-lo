@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { levelUpCost, duplicateRefund } from './congphap.calc';
+import { levelUpCost, duplicateRefund, materialUpgradeCost } from './congphap.calc';
 import { CongPhapRecord } from './congphap';
 
 const def: CongPhapRecord = {
@@ -7,6 +7,7 @@ const def: CongPhapRecord = {
   active: true, maxLevel: 10, baseCost: 100, costGrowth: 1.5,
   effects: [{ attribute: 'khiHuyet', flatPerLevel: 10, pctPerLevel: 0 }],
   powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null,
+  upgradeMaterialId: null, baseMaterialCost: 0, materialCostGrowth: 1, cooldownRounds: null,
 };
 
 describe('levelUpCost', () => {
@@ -21,5 +22,15 @@ describe('duplicateRefund', () => {
   it('mặc định = baseCost', () => { expect(duplicateRefund(def)).toBe(100); });
   it('dùng dupRefundLinhThach khi có', () => {
     expect(duplicateRefund({ ...def, dupRefundLinhThach: 42 })).toBe(42);
+  });
+});
+
+describe('materialUpgradeCost', () => {
+  it('tính cost material theo level', () => {
+    expect(materialUpgradeCost({ ...def, upgradeMaterialId: 'm', baseMaterialCost: 2, materialCostGrowth: 1.5 }, 1)).toBe(2);
+    expect(materialUpgradeCost({ ...def, upgradeMaterialId: 'm', baseMaterialCost: 2, materialCostGrowth: 1.5 }, 3)).toBe(5);
+  });
+  it('không có material thì cost bằng 0', () => {
+    expect(materialUpgradeCost(def, 1)).toBe(0);
   });
 });

@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   attributeDelta,
+  formatMaterialBalance,
+  formatUpgradeCost,
   getCongPhapRarityMeta,
   levelUpCost,
+  materialUpgradeCost,
   passiveBonusAt,
   skillPowerAt,
 } from "./congphap-display";
@@ -19,6 +22,9 @@ const passive: CongPhapDTO = {
   maxLevel: 10,
   baseCost: 100,
   costGrowth: 1.5,
+  upgradeMaterialId: null,
+  baseMaterialCost: 0,
+  materialCostGrowth: 1,
   effects: [
     { attribute: "khiHuyet", flatPerLevel: 50, pctPerLevel: 0 },
     { attribute: "tocDo", flatPerLevel: 0, pctPerLevel: 2 },
@@ -44,6 +50,35 @@ describe("levelUpCost", () => {
   it("grows geometrically by costGrowth, rounded", () => {
     expect(levelUpCost(passive, 2)).toBe(150); // 100 × 1.5
     expect(levelUpCost(passive, 3)).toBe(225); // 100 × 1.5²
+  });
+});
+
+describe("material upgrade cost", () => {
+  it("mirrors the backend material cost growth", () => {
+    const def = {
+      ...passive,
+      upgradeMaterialId: "xich-viem-tinh",
+      baseMaterialCost: 2,
+      materialCostGrowth: 1.5,
+    };
+    expect(materialUpgradeCost(def, 1)).toBe(2);
+    expect(materialUpgradeCost(def, 2)).toBe(3);
+  });
+
+  it("formats both Linh Thạch and named material costs", () => {
+    expect(
+      formatUpgradeCost({
+        linhThach: 100,
+        material: 3,
+        materialName: "Xích Viêm Tinh",
+      }),
+    ).toBe("100 Linh Thạch · 3 Xích Viêm Tinh");
+  });
+
+  it("shows current material balance against the required amount", () => {
+    expect(formatMaterialBalance(3, 5, "Xích Viêm Tinh")).toBe(
+      "3/5 Xích Viêm Tinh",
+    );
   });
 });
 

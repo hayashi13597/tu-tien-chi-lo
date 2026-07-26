@@ -134,6 +134,81 @@ describe("pill api", () => {
   });
 });
 
+describe("materials and alchemy api", () => {
+  it("fetchMaterials GETs the player's material inventory", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, [{ materialId: "xich-viem-tinh", quantity: 3 }]),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { fetchMaterials } = await import("./api");
+
+    await expect(fetchMaterials()).resolves.toEqual([
+      { materialId: "xich-viem-tinh", quantity: 3 },
+    ]);
+    expect(String(fetchMock.mock.calls[0][0])).toContain(
+      "/materials/inventory",
+    );
+  });
+
+  it("queueAlchemy POSTs recipe and quantity", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, { jobs: [], outputGrants: [] }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { queueAlchemy } = await import("./api");
+
+    await queueAlchemy("hoi-khi-dan", 2);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain("/alchemy/queue");
+    expect(init?.method).toBe("POST");
+    expect(JSON.parse(init?.body as string)).toEqual({
+      recipeId: "hoi-khi-dan",
+      quantity: 2,
+    });
+  });
+});
+
+describe("expedition api", () => {
+  it("startExpedition POSTs the selected branch, difficulty and duration", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, { id: "exp-1", status: "running" }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { startExpedition } = await import("./api");
+
+    await startExpedition({
+      branchId: "hoa-vuc",
+      difficulty: "hard",
+      durationSec: 28800,
+    });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain("/expeditions/start");
+    expect(init?.method).toBe("POST");
+    expect(JSON.parse(init?.body as string)).toEqual({
+      branchId: "hoa-vuc",
+      difficulty: "hard",
+      durationSec: 28800,
+    });
+  });
+
+  it("claimExpedition POSTs to the claim endpoint", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, { expedition: null, reward: { multiplier: 1 } }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { claimExpedition } = await import("./api");
+
+    await claimExpedition();
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain("/expeditions/claim");
+    expect(init?.method).toBe("POST");
+  });
+});
+
 describe("admin api", () => {
   it("fetchMe GETs /auth/me", async () => {
     const me = { id: "u1", username: "alice", role: "admin" };
@@ -357,12 +432,20 @@ describe("congphap api", () => {
   it("levelUpCongPhap returns the new level and Linh Thạch", async () => {
     const fetchMock = vi.fn(
       async (_input: RequestInfo | URL, _init?: RequestInit) =>
-        jsonResponse(200, { level: 3, linhThach: 40 }),
+        jsonResponse(200, {
+          level: 3,
+          linhThach: 40,
+          material: { id: "xich-viem-tinh", quantity: 2 },
+        }),
     );
     vi.stubGlobal("fetch", fetchMock);
     const { levelUpCongPhap } = await import("./api");
     const res = await levelUpCongPhap("thiet-cot-quyet");
-    expect(res).toEqual({ level: 3, linhThach: 40 });
+    expect(res).toEqual({
+      level: 3,
+      linhThach: 40,
+      material: { id: "xich-viem-tinh", quantity: 2 },
+    });
     expect(String(fetchMock.mock.calls[0][0])).toContain("/congphap/levelup");
   });
 
@@ -378,6 +461,9 @@ describe("congphap api", () => {
       maxLevel: 5,
       baseCost: 100,
       costGrowth: 1.5,
+      upgradeMaterialId: null,
+      baseMaterialCost: 0,
+      materialCostGrowth: 1,
       effects: [
         { attribute: "tocDo" as const, flatPerLevel: 1, pctPerLevel: 0 },
       ],
