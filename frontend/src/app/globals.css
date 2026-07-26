@@ -2650,6 +2650,7 @@ body {
 
 .admin-code-reward-row {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-3);
   align-items: center;
   padding: var(--space-3);
@@ -2673,8 +2674,12 @@ body {
   filter: drop-shadow(0 0 5px currentColor);
 }
 
+/* Grows to fill the row, but keeps a usable width instead of collapsing —
+   the row carries a fixed glyph + kind select + quantity + remove button, so
+   an unbounded `min-width: 0` left this squeezed to nothing in the narrow
+   detail pane. Below its basis the row wraps instead. */
 .admin-code-reward-select {
-  flex: 1;
+  flex: 1 1 200px;
   min-width: 0;
 }
 
@@ -3012,7 +3017,7 @@ body {
 /* Reward-kind selector sits before the value control in a code's reward row. */
 .admin-code-reward-kind {
   flex: 0 0 auto;
-  min-width: 120px;
+  width: 130px;
 }
 
 /* ============================================================

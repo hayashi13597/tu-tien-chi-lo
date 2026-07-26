@@ -456,29 +456,37 @@ function CodeForm({
                     }
                   />
                 )}
-                <div
-                  className="admin-code-reward-qty-wrap"
-                  hidden={kind === "linhThach"}
-                >
-                  <span className="admin-code-reward-times" aria-hidden="true">
-                    ×
-                  </span>
-                  <input
-                    type="number"
-                    className="admin-input admin-code-reward-qty"
-                    min={1}
-                    aria-label={`Số lượng hàng ${i + 1}`}
-                    value={numericValue(r.quantity)}
-                    onChange={(e) =>
-                      setReward(i, {
-                        quantity:
-                          e.target.value === ""
-                            ? Number.NaN
-                            : Number(e.target.value),
-                      })
-                    }
-                  />
-                </div>
+                {/* A Linh Thạch reward carries its amount in the field above,
+                    so the ×N multiplier would be a second, contradictory
+                    number — render it only for the item kinds. (An `hidden`
+                    attribute would do nothing here: this class sets
+                    `display: flex`, which outranks the UA stylesheet's
+                    `[hidden] { display: none }`.) */}
+                {kind !== "linhThach" && (
+                  <div className="admin-code-reward-qty-wrap">
+                    <span
+                      className="admin-code-reward-times"
+                      aria-hidden="true"
+                    >
+                      ×
+                    </span>
+                    <input
+                      type="number"
+                      className="admin-input admin-code-reward-qty"
+                      min={1}
+                      aria-label={`Số lượng hàng ${i + 1}`}
+                      value={numericValue(r.quantity)}
+                      onChange={(e) =>
+                        setReward(i, {
+                          quantity:
+                            e.target.value === ""
+                              ? Number.NaN
+                              : Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                )}
                 <button
                   type="button"
                   className="admin-btn admin-code-reward-remove"
