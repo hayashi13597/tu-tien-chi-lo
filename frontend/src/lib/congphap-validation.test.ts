@@ -103,6 +103,29 @@ describe("validateCongPhapDraft", () => {
     expect(fields({ ...passive, dupRefundLinhThach: 250 })).toEqual([]);
   });
 
+  it("validates material costs for công pháp upgrades", () => {
+    expect(
+      fields({
+        ...passive,
+        upgradeMaterialId: "xich-viem-tinh",
+        baseMaterialCost: 2,
+        materialCostGrowth: 1.2,
+      }),
+    ).toEqual([]);
+    expect(fields({ ...passive, upgradeMaterialId: "Bad_Id" })).toContain(
+      "upgradeMaterialId",
+    );
+    expect(fields({ ...passive, baseMaterialCost: -1 })).toContain(
+      "baseMaterialCost",
+    );
+    expect(fields({ ...passive, materialCostGrowth: 0.9 })).toContain(
+      "materialCostGrowth",
+    );
+    expect(
+      fields({ ...passive, baseMaterialCost: 2, upgradeMaterialId: null }),
+    ).toContain("upgradeMaterialId");
+  });
+
   it("findCongPhapError locates a field's message", () => {
     const errors = validateCongPhapDraft(
       { ...passive, name: "" },

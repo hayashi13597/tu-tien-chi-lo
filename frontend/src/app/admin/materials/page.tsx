@@ -121,12 +121,19 @@ export default function AdminMaterialsPage() {
 
   const save = useCallback(async () => {
     if (!draft || errors.length > 0) return;
+    const selectedId = draft[selectedIndex]?.id;
     setSaving(true);
     setSaveError(null);
     try {
       const { materials } = await updateAdminMaterials(draft);
       setServer(materials);
       setDraft(structuredClone(materials));
+      if (selectedId) {
+        const nextIndex = materials.findIndex(
+          (material) => material.id === selectedId,
+        );
+        if (nextIndex >= 0) setSelectedIndex(nextIndex);
+      }
       setSavedAt(new Date());
     } catch (error) {
       const message = error instanceof Error ? error.message : "Lưu thất bại";
@@ -138,7 +145,7 @@ export default function AdminMaterialsPage() {
     } finally {
       setSaving(false);
     }
-  }, [draft, errors.length]);
+  }, [draft, errors.length, selectedIndex]);
 
   const undo = () => {
     if (server) setDraft(structuredClone(server));

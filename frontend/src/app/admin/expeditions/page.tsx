@@ -247,12 +247,19 @@ export default function AdminExpeditionsPage() {
 
   const save = useCallback(async () => {
     if (!draft || errors.length > 0) return;
+    const selectedId = draft[selectedIndex]?.branch.id;
     setSaving(true);
     setSaveError(null);
     try {
       const { branches } = await updateAdminExpeditions(draft);
       setServer(branches);
       setDraft(structuredClone(branches));
+      if (selectedId) {
+        const nextIndex = branches.findIndex(
+          (bundle) => bundle.branch.id === selectedId,
+        );
+        if (nextIndex >= 0) setSelectedIndex(nextIndex);
+      }
       setSavedAt(new Date());
     } catch (error) {
       const message = error instanceof Error ? error.message : "Lưu thất bại";
@@ -264,7 +271,7 @@ export default function AdminExpeditionsPage() {
     } finally {
       setSaving(false);
     }
-  }, [draft, errors.length]);
+  }, [draft, errors.length, selectedIndex]);
 
   const undo = () => {
     if (server) setDraft(structuredClone(server));

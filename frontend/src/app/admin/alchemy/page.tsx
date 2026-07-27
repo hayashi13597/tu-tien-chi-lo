@@ -189,8 +189,8 @@ export default function AdminAlchemyPage() {
     const nextIndex = draft?.length ?? 0;
     updateDraft((current) => {
       const usedPills = new Set(current.map((recipe) => recipe.pillId));
-      const availablePill =
-        pills.find((pill) => !usedPills.has(pill.id)) ?? pills[0];
+      const availablePill = pills.find((pill) => !usedPills.has(pill.id));
+      if (!availablePill) return current;
       current.push({
         ...emptyRecipe(nextIndex + 1, pills, materials),
         pillId: availablePill.id,
@@ -202,12 +202,19 @@ export default function AdminAlchemyPage() {
 
   const save = useCallback(async () => {
     if (!draft || errors.length > 0) return;
+    const selectedId = draft[selectedIndex]?.id;
     setSaving(true);
     setSaveError(null);
     try {
       const { recipes } = await updateAdminAlchemyRecipes(draft);
       setServer(recipes);
       setDraft(structuredClone(recipes));
+      if (selectedId) {
+        const nextIndex = recipes.findIndex(
+          (recipe) => recipe.id === selectedId,
+        );
+        if (nextIndex >= 0) setSelectedIndex(nextIndex);
+      }
       setSavedAt(new Date());
     } catch (error) {
       const message = error instanceof Error ? error.message : "Lưu thất bại";
@@ -219,7 +226,7 @@ export default function AdminAlchemyPage() {
     } finally {
       setSaving(false);
     }
-  }, [draft, errors.length]);
+  }, [draft, errors.length, selectedIndex]);
 
   const undo = () => {
     if (server) setDraft(structuredClone(server));
@@ -253,6 +260,9 @@ export default function AdminAlchemyPage() {
       ? findAdminCatalogError(errors, `${selectedIndexSafe}.${field}`)
       : undefined;
   const dependencyError = pills.length === 0 || materials.length === 0;
+  const hasAvailablePill = pills.some(
+    (pill) => !draft.some((recipe) => recipe.pillId === pill.id),
+  );
 
   return (
     <section>
@@ -264,7 +274,7 @@ export default function AdminAlchemyPage() {
             type="button"
             className="admin-btn admin-btn-primary"
             onClick={addRecipe}
-            disabled={saving || dependencyError}
+            disabled={saving || dependencyError || !hasAvailablePill}
           >
             + Thêm công thức
           </button>
@@ -275,6 +285,12 @@ export default function AdminAlchemyPage() {
         <div className="admin-error">
           Cần có ít nhất một đan dược và một nguyên liệu trước khi tạo công
           thức.
+        </div>
+      )}
+      {!dependencyError && !hasAvailablePill && (
+        <div className="admin-error">
+          Mỗi đan dược chỉ có một công thức; thêm đan dược mới nếu cần mở rộng
+          catalog.
         </div>
       )}
       {saveError && <div className="admin-error">{saveError}</div>}
