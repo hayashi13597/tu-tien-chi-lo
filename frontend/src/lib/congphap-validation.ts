@@ -1,6 +1,8 @@
 import { ATTRIBUTE_ORDER } from "./attribute-constants";
 import type { CongPhapDTO } from "./types";
 
+const SLUG = /^[a-z0-9-]+$/;
+
 // Client-side mirror of the backend's công pháp validation (zod shape checks +
 // domain validateCongPhapDefinition), so the editor pins errors to fields
 // before a request is sent. The backend remains the authority — this only has
@@ -38,6 +40,24 @@ export function validateCongPhapDraft(
     (!Number.isInteger(def.dupRefundLinhThach) || def.dupRefundLinhThach < 0)
   ) {
     fail("dupRefundLinhThach", "Bỏ trống hoặc số nguyên ≥ 0");
+  }
+  if (def.upgradeMaterialId !== null && !SLUG.test(def.upgradeMaterialId)) {
+    fail(
+      "upgradeMaterialId",
+      "ID nguyên liệu chỉ gồm a-z, 0-9 và dấu gạch ngang",
+    );
+  }
+  if (!Number.isInteger(def.baseMaterialCost) || def.baseMaterialCost < 0) {
+    fail("baseMaterialCost", "Số nguyên ≥ 0");
+  }
+  if (!(def.materialCostGrowth >= 1)) {
+    fail("materialCostGrowth", "Phải là số ≥ 1");
+  }
+  if (def.baseMaterialCost > 0 && def.upgradeMaterialId === null) {
+    fail(
+      "upgradeMaterialId",
+      "Cần chọn nguyên liệu khi có chi phí nguyên liệu",
+    );
   }
 
   if (def.category === "passive") {

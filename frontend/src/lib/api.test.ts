@@ -341,6 +341,124 @@ describe("admin pill api", () => {
   });
 });
 
+describe("admin catalog api", () => {
+  const material = {
+    id: "xich-viem-tinh",
+    name: "Xích Viêm Tinh",
+    glyph: "炎",
+    rarity: 1,
+    description: "d",
+    active: true,
+  };
+  const recipe = {
+    id: "hoi-khi-dan",
+    pillId: "hoi-khi-dan",
+    durationSec: 1800,
+    linhThachCost: 10,
+    active: true,
+    ingredients: [{ materialId: material.id, quantity: 2 }],
+  };
+  const branch = {
+    branch: {
+      id: "hoa-vuc",
+      name: "Hỏa Vực",
+      glyph: "火",
+      description: "d",
+      basePower: 100,
+      alchemyMaterialId: material.id,
+      upgradeMaterialWeights: [{ materialId: material.id, weight: 1 }],
+    },
+    difficulties: [
+      {
+        key: "easy" as const,
+        enemyMultiplier: 0.8,
+        normalDropRate: 0.5,
+        bossDropRate: 0.8,
+        rewardMultiplier: 0.25,
+        adaptiveCoefficient: 0.5,
+      },
+      {
+        key: "normal" as const,
+        enemyMultiplier: 1,
+        normalDropRate: 0.4,
+        bossDropRate: 0.7,
+        rewardMultiplier: 0.5,
+        adaptiveCoefficient: 0.75,
+      },
+      {
+        key: "hard" as const,
+        enemyMultiplier: 1.5,
+        normalDropRate: 0.3,
+        bossDropRate: 0.6,
+        rewardMultiplier: 1,
+        adaptiveCoefficient: 1,
+      },
+    ],
+  };
+
+  it("fetches and replaces the admin material catalog", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, { materials: [material] }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { fetchAdminMaterials, updateAdminMaterials } = await import("./api");
+
+    await expect(fetchAdminMaterials()).resolves.toEqual({
+      materials: [material],
+    });
+    await updateAdminMaterials([material]);
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/admin/materials");
+    const [url, init] = fetchMock.mock.calls[1];
+    expect(String(url)).toContain("/admin/materials");
+    expect(init?.method).toBe("PUT");
+    expect(JSON.parse(init?.body as string)).toEqual({ materials: [material] });
+  });
+
+  it("fetches and replaces the admin alchemy recipe catalog", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, { recipes: [recipe] }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { fetchAdminAlchemyRecipes, updateAdminAlchemyRecipes } =
+      await import("./api");
+
+    await expect(fetchAdminAlchemyRecipes()).resolves.toEqual({
+      recipes: [recipe],
+    });
+    await updateAdminAlchemyRecipes([recipe]);
+    expect(String(fetchMock.mock.calls[0][0])).toContain(
+      "/admin/alchemy/recipes",
+    );
+    const [url, init] = fetchMock.mock.calls[1];
+    expect(String(url)).toContain("/admin/alchemy/recipes");
+    expect(init?.method).toBe("PUT");
+    expect(JSON.parse(init?.body as string)).toEqual({ recipes: [recipe] });
+  });
+
+  it("fetches and replaces the admin expedition catalog", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, { branches: [branch] }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { fetchAdminExpeditions, updateAdminExpeditions } = await import(
+      "./api"
+    );
+
+    await expect(fetchAdminExpeditions()).resolves.toEqual({
+      branches: [branch],
+    });
+    await updateAdminExpeditions([branch]);
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/admin/expeditions");
+    const [url, init] = fetchMock.mock.calls[1];
+    expect(String(url)).toContain("/admin/expeditions");
+    expect(init?.method).toBe("PUT");
+    expect(JSON.parse(init?.body as string)).toEqual({ branches: [branch] });
+  });
+});
+
 describe("redeem api", () => {
   it("redeemCode POSTs the code and returns rewards", async () => {
     const result = {

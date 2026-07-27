@@ -1586,6 +1586,19 @@ body {
   color: var(--fg);
 }
 
+.admin-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.admin-save-time {
+  margin: calc(var(--space-5) * -0.5) 0 var(--space-4);
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
 /* Flat elevated data panel — replaces glass/blur cards for data areas. */
 .admin-panel {
   border: 1px solid var(--border);
@@ -2417,6 +2430,12 @@ body {
 
 .admin-field--wide {
   grid-column: 1 / -1;
+}
+
+.admin-textarea {
+  min-height: 5.5rem;
+  resize: vertical;
+  line-height: 1.5;
 }
 
 .admin-curve {

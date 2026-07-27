@@ -63,6 +63,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             Cảnh giới
           </Link>
           <Link
+            href="/admin/materials"
+            aria-current={pathname === "/admin/materials" ? "page" : undefined}
+          >
+            <CauldronIcon width={18} height={18} />
+            Nguyên liệu
+          </Link>
+          <Link
             href="/admin/pills"
             aria-current={pathname === "/admin/pills" ? "page" : undefined}
           >
@@ -70,11 +77,27 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             Đan dược
           </Link>
           <Link
+            href="/admin/alchemy"
+            aria-current={pathname === "/admin/alchemy" ? "page" : undefined}
+          >
+            <CauldronIcon width={18} height={18} />
+            Luyện đan
+          </Link>
+          <Link
             href="/admin/congphap"
             aria-current={pathname === "/admin/congphap" ? "page" : undefined}
           >
             <ScrollIcon width={18} height={18} />
             Công pháp
+          </Link>
+          <Link
+            href="/admin/expeditions"
+            aria-current={
+              pathname === "/admin/expeditions" ? "page" : undefined
+            }
+          >
+            <MountainIcon width={18} height={18} />
+            Bí cảnh
           </Link>
           <Link
             href="/admin/codes"

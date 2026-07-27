@@ -7,6 +7,7 @@ import { RarityPips } from "@/components/rarity-pips";
 import {
   createAdminCongPhap,
   fetchAdminCongPhap,
+  fetchAdminMaterials,
   grantToUser,
   searchAdminUsers,
   updateAdminCongPhap,
@@ -23,6 +24,7 @@ import type {
   AttributeKey,
   CongPhapCategory,
   CongPhapDTO,
+  MaterialDTO,
   PassiveEffectDTO,
 } from "@/lib/types";
 
@@ -86,6 +88,7 @@ function headline(def: CongPhapDTO): string {
 interface CongPhapFormProps {
   initial: CongPhapDTO;
   isNew: boolean;
+  materials: MaterialDTO[];
   onSaved: (saved: CongPhapDTO) => void;
   onCancel: () => void;
   onDirtyChange: (dirty: boolean) => void;
@@ -94,6 +97,7 @@ interface CongPhapFormProps {
 function CongPhapForm({
   initial,
   isNew,
+  materials,
   onSaved,
   onCancel,
   onDirtyChange,
@@ -337,6 +341,79 @@ function CongPhapForm({
             {err("dupRefundLinhThach") && (
               <span className="admin-field-error">
                 {err("dupRefundLinhThach")?.message}
+              </span>
+            )}
+          </label>
+        </div>
+        <div className="admin-form-grid">
+          <label className="admin-field">
+            <span className="admin-field-label">Nguyên liệu nâng cấp</span>
+            <select
+              className={`admin-input${err("upgradeMaterialId") ? " invalid" : ""}`}
+              value={draft.upgradeMaterialId ?? ""}
+              onChange={(e) =>
+                set(
+                  "upgradeMaterialId",
+                  e.target.value === "" ? null : e.target.value,
+                )
+              }
+              disabled={saving || materials.length === 0}
+              aria-label="Nguyên liệu nâng cấp công pháp"
+            >
+              <option value="">Không dùng nguyên liệu</option>
+              {materials.map((material) => (
+                <option key={material.id} value={material.id}>
+                  {material.glyph} {material.name}
+                  {material.active ? "" : " (đã tắt)"}
+                </option>
+              ))}
+            </select>
+            <span className="admin-field-hint">
+              {materials.length === 0
+                ? "Chưa có catalog nguyên liệu"
+                : "Chi phí này cộng với Linh Thạch khi nâng cấp"}
+            </span>
+            {err("upgradeMaterialId") && (
+              <span className="admin-field-error">
+                {err("upgradeMaterialId")?.message}
+              </span>
+            )}
+          </label>
+          <label className="admin-field">
+            <span className="admin-field-label">Nguyên liệu/cấp đầu</span>
+            <input
+              type="number"
+              min={0}
+              className={`admin-input admin-num${err("baseMaterialCost") ? " invalid" : ""}`}
+              value={numericValue(draft.baseMaterialCost)}
+              onChange={(e) => set("baseMaterialCost", numeric(e.target.value))}
+              disabled={saving}
+              aria-label="Chi phí nguyên liệu cấp đầu"
+            />
+            <span className="admin-field-hint">Chi phí cho cấp 1 → 2</span>
+            {err("baseMaterialCost") && (
+              <span className="admin-field-error">
+                {err("baseMaterialCost")?.message}
+              </span>
+            )}
+          </label>
+          <label className="admin-field">
+            <span className="admin-field-label">Hệ số tăng nguyên liệu</span>
+            <input
+              type="number"
+              min={1}
+              step="0.1"
+              className={`admin-input admin-num${err("materialCostGrowth") ? " invalid" : ""}`}
+              value={numericValue(draft.materialCostGrowth)}
+              onChange={(e) =>
+                set("materialCostGrowth", numeric(e.target.value))
+              }
+              disabled={saving}
+              aria-label="Hệ số tăng chi phí nguyên liệu"
+            />
+            {err("materialCostGrowth") && (
+              <span className="admin-field-error">
+                {err("materialCostGrowth")?.message}
               </span>
             )}
           </label>
@@ -689,6 +766,7 @@ function GrantPanel({ catalog }: { catalog: CongPhapDTO[] }) {
 
 export default function AdminCongPhapPage() {
   const [list, setList] = useState<CongPhapDTO[] | null>(null);
+  const [materials, setMaterials] = useState<MaterialDTO[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [dirtyOpen, setDirtyOpen] = useState(false);
@@ -696,8 +774,12 @@ export default function AdminCongPhapPage() {
   const load = useCallback(async () => {
     setLoadError(null);
     try {
-      const { congphap } = await fetchAdminCongPhap();
+      const [{ congphap }, { materials: loadedMaterials }] = await Promise.all([
+        fetchAdminCongPhap(),
+        fetchAdminMaterials(),
+      ]);
       setList(congphap);
+      setMaterials(loadedMaterials);
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : "Không tải được danh sách");
     }
@@ -879,6 +961,7 @@ export default function AdminCongPhapPage() {
                   openId === "new" ? emptyCongPhap() : (editing as CongPhapDTO)
                 }
                 isNew={openId === "new"}
+                materials={materials}
                 onSaved={onSaved}
                 onCancel={() => setOpenId(null)}
                 onDirtyChange={setDirtyOpen}
