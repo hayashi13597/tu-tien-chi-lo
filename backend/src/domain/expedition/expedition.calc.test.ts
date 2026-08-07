@@ -8,6 +8,7 @@ import {
   rewardMultiplier,
   rollExpeditionRewards,
   simulateExpedition,
+  expeditionStartGate,
 } from './expedition.calc';
 import { ExpeditionBranchConfig, ExpeditionDifficultyConfig } from './expedition';
 
@@ -98,5 +99,18 @@ describe('expedition calculations', () => {
     const result = simulateExpedition({ player: { ...player, battlePower: 1, attributes: { ...playerAttributes, khiHuyet: 10, congVatLy: 1 } }, branch: { ...branch, basePower: 10_000 }, difficulty: hard, realmMultiplier: 1, realmReferencePower: 1, ticketCostUnits: 4, random: new ConstantRandom(0.5), maxTurns: 1 });
     expect(result.wins).toBe(0);
     expect(result.reward.multiplier).toBe(0.25);
+  });
+});
+
+describe('expeditionStartGate', () => {
+  it('chặn khi realm thấp hơn gate, message mang tên cảnh giới', () => {
+    expect(() => expeditionStartGate({ ...branch, tier: 2, minRealmMajor: 3 }, 2, 'Kết Đan'))
+      .toThrowError(/Tầng 2 yêu cầu cảnh giới Kết Đan/);
+  });
+  it('qua khi đủ cảnh', () => {
+    expect(() => expeditionStartGate({ ...branch, tier: 2, minRealmMajor: 3 }, 3, 'Kết Đan')).not.toThrow();
+  });
+  it('tầng 1 không gate (minRealmMajor 0)', () => {
+    expect(() => expeditionStartGate(branch, 0, 'Phàm Nhân')).not.toThrow();
   });
 });

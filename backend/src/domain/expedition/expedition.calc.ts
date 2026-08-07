@@ -129,3 +129,16 @@ function enemyForPower(power: number, playerSpeed: number): CombatantSnapshot {
   };
   return { id: 'enemy', attributes, battlePower: power, maxChanNguyen: 0, skills: [] };
 }
+
+// Phase 3 — hard gate cảnh giới theo tầng (chiến lực recommendedPower chỉ là
+// cảnh báo phía FE, server không chặn). realmName đã resolve ở application
+// layer để domain không phụ thuộc realm catalog.
+export function expeditionStartGate(
+  branch: Pick<ExpeditionBranchConfig, 'tier' | 'minRealmMajor'>,
+  realmMajor: number,
+  realmName: string,
+): void {
+  if (realmMajor < branch.minRealmMajor) {
+    throw new DomainError('EXPEDITION_REALM_GATE', `Tầng ${branch.tier} yêu cầu cảnh giới ${realmName}`);
+  }
+}
