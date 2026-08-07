@@ -168,6 +168,8 @@ export interface AdminRedeemRewardDTO {
   pillId?: string;
   congPhapId?: string;
   linhThach?: number;
+  /** Phase 2: reward vật phẩm material (vd: bi-tich-*). */
+  materialId?: string;
   quantity: number;
 }
 

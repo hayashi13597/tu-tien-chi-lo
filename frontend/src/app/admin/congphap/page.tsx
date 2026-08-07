@@ -16,6 +16,7 @@ import {
   ATTRIBUTE_LABELS,
   ATTRIBUTE_ORDER,
   effectAttributeLabel,
+  SYSTEM_EFFECT_LABELS,
 } from "@/lib/attribute-constants";
 import { getCongPhapRarityMeta, levelUpCost } from "@/lib/congphap-display";
 import {
@@ -264,6 +265,132 @@ function CongPhapForm({
                 </option>
               ))}
             </select>
+          </label>
+        </div>
+      </section>
+
+      <section className="admin-form-section">
+        <div className="admin-form-section-head">
+          <h4 className="admin-form-section-title">Phân Hệ (Phase 2)</h4>
+          <span className="admin-form-section-hint">
+            tier ≥ 2 bắt buộc nhánh + Bí Tịch; tier 1 kế thừa hệ cũ
+          </span>
+        </div>
+        <div className="admin-form-grid">
+          <label className="admin-field">
+            <span className="admin-field-label">Tier</span>
+            <select
+              className={`admin-input${err("tier") ? " invalid" : ""}`}
+              value={draft.tier}
+              aria-label="Tier công pháp"
+              disabled={saving}
+              onChange={(e) =>
+                setDraft((d) => ({
+                  ...d,
+                  tier: Number(e.target.value),
+                  // Gợi ý gate mặc định theo tier chuẩn (0 / Kết Đan=3 / Hóa Thần=5) —
+                  // admin vẫn sửa được.
+                  minRealmMajor:
+                    { 1: 0, 2: 3, 3: 5 }[Number(e.target.value) as 1 | 2 | 3] ??
+                    d.minRealmMajor,
+                }))
+              }
+            >
+              <option value={1}>1 — Phàm Giai</option>
+              <option value={2}>2 — Linh Giai</option>
+              <option value={3}>3 — Thiên Giai</option>
+            </select>
+            {err("tier") && (
+              <span className="admin-field-error">{err("tier")?.message}</span>
+            )}
+          </label>
+          <label className="admin-field">
+            <span className="admin-field-label">Nhánh</span>
+            <select
+              className={`admin-input${err("branch") ? " invalid" : ""}`}
+              value={draft.branch ?? ""}
+              aria-label="Nhánh công pháp"
+              disabled={saving}
+              onChange={(e) =>
+                set(
+                  "branch",
+                  e.target.value === ""
+                    ? null
+                    : (e.target.value as typeof draft.branch),
+                )
+              }
+            >
+              <option value="">— không thuộc nhánh —</option>
+              <option value="tuLuyen">Tu Luyện</option>
+              <option value="chienDao">Chiến Đạo</option>
+              <option value="danDao">Đan Đạo</option>
+            </select>
+            {err("branch") && (
+              <span className="admin-field-error">
+                {err("branch")?.message}
+              </span>
+            )}
+          </label>
+          <label className="admin-field">
+            <span className="admin-field-label">
+              Cảnh giới tối thiểu (major)
+            </span>
+            <input
+              type="number"
+              min={0}
+              className={`admin-input admin-num${err("minRealmMajor") ? " invalid" : ""}`}
+              value={numericValue(draft.minRealmMajor)}
+              onChange={(e) => set("minRealmMajor", numeric(e.target.value))}
+              disabled={saving}
+              aria-label="Cảnh giới tối thiểu để học"
+            />
+            <span className="admin-field-hint">
+              0 = không gate; Kết Đan = 3, Hóa Thần = 5
+            </span>
+            {err("minRealmMajor") && (
+              <span className="admin-field-error">
+                {err("minRealmMajor")?.message}
+              </span>
+            )}
+          </label>
+          <label className="admin-field">
+            <span className="admin-field-label">Bí Tịch nhập môn</span>
+            <select
+              className={`admin-input${err("biTichMaterialId") ? " invalid" : ""}`}
+              value={draft.biTichMaterialId ?? ""}
+              onChange={(e) =>
+                set(
+                  "biTichMaterialId",
+                  e.target.value === "" ? null : e.target.value,
+                )
+              }
+              disabled={saving || materials.length === 0}
+              aria-label="Bí Tịch nhập môn"
+            >
+              <option value="">— chỉ nhận qua redeem —</option>
+              {[...materials]
+                .sort((a, b) =>
+                  a.id.startsWith("bi-tich-") === b.id.startsWith("bi-tich-")
+                    ? a.name.localeCompare(b.name)
+                    : a.id.startsWith("bi-tich-")
+                      ? -1
+                      : 1,
+                )
+                .map((material) => (
+                  <option key={material.id} value={material.id}>
+                    {material.glyph} {material.name}
+                    {material.active ? "" : " (đã tắt)"}
+                  </option>
+                ))}
+            </select>
+            <span className="admin-field-hint">
+              Người chơi học môn bằng 1 Bí Tịch + 300 Linh Thạch
+            </span>
+            {err("biTichMaterialId") && (
+              <span className="admin-field-error">
+                {err("biTichMaterialId")?.message}
+              </span>
+            )}
           </label>
         </div>
       </section>
@@ -547,6 +674,16 @@ function CongPhapForm({
                     {ATTRIBUTE_LABELS[key]}
                   </option>
                 ))}
+                {(
+                  Object.entries(SYSTEM_EFFECT_LABELS) as [
+                    keyof typeof SYSTEM_EFFECT_LABELS,
+                    string,
+                  ][]
+                ).map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label} (hệ thống)
+                  </option>
+                ))}
               </select>
               <label className="admin-row-field">
                 <span>Cộng phẳng/cấp</span>
@@ -555,7 +692,7 @@ function CongPhapForm({
                   className="admin-input admin-num admin-row-num"
                   value={numericValue(effect.flatPerLevel)}
                   aria-label={`Cộng phẳng hàng ${i + 1}`}
-                  disabled={saving}
+                  disabled={saving || effect.attribute in SYSTEM_EFFECT_LABELS}
                   onChange={(e) =>
                     setEffect(i, { flatPerLevel: numeric(e.target.value) })
                   }

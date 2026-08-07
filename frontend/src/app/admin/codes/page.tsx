@@ -7,6 +7,7 @@ import {
   createAdminCode,
   fetchAdminCodes,
   fetchAdminCongPhap,
+  fetchAdminMaterials,
   fetchAdminPills,
   updateAdminCode,
 } from "@/lib/api";
@@ -18,6 +19,7 @@ import type {
   AdminRedeemCodeDTO,
   AdminRedeemRewardDTO,
   CongPhapDTO,
+  MaterialDTO,
 } from "@/lib/types";
 
 type CodeDraft = Omit<AdminRedeemCodeDTO, "redeemedCount">;
@@ -25,17 +27,19 @@ type CodeDraft = Omit<AdminRedeemCodeDTO, "redeemedCount">;
 // A reward carries exactly one kind; the selector below rewrites the row
 // wholesale when the kind changes so a stale key can never linger and trip the
 // backend's "exactly one" rule.
-type RewardKind = "pill" | "congphap" | "linhThach";
+type RewardKind = "pill" | "congphap" | "linhThach" | "material";
 
 const REWARD_KIND_LABEL: Record<RewardKind, string> = {
   pill: "Đan dược",
   congphap: "Công pháp",
   linhThach: "Linh Thạch",
+  material: "Vật phẩm",
 };
 
 function rewardKind(r: AdminRedeemRewardDTO): RewardKind {
   if (r.congPhapId !== undefined) return "congphap";
   if (r.linhThach !== undefined) return "linhThach";
+  if (r.materialId !== undefined) return "material";
   return "pill";
 }
 
@@ -45,6 +49,7 @@ function emptyRewardOfKind(
 ): AdminRedeemRewardDTO {
   if (kind === "congphap") return { congPhapId: "", quantity };
   if (kind === "linhThach") return { linhThach: 100, quantity: 1 };
+  if (kind === "material") return { materialId: "", quantity };
   return { pillId: "", quantity };
 }
 
@@ -165,6 +170,7 @@ interface CodeFormProps {
   isNew: boolean;
   pills: AdminPillDTO[];
   congphap: CongPhapDTO[];
+  materials: MaterialDTO[];
   onSaved: (saved: AdminRedeemCodeDTO) => void;
   onCancel: () => void;
   onDirtyChange: (dirty: boolean) => void;
@@ -175,6 +181,7 @@ function CodeForm({
   isNew,
   pills,
   congphap,
+  materials,
   onSaved,
   onCancel,
   onDirtyChange,
@@ -389,7 +396,9 @@ function CodeForm({
                 ? "晶"
                 : kind === "congphap"
                   ? (selectedCongPhap?.glyph ?? "?")
-                  : (selectedPill?.glyph ?? "?");
+                  : kind === "material"
+                    ? "材"
+                    : (selectedPill?.glyph ?? "?");
             const glyphColor =
               kind === "linhThach"
                 ? "var(--jade)"
@@ -397,9 +406,11 @@ function CodeForm({
                   ? selectedCongPhap
                     ? getCongPhapRarityMeta(selectedCongPhap.rarity).color
                     : "var(--muted)"
-                  : selectedPill
-                    ? getRarityMeta(selectedPill.rarity).color
-                    : "var(--muted)";
+                  : kind === "material"
+                    ? "var(--gold)"
+                    : selectedPill
+                      ? getRarityMeta(selectedPill.rarity).color
+                      : "var(--muted)";
             return (
               <div
                 // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional, no stable id
@@ -457,6 +468,32 @@ function CodeForm({
                         {cp.name}
                       </option>
                     ))}
+                  </select>
+                )}
+                {kind === "material" && (
+                  <select
+                    className="admin-input admin-row-grow"
+                    value={r.materialId ?? ""}
+                    aria-label={`Vật phẩm hàng ${i + 1}`}
+                    onChange={(e) =>
+                      setReward(i, { materialId: e.target.value })
+                    }
+                  >
+                    <option value="">-- Chọn vật phẩm --</option>
+                    {[...materials]
+                      .sort((a, b) =>
+                        a.id.startsWith("bi-tich-") ===
+                        b.id.startsWith("bi-tich-")
+                          ? a.name.localeCompare(b.name)
+                          : a.id.startsWith("bi-tich-")
+                            ? -1
+                            : 1,
+                      )
+                      .map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.glyph} {m.name}
+                        </option>
+                      ))}
                   </select>
                 )}
                 {kind === "linhThach" && (
@@ -556,6 +593,7 @@ export default function AdminCodesPage() {
   const [codes, setCodes] = useState<AdminRedeemCodeDTO[] | null>(null);
   const [pills, setPills] = useState<AdminPillDTO[]>([]);
   const [congphap, setCongPhap] = useState<CongPhapDTO[]>([]);
+  const [materials, setMaterials] = useState<MaterialDTO[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [dirtyOpen, setDirtyOpen] = useState(false);
@@ -563,15 +601,21 @@ export default function AdminCodesPage() {
   const load = useCallback(async () => {
     setLoadError(null);
     try {
-      const [{ codes: list }, { pills: pillList }, { congphap: cpList }] =
-        await Promise.all([
-          fetchAdminCodes(),
-          fetchAdminPills(),
-          fetchAdminCongPhap(),
-        ]);
+      const [
+        { codes: list },
+        { pills: pillList },
+        { congphap: cpList },
+        { materials: materialList },
+      ] = await Promise.all([
+        fetchAdminCodes(),
+        fetchAdminPills(),
+        fetchAdminCongPhap(),
+        fetchAdminMaterials(),
+      ]);
       setCodes(list);
       setPills(pillList);
       setCongPhap(cpList);
+      setMaterials(materialList);
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : "Không tải được danh sách");
     }
@@ -755,6 +799,7 @@ export default function AdminCodesPage() {
                 isNew={openId === "new"}
                 pills={pills}
                 congphap={congphap}
+                materials={materials}
                 onSaved={onSaved}
                 onCancel={() => setOpenId(null)}
                 onDirtyChange={setDirtyOpen}
