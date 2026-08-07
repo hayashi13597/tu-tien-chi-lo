@@ -54,6 +54,30 @@ describe('admin catalog validation', () => {
     await expect(useCase.execute([recipe])).rejects.toMatchObject({ code: 'PILL_NOT_FOUND' });
   });
 
+  it.each([
+    ['tier 0', { tier: 0 }],
+    ['tier 4', { tier: 4 }],
+    ['tier không nguyên', { tier: 1.5 }],
+    ['minRealmMajor âm', { minRealmMajor: -1 }],
+    ['minRealmMajor > 10', { minRealmMajor: 11 }],
+    ['recommendedPower âm', { recommendedPower: -1 }],
+  ])('INVALID_EXPEDITION_CONFIG khi %s', async (_label, overrides) => {
+    const useCase = new UpdateExpeditionConfigAdminUseCase({ replace: async () => [] } as never);
+    await expect(useCase.execute([{ ...branch, branch: { ...branch.branch, ...overrides } }])).rejects.toMatchObject({ code: 'INVALID_EXPEDITION_CONFIG' });
+    await expect(useCase.execute([branch])).resolves.toEqual([]);
+  });
+
+  it('bossDropWeights weight âm/id rỗng → INVALID_EXPEDITION_CONFIG', async () => {
+    const useCase = new UpdateExpeditionConfigAdminUseCase({ replace: async () => [] } as never);
+    await expect(useCase.execute([{ ...branch, branch: { ...branch.branch, bossDropWeights: [{ materialId: 'm', weight: -1 }] } }])).rejects.toMatchObject({ code: 'INVALID_EXPEDITION_CONFIG' });
+    await expect(useCase.execute([{ ...branch, branch: { ...branch.branch, bossDropWeights: [{ materialId: '', weight: 1 }] } }])).rejects.toMatchObject({ code: 'INVALID_EXPEDITION_CONFIG' });
+    // hợp lệ: truyền xuống repo giữ nguyên
+    const replaced: unknown[] = [];
+    await new UpdateExpeditionConfigAdminUseCase({ replace: async (rows: unknown[]) => { replaced.push(rows); return []; } } as never)
+      .execute([{ ...branch, branch: { ...branch.branch, tier: 2, minRealmMajor: 3, recommendedPower: 600, bossDropWeights: [{ materialId: 'dan-hoa-tuy', weight: 0.3 }] } }]);
+    expect(replaced).toHaveLength(1);
+  });
+
   it('reject branch thiếu easy/normal/hard và weight âm', async () => {
     const useCase = new UpdateExpeditionConfigAdminUseCase({ replace: async () => [] } as never);
     await expect(useCase.execute([{ ...branch, difficulties: branch.difficulties.slice(0, 2) }])).rejects.toMatchObject({ code: 'INVALID_EXPEDITION_CONFIG' });
