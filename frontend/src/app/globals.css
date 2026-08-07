@@ -3553,31 +3553,31 @@ body {
 .alchemy-profile-strip {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.03);
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
 }
 .alchemy-rank-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-3);
   flex-wrap: wrap;
 }
 .alchemy-tier-badge {
-  margin-left: 8px;
-  padding: 1px 8px;
+  margin-left: var(--space-2);
+  padding: 1px var(--space-2);
   border-radius: 999px;
   font-size: 0.7rem;
-  border: 1px solid rgba(120, 170, 255, 0.5);
-  color: rgb(160, 200, 255);
+  border: 1px solid color-mix(in srgb, var(--jade) 45%, transparent);
+  color: var(--jade);
 }
 .alchemy-locked {
   opacity: 0.55;
 }
 .alchemy-recipe-lock {
-  color: rgb(255, 180, 120);
+  color: var(--gold);
 }
 .alchemy-cap-note {
   opacity: 0.7;
