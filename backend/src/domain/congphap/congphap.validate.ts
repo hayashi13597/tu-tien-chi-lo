@@ -1,5 +1,5 @@
 import { CongPhapRecord } from './congphap';
-import { ATTRIBUTE_KEYS } from '../attributes/attributes';
+import { ATTRIBUTE_KEYS, AttributeSet } from '../attributes/attributes';
 import { DomainError } from '../errors';
 
 const SLUG = /^[a-z0-9-]+$/;
@@ -28,7 +28,10 @@ export function validateCongPhapDefinition(def: CongPhapRecord): void {
     if (def.chanNguyenCost !== null) fail('passive công pháp must not set chanNguyenCost');
     if (!def.effects || def.effects.length === 0) fail('passive công pháp requires at least one effect');
     for (const e of def.effects) {
-      if (!ATTRIBUTE_KEYS.includes(e.attribute)) fail(`unknown attribute "${e.attribute}"`);
+      // Key thuộc AttributeSet (chiến đấu) hoặc hai key hệ thống của Phase 2.
+      const isKnown = ATTRIBUTE_KEYS.includes(e.attribute as keyof AttributeSet)
+        || e.attribute === 'linhKhiRate' || e.attribute === 'danDaoSuccess';
+      if (!isKnown) fail(`unknown attribute "${e.attribute}"`);
       if (!Number.isFinite(e.flatPerLevel) || !Number.isFinite(e.pctPerLevel)) fail('effect values must be finite numbers');
     }
   } else if (def.category === 'active') {
