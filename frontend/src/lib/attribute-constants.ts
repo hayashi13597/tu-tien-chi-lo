@@ -33,6 +33,7 @@ export const SYSTEM_EFFECT_LABELS = {
 
 export function effectAttributeLabel(key: string): string {
   if (key in ATTRIBUTE_LABELS) return ATTRIBUTE_LABELS[key as AttributeKey];
-  if (key in SYSTEM_EFFECT_LABELS) return SYSTEM_EFFECT_LABELS[key as keyof typeof SYSTEM_EFFECT_LABELS];
+  if (key in SYSTEM_EFFECT_LABELS)
+    return SYSTEM_EFFECT_LABELS[key as keyof typeof SYSTEM_EFFECT_LABELS];
   return key;
 }

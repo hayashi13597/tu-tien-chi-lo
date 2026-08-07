@@ -110,5 +110,16 @@ export function useCongPhap(enabled: boolean): UseCongPhapResult {
     [refetch],
   );
 
-  return { owned, catalog, system, loading, error, refetch, equip, unequip, levelUp, learn };
+  return {
+    owned,
+    catalog,
+    system,
+    loading,
+    error,
+    refetch,
+    equip,
+    unequip,
+    levelUp,
+    learn,
+  };
 }

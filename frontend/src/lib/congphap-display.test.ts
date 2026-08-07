@@ -31,7 +31,11 @@ const passive: CongPhapDTO = {
   ],
   powerPerLevel: null,
   chanNguyenCost: null,
-  dupRefundLinhThach: null, tier: 1, branch: "chienDao" as const, minRealmMajor: 0, biTichMaterialId: null,
+  dupRefundLinhThach: null,
+  tier: 1,
+  branch: "chienDao" as const,
+  minRealmMajor: 0,
+  biTichMaterialId: null,
 };
 
 const active: CongPhapDTO = {

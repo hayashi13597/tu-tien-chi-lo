@@ -12,7 +12,11 @@ import {
   searchAdminUsers,
   updateAdminCongPhap,
 } from "@/lib/api";
-import { ATTRIBUTE_LABELS, ATTRIBUTE_ORDER, effectAttributeLabel } from "@/lib/attribute-constants";
+import {
+  ATTRIBUTE_LABELS,
+  ATTRIBUTE_ORDER,
+  effectAttributeLabel,
+} from "@/lib/attribute-constants";
 import { getCongPhapRarityMeta, levelUpCost } from "@/lib/congphap-display";
 import {
   findCongPhapError,

@@ -103,8 +103,10 @@ export function validateCongPhapDraft(
     fail("minRealmMajor", "Số nguyên ≥ 0");
   }
   if (def.tier >= 2) {
-    if (def.branch === null) fail("branch", "Môn từ tier 2 bắt buộc thuộc một nhánh");
-    if (def.biTichMaterialId === null) fail("biTichMaterialId", "Môn từ tier 2 cần Bí Tịch nhập môn");
+    if (def.branch === null)
+      fail("branch", "Môn từ tier 2 bắt buộc thuộc một nhánh");
+    if (def.biTichMaterialId === null)
+      fail("biTichMaterialId", "Môn từ tier 2 cần Bí Tịch nhập môn");
   }
 
   return errors;

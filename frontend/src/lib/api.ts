@@ -342,7 +342,9 @@ export function levelUpCongPhap(congPhapId: string): Promise<LevelUpResult> {
 }
 
 // POST /congphap/:id/learn — học môn bằng 1 Bí Tịch + 300 Linh Thạch (Phase 2).
-export function learnCongPhap(congPhapId: string): Promise<LearnCongPhapResult> {
+export function learnCongPhap(
+  congPhapId: string,
+): Promise<LearnCongPhapResult> {
   return apiFetch<LearnCongPhapResult>(`/congphap/${congPhapId}/learn`, {
     method: "POST",
   });
