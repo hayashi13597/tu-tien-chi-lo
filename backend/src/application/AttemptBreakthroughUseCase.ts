@@ -5,6 +5,8 @@ import { RealmConfigSource } from '../domain/ports/RealmConfigSource';
 import { computeLinhKhi } from '../domain/cultivation/cultivation.calc';
 import { computeSuccessRate, rollSuccess, nextStage, isMaxStage } from '../domain/breakthrough/breakthrough.calc';
 import { CharacterRecord } from '../domain/entities/Character';
+import { OwnedCongPhapRepository } from '../domain/ports/OwnedCongPhapRepository';
+import { buildSystemBuffs } from './attributeState';
 
 export interface AttemptBreakthroughOutput {
   success: boolean;
@@ -16,6 +18,7 @@ export class AttemptBreakthroughUseCase {
     private readonly characters: CharacterRepository,
     private readonly randomSource: RandomSource,
     private readonly realmConfig: RealmConfigSource,
+    private readonly ownedCongPhap: OwnedCongPhapRepository,
   ) {}
 
   async execute(userId: string): Promise<AttemptBreakthroughOutput> {
@@ -38,6 +41,9 @@ export class AttemptBreakthroughUseCase {
     // front. Every branch below (including the three rejection paths) persists
     // this value as its first write, so a rejected attempt never silently drops
     // accrued progress.
+    // Buff nhánh Tu Luyện (Phase 2) nhân thẳng vào rate trước khi tích lũy.
+    const owned = await this.ownedCongPhap.listByUser(userId);
+    const { linhKhiRateMultiplier } = buildSystemBuffs(owned);
     const buff =
       character.cultivationBuffMultiplier !== null && character.cultivationBuffUntil !== null
         ? { multiplier: character.cultivationBuffMultiplier, until: character.cultivationBuffUntil }
@@ -46,7 +52,7 @@ export class AttemptBreakthroughUseCase {
       storedLinhKhi: character.linhKhi,
       lastUpdateAt: character.lastUpdateAt,
       now,
-      cultivationRate: stage.cultivationRate,
+      cultivationRate: stage.cultivationRate * linhKhiRateMultiplier,
       buff,
     });
 

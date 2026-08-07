@@ -37,6 +37,17 @@ function buildFakes(options: {
   return { alchemy, characters, materials, state };
 }
 
+// Fake OwnedCongPhapRepository trả rỗng / seed có buff Đan Đạo cho test preview.
+function ownedFake(entries: { level: number; effects: { attribute: string; flatPerLevel: number; pctPerLevel: number }[] }[] = []) {
+  return {
+    listByUser: async () => entries.map((e) => ({
+      def: { id: 'x', name: 'X', glyph: 'x', rarity: 3, category: 'passive', desc: 'd', active: true, maxLevel: 10, baseCost: 0, costGrowth: 1, effects: e.effects, powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null, upgradeMaterialId: null, baseMaterialCost: 0, materialCostGrowth: 1, cooldownRounds: null, tier: 2, branch: 'danDao', minRealmMajor: 3, biTichMaterialId: 'bi-tich-x' },
+      level: e.level, equippedSlot: null,
+    })) as never,
+  };
+}
+const EMPTY_OWNED = ownedFake();
+
 describe('alchemy profile use cases', () => {
   it('GET profile trả bước kế tiếp cho rank và lò', async () => {
     const f = buildFakes({ profile: profile({ danKhi: 120 }), linhThach: 500 });
@@ -80,13 +91,13 @@ describe('alchemy profile use cases', () => {
 
   it('recipes player: locked khi rank thấp, effectiveSuccessPct tính theo profile', async () => {
     const f = buildFakes({ profile: profile({ rank: 5, furnaceLevel: 2 }) });
-    const list = await new ListAlchemyRecipesUseCase(f.alchemy as never).executeForUser('u');
+    const list = await new ListAlchemyRecipesUseCase(f.alchemy as never, EMPTY_OWNED as never).executeForUser('u');
     expect(list[0].locked).toBe(false);
     expect(list[0].effectiveSuccessPct).toBe(91); // 75 + (5−1)×3 + (2−1)×4
     expect(list[0].effectiveDurationSec).toBe(Math.round(7200 * (1 - (8 + 4) / 100)));
 
     const low = buildFakes({ profile: profile({ rank: 1 }) });
-    const lockedList = await new ListAlchemyRecipesUseCase(low.alchemy as never).executeForUser('u');
+    const lockedList = await new ListAlchemyRecipesUseCase(low.alchemy as never, EMPTY_OWNED as never).executeForUser('u');
     expect(lockedList[0].locked).toBe(true);
   });
 
@@ -95,5 +106,34 @@ describe('alchemy profile use cases', () => {
     await expect(new QueueAlchemyUseCase(f.alchemy as never, f.materials as never, f.characters as never)
       .execute('u', recipeT2.id, 1)).rejects.toMatchObject({ code: 'ALCHEMY_RANK_TOO_LOW' });
     expect(f.state.enqueueCalls).toBe(0);
+  });
+});
+
+describe('ListAlchemyRecipesUseCase — buff Đan Đạo (Phase 2)', () => {
+  it('sở hữu Điều Hỏa Tán Quyết lv 5 → effectiveSuccessPct tăng đúng 5 điểm', async () => {
+    const f = buildFakes({ profile: profile({ rank: 5, furnaceLevel: 2 }) });
+    const danDao = ownedFake([{ level: 5, effects: [{ attribute: 'danDaoSuccess', flatPerLevel: 0, pctPerLevel: 1 }] }]);
+    const list = await new ListAlchemyRecipesUseCase(f.alchemy as never, danDao as never).executeForUser('u');
+    expect(list[0].effectiveSuccessPct).toBe(95); // 75 + 12 + 4 + 5 → clamp 95
+  });
+
+  it('môn danDao bị inactive không đóng góp', async () => {
+    const f = buildFakes({ profile: profile({ rank: 5, furnaceLevel: 2 }) });
+    const inactive = {
+      listByUser: async () => [{
+        def: { id: 'x', name: 'X', glyph: 'x', rarity: 3, category: 'passive', desc: 'd', active: false, maxLevel: 10, baseCost: 0, costGrowth: 1, effects: [{ attribute: 'danDaoSuccess', flatPerLevel: 0, pctPerLevel: 2 }], powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null, upgradeMaterialId: null, baseMaterialCost: 0, materialCostGrowth: 1, cooldownRounds: null, tier: 2, branch: 'danDao', minRealmMajor: 3, biTichMaterialId: 'bi-tich-x' },
+        level: 10, equippedSlot: null,
+      }],
+    };
+    const list = await new ListAlchemyRecipesUseCase(f.alchemy as never, inactive as never).executeForUser('u');
+    expect(list[0].effectiveSuccessPct).toBe(91); // như không buff
+  });
+
+  it('recipe base 100 vẫn 100 (bonus không vượt nóc)', async () => {
+    const t1 = { ...recipeT2, id: 'recipe-t1', tier: 1, minAlchemyRank: 1, baseSuccessPct: 100 };
+    const f = buildFakes({ profile: profile({ rank: 5, furnaceLevel: 5 }), recipes: [t1] });
+    const danDao = ownedFake([{ level: 10, effects: [{ attribute: 'danDaoSuccess', flatPerLevel: 0, pctPerLevel: 2 }] }]);
+    const list = await new ListAlchemyRecipesUseCase(f.alchemy as never, danDao as never).executeForUser('u');
+    expect(list[0].effectiveSuccessPct).toBe(100);
   });
 });

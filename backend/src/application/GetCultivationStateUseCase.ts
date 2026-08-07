@@ -5,7 +5,7 @@ import { computeLinhKhi } from '../domain/cultivation/cultivation.calc';
 import { isMaxStage, computeSuccessRate } from '../domain/breakthrough/breakthrough.calc';
 import { OwnedCongPhapRepository } from '../domain/ports/OwnedCongPhapRepository';
 import { AttributeSet } from '../domain/attributes/attributes';
-import { buildAttributeState } from './attributeState';
+import { buildAttributeState, buildSystemBuffs } from './attributeState';
 
 export interface CultivationStateOutput {
   realmMajor: number;
@@ -69,6 +69,10 @@ export class GetCultivationStateUseCase {
     }
     const stage = config.getStage(character.realmMajor, character.realmSub);
     const now = new Date();
+    // Buff nhánh Tu Luyện (Phase 2) nhân thẳng vào rate — áp dụng cả tích lũy offline.
+    const owned = await this.ownedCongPhap.listByUser(userId);
+    const { linhKhiRateMultiplier } = buildSystemBuffs(owned);
+    const effectiveRate = stage.cultivationRate * linhKhiRateMultiplier;
     // Reflect any active timed cultivation buff on the read path too, so the
     // client's polled state shows the faster accrual while the buff lasts —
     // otherwise a consumed buff would only take visible effect on the next
@@ -81,7 +85,7 @@ export class GetCultivationStateUseCase {
       storedLinhKhi: character.linhKhi,
       lastUpdateAt: character.lastUpdateAt,
       now,
-      cultivationRate: stage.cultivationRate,
+      cultivationRate: effectiveRate,
       buff,
     });
 
@@ -98,7 +102,6 @@ export class GetCultivationStateUseCase {
       bonusPct: character.breakthroughBonusPct,
     });
 
-    const owned = await this.ownedCongPhap.listByUser(userId);
     const attrState = buildAttributeState(config, character.realmMajor, character.realmSub, owned);
 
     return {
@@ -112,7 +115,8 @@ export class GetCultivationStateUseCase {
       canBreakthrough: !atMax && !punished && currentLinhKhi >= stage.linhKhiRequired,
       isMaxStage: atMax,
       punishedUntil: character.punishedUntil,
-      cultivationRate: stage.cultivationRate,
+      // Trả rate hiệu dụng (đã gồm buff Tu Luyện) để số hiển thị khớp tích lũy thật.
+      cultivationRate: effectiveRate,
       cultivationBuffMultiplier: character.cultivationBuffMultiplier,
       cultivationBuffUntil: character.cultivationBuffUntil,
       breakthroughBonusPct: character.breakthroughBonusPct,

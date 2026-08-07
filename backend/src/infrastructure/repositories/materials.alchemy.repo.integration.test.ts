@@ -34,7 +34,8 @@ beforeAll(async () => {
     create: { id: 'test-alchemy-material-2', name: 'Test 2', glyph: 'T2', rarity: 1, description: 'd', active: true },
     update: {},
   });
-  await prisma.alchemyRecipe.upsert({
+  await prisma.pill.upsert({ where: { id: 'test-dandao-pill' }, create: { id: 'test-dandao-pill', name: 'DD', glyph: 'D', rarity: 1, effectKind: 'linhKhi', amount: 1, desc: 'd', active: true, starterQuantity: 0 }, update: {} });
+    await prisma.alchemyRecipe.upsert({
     where: { id: 'test-alchemy-recipe' },
     create: {
       id: 'test-alchemy-recipe', pillId: 'test-alchemy-pill', durationSec: 1_800, linhThachCost: 10, active: true,
@@ -116,5 +117,56 @@ describe('material/alchemy Prisma repositories', () => {
     // hết Đan Khí → guard chặn, rank giữ nguyên, không bị âm.
     await expect(alchemy.rankUp(rankUserId, 3, 300)).rejects.toMatchObject({ code: 'INSUFFICIENT_DAN_KHI' });
     expect(await alchemy.getProfile(rankUserId)).toMatchObject({ rank: 2, danKhi: 0 });
+  });
+});
+
+describe('settle với buff Đan Đạo (Phase 2)', () => {
+  // Recipe base 45, rank 1 + lò 1 → 45%. Random constant 0.5:
+  // không buff → 45 < 50 → mẻ hỏng; buff +20 (lv 10 × 2%) → 65 ≥ 50 → thành công.
+  it('môn danDao active cộng điểm vào roll; user không môn vẫn hỏng', async () => {
+    await prisma.pill.upsert({ where: { id: 'test-dandao-pill' }, create: { id: 'test-dandao-pill', name: 'DD', glyph: 'D', rarity: 1, effectKind: 'linhKhi', amount: 1, desc: 'd', active: true, starterQuantity: 0 }, update: {} });
+    await prisma.alchemyRecipe.upsert({
+      where: { id: 'test-dandao-recipe' },
+      create: {
+        id: 'test-dandao-recipe', pillId: 'test-dandao-pill', durationSec: 60, linhThachCost: 0, active: true,
+        tier: 1, minAlchemyRank: 1, baseSuccessPct: 45,
+        ingredients: { create: [{ id: 'test-dandao-in', materialId: 'test-alchemy-material', quantity: 1 }] },
+      },
+      update: { baseSuccessPct: 45, active: true, durationSec: 60 },
+    });
+    await prisma.congPhap.upsert({
+      where: { id: 'test-dandao-congphap' },
+      create: { id: 'test-dandao-congphap', name: 'Đ', glyph: 'd', rarity: 3, category: 'passive', desc: 'd', active: true, maxLevel: 10, baseCost: 0, costGrowth: 1, effects: [{ attribute: 'danDaoSuccess', flatPerLevel: 0, pctPerLevel: 2 }], powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null, tier: 2, branch: 'danDao', minRealmMajor: 3 },
+      update: { effects: [{ attribute: 'danDaoSuccess', flatPerLevel: 0, pctPerLevel: 2 }], active: true },
+    });
+
+    const mkUser = async (name: string) => {
+      const u = await prisma.user.create({ data: { username: `dd_${name}_${Date.now()}`, passwordHash: 'x' } });
+      await prisma.character.create({ data: { userId: u.id, linhThach: 0 } });
+      await prisma.materialInventory.create({ data: { userId: u.id, materialId: 'test-alchemy-material', quantity: 2 } });
+      return u.id;
+    };
+    const buffedUser = await mkUser('buffed');
+    const plainUser = await mkUser('plain');
+    await prisma.ownedCongPhap.create({ data: { userId: buffedUser, congPhapId: 'test-dandao-congphap', level: 10 } });
+
+    const now = new Date('2026-08-07T00:00:00Z');
+    await alchemy.enqueue({ userId: buffedUser, characterId: (await prisma.character.findUniqueOrThrow({ where: { userId: buffedUser } })).id, recipeId: 'test-dandao-recipe', quantity: 1, now });
+    await alchemy.enqueue({ userId: plainUser, characterId: (await prisma.character.findUniqueOrThrow({ where: { userId: plainUser } })).id, recipeId: 'test-dandao-recipe', quantity: 1, now });
+
+    const later = new Date('2026-08-07T00:10:00Z');
+    const settledBuffed = await alchemy.settleCompleted(buffedUser, later);
+    const settledPlain = await alchemy.settleCompleted(plainUser, later);
+
+    expect(settledBuffed.jobs[0]).toMatchObject({ successCount: 1, failCount: 0 });
+    expect(settledBuffed.outputGrants).toEqual([{ pillId: 'test-dandao-pill', quantity: 1 }]);
+    expect(settledPlain.jobs[0]).toMatchObject({ successCount: 0, failCount: 1 });
+    expect(settledPlain.outputGrants).toEqual([]);
+    // Buff được đọc trong cùng tx settle — không phải state ngoài.
+
+    await prisma.user.deleteMany({ where: { id: { in: [buffedUser, plainUser] } } });
+    await prisma.congPhap.delete({ where: { id: 'test-dandao-congphap' } }).catch(() => {});
+    await prisma.alchemyRecipe.delete({ where: { id: 'test-dandao-recipe' } }).catch(() => {});
+    await prisma.pill.delete({ where: { id: 'test-dandao-pill' } }).catch(() => {});
   });
 });

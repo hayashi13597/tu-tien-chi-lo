@@ -6,6 +6,7 @@ import { AlchemyProfileRecord } from '../../domain/alchemy/alchemy.profile';
 import { AlchemyRepository } from '../../domain/ports/AlchemyRepository';
 import { RandomSource } from '../../domain/ports/RandomSource';
 import { MathRandomSource } from '../random/MathRandomSource';
+import { sumSystemBuffs, PassiveEffect } from '../../domain/attributes/attributes.calc';
 
 type RecipeRow = {
   id: string;
@@ -225,15 +226,22 @@ export class PrismaAlchemyRepository implements AlchemyRepository {
       create: { userId, characterId: character.id },
       update: {},
     });
-    const [recipeRows, jobRows] = await Promise.all([
+    const [recipeRows, jobRows, ownedRows] = await Promise.all([
       tx.alchemyRecipe.findMany({ include: { ingredients: true } }),
       tx.alchemyJob.findMany({ where: { userId }, orderBy: [{ startsAt: 'asc' }, { queuedAt: 'asc' }] }),
+      // Buff Đan Đạo (Phase 2) đọc trong cùng snapshot Serializable.
+      tx.ownedCongPhap.findMany({ where: { userId }, include: { congPhap: true } }),
     ]);
     const recipes = new Map(recipeRows.map((row) => {
       const recipe = toRecipe(row);
       return [recipe.id, recipe] as const;
     }));
-    const settlement = settleAlchemyQueue({ now, jobs: jobRows.map(toJob), recipes, profile, random: this.random });
+    const danDaoPct = sumSystemBuffs(
+      ownedRows
+        .filter((r) => r.congPhap.category === 'passive' && r.congPhap.active && r.congPhap.effects)
+        .map((r) => ({ level: r.level, effects: r.congPhap.effects as unknown as PassiveEffect[] })),
+    ).danDaoSuccessPct;
+    const settlement = settleAlchemyQueue({ now, jobs: jobRows.map(toJob), recipes, profile, random: this.random, danDaoPct });
 
     for (const job of settlement.jobs) {
       await tx.alchemyJob.update({

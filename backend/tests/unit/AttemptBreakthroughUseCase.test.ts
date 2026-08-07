@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { AttemptBreakthroughUseCase } from '../../src/application/AttemptBreakthroughUseCase';
 import { InMemoryCharacterRepository } from '../fakes/InMemoryCharacterRepository';
+import { InMemoryOwnedCongPhapRepository } from '../fakes/InMemoryOwnedCongPhapRepository';
 import { FixedRandomSource } from '../fakes/FixedRandomSource';
 import { StaticRealmConfigSource } from '../fakes/StaticRealmConfigSource';
 import { CharacterRecord } from '../../src/domain/entities/Character';
@@ -26,14 +27,14 @@ function makeCharacter(overrides: Partial<CharacterRecord> = {}): CharacterRecor
 
 describe('AttemptBreakthroughUseCase', () => {
   it('rejects an unknown user with CHARACTER_NOT_FOUND', async () => {
-    const useCase = new AttemptBreakthroughUseCase(new InMemoryCharacterRepository(), new FixedRandomSource(0), new StaticRealmConfigSource());
+    const useCase = new AttemptBreakthroughUseCase(new InMemoryCharacterRepository(), new FixedRandomSource(0), new StaticRealmConfigSource(), new InMemoryOwnedCongPhapRepository());
     await expect(useCase.execute('nobody')).rejects.toMatchObject({ code: 'CHARACTER_NOT_FOUND' });
   });
 
   it('rejects with INSUFFICIENT_LINH_KHI when below the requirement, but still persists accrued linh khi', async () => {
     const characters = new InMemoryCharacterRepository();
     characters.seed(makeCharacter({ linhKhi: 10 }));
-    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0), new StaticRealmConfigSource());
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0), new StaticRealmConfigSource(), new InMemoryOwnedCongPhapRepository());
 
     await expect(useCase.execute('user-1')).rejects.toMatchObject({ code: 'INSUFFICIENT_LINH_KHI' });
 
@@ -57,7 +58,7 @@ describe('AttemptBreakthroughUseCase', () => {
       updateCalls += 1;
       return originalUpdate(id, expectedLastUpdateAt, data);
     };
-    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0), new StaticRealmConfigSource());
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0), new StaticRealmConfigSource(), new InMemoryOwnedCongPhapRepository());
 
     await expect(useCase.execute('user-1')).rejects.toMatchObject({ code: 'PUNISHED' });
 
@@ -78,7 +79,7 @@ describe('AttemptBreakthroughUseCase', () => {
       updateCalls += 1;
       return originalUpdate(id, expectedLastUpdateAt, data);
     };
-    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0), new StaticRealmConfigSource());
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0), new StaticRealmConfigSource(), new InMemoryOwnedCongPhapRepository());
 
     await expect(useCase.execute('user-1')).rejects.toMatchObject({ code: 'MAX_STAGE_REACHED' });
 
@@ -95,7 +96,7 @@ describe('AttemptBreakthroughUseCase', () => {
     // Phàm Nhân - Sơ requires 100 linh khi; seed exactly 150 so 50 carries over.
     characters.seed(makeCharacter({ linhKhi: 150, breakthroughFails: 2 }));
     // randomValue 0 always beats any positive success rate (rollSuccess: randomValue*100 < rate).
-    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0), new StaticRealmConfigSource());
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0), new StaticRealmConfigSource(), new InMemoryOwnedCongPhapRepository());
 
     const result = await useCase.execute('user-1');
 
@@ -111,7 +112,7 @@ describe('AttemptBreakthroughUseCase', () => {
     const characters = new InMemoryCharacterRepository();
     characters.seed(makeCharacter({ linhKhi: 150, breakthroughFails: 0 }));
     // randomValue 0.999 beats no realistic success rate (< 99.9%), forcing failure.
-    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0.999), new StaticRealmConfigSource());
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0.999), new StaticRealmConfigSource(), new InMemoryOwnedCongPhapRepository());
 
     const result = await useCase.execute('user-1');
 
@@ -126,7 +127,7 @@ describe('AttemptBreakthroughUseCase', () => {
   it('rolls over realmMajor when breaking through from Viên Mãn (peak substage 4)', async () => {
     const characters = new InMemoryCharacterRepository();
     characters.seed(makeCharacter({ realmMajor: 0, realmSub: 4, linhKhi: 500 }));
-    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0), new StaticRealmConfigSource());
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0), new StaticRealmConfigSource(), new InMemoryOwnedCongPhapRepository());
 
     const result = await useCase.execute('user-1');
 
@@ -137,7 +138,7 @@ describe('AttemptBreakthroughUseCase', () => {
   it('throws CONCURRENT_MODIFICATION if the character was modified between read and write', async () => {
     const characters = new InMemoryCharacterRepository();
     characters.seed(makeCharacter({ linhKhi: 150 }));
-    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0), new StaticRealmConfigSource());
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0), new StaticRealmConfigSource(), new InMemoryOwnedCongPhapRepository());
 
     // Simulate another request winning the race between execute()'s read and
     // its write: intercept the fake's write method so that, on the first
@@ -176,7 +177,7 @@ describe('AttemptBreakthroughUseCase breakthrough bonus', () => {
     // Roll 0.92 → 92, above the base rate (90, so this would FAIL without the
     // bonus) but below the boosted rate (min(90+30, cap 95) = 95). Success here
     // proves the bonus actually entered the rate, not just that the roll was low.
-    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0.92), new StaticRealmConfigSource());
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0.92), new StaticRealmConfigSource(), new InMemoryOwnedCongPhapRepository());
     const result = await useCase.execute('user-1');
     expect(result.success).toBe(true);
     expect(result.character.breakthroughBonusPct).toBe(0);
@@ -185,7 +186,7 @@ describe('AttemptBreakthroughUseCase breakthrough bonus', () => {
   it('resets breakthroughBonusPct to 0 on failure too', async () => {
     const characters = new InMemoryCharacterRepository();
     characters.seed(makeCharacter({ linhKhi: 150, breakthroughBonusPct: 10 }));
-    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0.999), new StaticRealmConfigSource());
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0.999), new StaticRealmConfigSource(), new InMemoryOwnedCongPhapRepository());
     const result = await useCase.execute('user-1');
     expect(result.success).toBe(false);
     expect(result.character.breakthroughBonusPct).toBe(0);
@@ -194,9 +195,37 @@ describe('AttemptBreakthroughUseCase breakthrough bonus', () => {
   it('leaves breakthroughBonusPct untouched on a rejected attempt (insufficient)', async () => {
     const characters = new InMemoryCharacterRepository();
     characters.seed(makeCharacter({ linhKhi: 10, breakthroughBonusPct: 25 }));
-    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0), new StaticRealmConfigSource());
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0), new StaticRealmConfigSource(), new InMemoryOwnedCongPhapRepository());
     await expect(useCase.execute('user-1')).rejects.toMatchObject({ code: 'INSUFFICIENT_LINH_KHI' });
     const saved = await characters.findByUserId('user-1');
     expect(saved?.breakthroughBonusPct).toBe(25);
+  });
+});
+
+describe('AttemptBreakthroughUseCase — buff Tu Luyện (Phase 2)', () => {
+  // Passive linhKhiRate 2%/level cấp 10 → rate × 1.2 khi tích lũy lazy.
+  const tuLuyenPassive = {
+    def: {
+      id: 'vong-coc-quyet', name: 'Vong Cốc', glyph: '忘', rarity: 3, category: 'passive' as const,
+      desc: 'd', active: true, maxLevel: 10, baseCost: 300, costGrowth: 1.6,
+      effects: [{ attribute: 'linhKhiRate' as const, flatPerLevel: 0, pctPerLevel: 2 }],
+      powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null,
+      upgradeMaterialId: null, baseMaterialCost: 0, materialCostGrowth: 1, cooldownRounds: null,
+      tier: 2, branch: 'tuLuyen' as const, minRealmMajor: 3, biTichMaterialId: 'bi-tich-vong-coc',
+    },
+    level: 10, equippedSlot: null,
+  };
+
+  it('reject PUNISHED vẫn persist số linh khi đã nhân buff', async () => {
+    const characters = new InMemoryCharacterRepository();
+    characters.seed(makeCharacter({ linhKhi: 0, lastUpdateAt: new Date(Date.now() - 1000 * 1000), punishedUntil: new Date(Date.now() + 60_000) }));
+    const owned = new InMemoryOwnedCongPhapRepository();
+    owned.seed('user-1', [tuLuyenPassive]);
+    const useCase = new AttemptBreakthroughUseCase(characters, new FixedRandomSource(0), new StaticRealmConfigSource(), owned);
+    await expect(useCase.execute('user-1')).rejects.toMatchObject({ code: 'PUNISHED' });
+    // Stage 0-0 rate=1.00 → 1000s × 1.2 ≈ 1200 (±1s jitter of Date.now()).
+    const saved = await characters.findByUserId('user-1');
+    expect(saved!.linhKhi).toBeGreaterThan(1150);
+    expect(saved!.linhKhi).toBeLessThan(1250);
   });
 });

@@ -7,7 +7,7 @@ import { isMaxStage, computeSuccessRate } from '../domain/breakthrough/breakthro
 import { applyPillEffect } from '../domain/pills/pill.calc';
 import { CultivationStateOutput } from './GetCultivationStateUseCase';
 import { OwnedCongPhapRepository } from '../domain/ports/OwnedCongPhapRepository';
-import { buildAttributeState } from './attributeState';
+import { buildAttributeState, buildSystemBuffs } from './attributeState';
 
 export class ConsumePillUseCase {
   constructor(
@@ -56,6 +56,10 @@ export class ConsumePillUseCase {
     }
 
     // Recompute lazily-accrued linh khi (respecting any active buff) up front.
+    // Buff nhánh Tu Luyện (Phase 2) nhân thẳng vào rate trước khi tích lũy.
+    const owned = await this.ownedCongPhap.listByUser(userId);
+    const { linhKhiRateMultiplier } = buildSystemBuffs(owned);
+    const effectiveRate = stage.cultivationRate * linhKhiRateMultiplier;
     const buff =
       character.cultivationBuffMultiplier !== null && character.cultivationBuffUntil !== null
         ? { multiplier: character.cultivationBuffMultiplier, until: character.cultivationBuffUntil }
@@ -64,7 +68,7 @@ export class ConsumePillUseCase {
       storedLinhKhi: character.linhKhi,
       lastUpdateAt: character.lastUpdateAt,
       now,
-      cultivationRate: stage.cultivationRate,
+      cultivationRate: effectiveRate,
       buff,
     });
 
@@ -104,7 +108,6 @@ export class ConsumePillUseCase {
     const newStage = config.getStage(updated.realmMajor, updated.realmSub);
     const newAtMax = isMaxStage(updated.realmMajor, updated.realmSub, config.maxRealmMajor, config.peakRealmSub(updated.realmMajor));
     const newPunished = updated.punishedUntil !== null && updated.punishedUntil.getTime() > now.getTime();
-    const owned = await this.ownedCongPhap.listByUser(userId);
     const attrState = buildAttributeState(config, updated.realmMajor, updated.realmSub, owned);
     return {
       realmMajor: updated.realmMajor,
@@ -115,7 +118,8 @@ export class ConsumePillUseCase {
       canBreakthrough: !newAtMax && !newPunished && updated.linhKhi >= newStage.linhKhiRequired,
       isMaxStage: newAtMax,
       punishedUntil: updated.punishedUntil,
-      cultivationRate: newStage.cultivationRate,
+      // Trả rate hiệu dụng (đã gồm buff Tu Luyện) để số hiển thị khớp tích lũy thật.
+      cultivationRate: newStage.cultivationRate * linhKhiRateMultiplier,
       cultivationBuffMultiplier: updated.cultivationBuffMultiplier,
       cultivationBuffUntil: updated.cultivationBuffUntil,
       breakthroughBonusPct: updated.breakthroughBonusPct,
