@@ -99,3 +99,38 @@ describe('alchemy profile domain', () => {
     expect(errorCode(() => furnaceUpgradeCheck(profile({ furnaceLevel: 2, danKhi: 300 }), 4))).toBe('ALCHEMY_FURNACE_INVALID');
   });
 });
+
+describe('rankUpCheck rank 7-9 (Thiên Giai)', () => {
+  const base = { rank: 6, danKhi: 10_000 };
+  it('rank 7 hợp lệ: đủ realm 5 + ĐK 3100 + Tủy 1', () => {
+    expect(() => rankUpCheck(base, 7, 5, 1)).not.toThrow();
+  });
+  it('rank 9 hợp lệ ở realm 5 (cùng gate Hóa Thần)', () => {
+    expect(() => rankUpCheck({ rank: 8, danKhi: 9999 }, 9, 5, 1)).not.toThrow();
+  });
+  it('rank 10 → ALCHEMY_RANK_LOCKED (cap mới 9)', () => {
+    try {
+      rankUpCheck({ rank: 9, danKhi: 99999 }, 10, 9, 9);
+      expect.unreachable();
+    } catch (e) {
+      expect((e as DomainError).code).toBe('ALCHEMY_RANK_LOCKED');
+    }
+  });
+  it('rank 7 realm 4 → ALCHEMY_REALM_GATE', () => {
+    expect(() => rankUpCheck(base, 7, 4, 1)).toThrowError(/realmMajor 5/);
+  });
+  it('thiếu Đan Khí → INSUFFICIENT_DAN_KHI (message mang cost 3100)', () => {
+    expect(() => rankUpCheck({ rank: 6, danKhi: 100 }, 7, 5, 1)).toThrowError(/3100/);
+  });
+  it('đủ ĐK + realm nhưng 0 Tủy → ALCHEMY_MISSING_DAN_HOA_TUY', () => {
+    try {
+      rankUpCheck(base, 7, 5, 0);
+      expect.unreachable();
+    } catch (e) {
+      expect((e as DomainError).code).toBe('ALCHEMY_MISSING_DAN_HOA_TUY');
+    }
+  });
+  it('rank 1-6 không cần Tủy (hành vi cũ)', () => {
+    expect(() => rankUpCheck({ rank: 5, danKhi: 2100 }, 6, 0)).not.toThrow();
+  });
+});
