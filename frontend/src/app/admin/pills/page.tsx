@@ -78,6 +78,8 @@ function emptyPill(): AdminPillDTO {
     name: "",
     glyph: "",
     rarity: 0,
+    // Backend mặc định tier 1 khi body thiếu — gửi sẵn để DTO đầy đủ.
+    tier: 1,
     effectKind: "linhKhi",
     ...statsForKind("linhKhi"),
     desc: "",

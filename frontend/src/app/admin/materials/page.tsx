@@ -25,6 +25,7 @@ function emptyMaterial(index: number): MaterialDTO {
     name: "Nguyên liệu mới",
     glyph: "◇",
     rarity: 0,
+    tier: 1,
     description: "Mô tả nguyên liệu.",
     active: true,
   };

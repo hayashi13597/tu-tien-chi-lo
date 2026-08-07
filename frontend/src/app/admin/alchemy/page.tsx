@@ -44,6 +44,10 @@ function emptyRecipe(
     ingredients: materials[0]
       ? [{ materialId: materials[0].id, quantity: 1 }]
       : [],
+    // Backend mặc định khi thiếu: tier 1, rank 1, deterministic 100%.
+    tier: 1,
+    minAlchemyRank: 1,
+    baseSuccessPct: 100,
   };
 }
 

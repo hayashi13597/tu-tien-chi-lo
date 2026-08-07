@@ -15,6 +15,7 @@ const material: MaterialDTO = {
   name: "Xích Viêm Tinh",
   glyph: "炎",
   rarity: 1,
+  tier: 1,
   description: "Một tinh thể nóng rực.",
   active: true,
 };
@@ -26,6 +27,9 @@ const recipe: AlchemyRecipeDTO = {
   linhThachCost: 10,
   active: true,
   ingredients: [{ materialId: material.id, quantity: 2 }],
+  tier: 1,
+  minAlchemyRank: 1,
+  baseSuccessPct: 100,
 };
 
 const branch: ExpeditionBranchDTO = {

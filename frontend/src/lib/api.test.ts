@@ -168,6 +168,30 @@ describe("materials and alchemy api", () => {
       quantity: 2,
     });
   });
+
+  it("fetches alchemy profile and posts rank-up/furnace", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        jsonResponse(200, {
+          profile: { rank: 1, danKhi: 0, furnaceLevel: 1 },
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { fetchAlchemyProfile, rankUpAlchemy, upgradeAlchemyFurnace } =
+      await import("./api");
+
+    await fetchAlchemyProfile();
+    await rankUpAlchemy();
+    await upgradeAlchemyFurnace();
+
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/alchemy/profile");
+    expect(String(fetchMock.mock.calls[1][0])).toContain("/alchemy/rank-up");
+    expect(fetchMock.mock.calls[1][1]?.method).toBe("POST");
+    expect(String(fetchMock.mock.calls[2][0])).toContain(
+      "/alchemy/furnace/upgrade",
+    );
+    expect(fetchMock.mock.calls[2][1]?.method).toBe("POST");
+  });
 });
 
 describe("expedition api", () => {
@@ -289,6 +313,7 @@ describe("admin pill api", () => {
     name: "Test Đan",
     glyph: "试",
     rarity: 1,
+    tier: 1,
     effectKind: "linhKhi",
     amount: 25,
     multiplier: null,
@@ -347,6 +372,7 @@ describe("admin catalog api", () => {
     name: "Xích Viêm Tinh",
     glyph: "炎",
     rarity: 1,
+    tier: 1,
     description: "d",
     active: true,
   };
@@ -357,6 +383,9 @@ describe("admin catalog api", () => {
     linhThachCost: 10,
     active: true,
     ingredients: [{ materialId: material.id, quantity: 2 }],
+    tier: 1,
+    minAlchemyRank: 1,
+    baseSuccessPct: 100,
   };
   const branch = {
     branch: {

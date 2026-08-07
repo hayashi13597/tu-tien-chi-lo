@@ -134,6 +134,9 @@ export interface AdminPillDTO {
   name: string;
   glyph: string;
   rarity: PillRarity;
+  // Bậc đan 1..3 (Phàm/Linh/Thiên Giai) — chỉ route admin trả; player
+  // /pills/inventory (PillInventoryItem) không có field này.
+  tier: number;
   effectKind: PillEffectKind;
   amount: number | null;
   multiplier: number | null;
@@ -245,6 +248,8 @@ export interface MaterialDTO {
   name: string;
   glyph: string;
   rarity: number;
+  // Bậc nguyên liệu 1..3 (Phàm/Linh/Thiên Giai).
+  tier: number;
   description: string;
   active: boolean;
 }
@@ -267,6 +272,13 @@ export interface AlchemyRecipeDTO {
   linhThachCost: number;
   active: boolean;
   ingredients: AlchemyIngredientDTO[];
+  tier: number;
+  minAlchemyRank: number;
+  baseSuccessPct: number;
+  // Player route: tính theo profile người gọi. Admin route: không có — optional.
+  effectiveSuccessPct?: number;
+  effectiveDurationSec?: number;
+  locked?: boolean;
 }
 
 export type AlchemyJobStatus = "queued" | "running" | "completed";
@@ -283,6 +295,9 @@ export interface AlchemyJobDTO {
   completedAt: string | null;
   outputGrantedAt: string | null;
   status: AlchemyJobStatus;
+  successCount: number;
+  failCount: number;
+  critCount: number;
 }
 
 export interface AlchemyOutputGrantDTO {
@@ -420,4 +435,25 @@ export interface StartExpeditionInput {
   branchId: string;
   difficulty: ExpeditionDifficultyKey;
   durationSec: ExpeditionDurationSec;
+}
+
+export interface AlchemyProfileDTO {
+  profile: { rank: number; danKhi: number; furnaceLevel: number };
+  successBonusPct: number;
+  speedBonusPct: number;
+  nextRank: {
+    target: number;
+    danKhiCost: number;
+    realmGateMajor: number | null;
+    realmMet: boolean;
+    affordable: boolean;
+    locked: boolean;
+  } | null;
+  nextFurnace: {
+    target: number;
+    danKhiCost: number;
+    linhThachCost: number;
+    affordableDanKhi: boolean;
+    affordableLinhThach: boolean;
+  } | null;
 }

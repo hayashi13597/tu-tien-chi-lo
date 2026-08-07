@@ -8,6 +8,7 @@ function pill(over: Partial<AdminPillDTO> = {}): AdminPillDTO {
     name: "Test Đan",
     glyph: "试",
     rarity: 0,
+    tier: 1,
     effectKind: "linhKhi",
     amount: 50,
     multiplier: null,
