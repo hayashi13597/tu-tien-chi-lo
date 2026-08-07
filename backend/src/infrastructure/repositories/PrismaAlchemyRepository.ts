@@ -83,6 +83,19 @@ export class PrismaAlchemyRepository implements AlchemyRepository {
     private readonly random: RandomSource = new MathRandomSource(),
   ) {}
 
+  // P2034 = serialization failure của Serializable tx: map 409 (CONCURRENT_MODIFICATION)
+  // để client retry, thay vì rơi thành 500 — cùng pattern PrismaExpeditionRepository.
+  private async runSerializable<T>(work: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+    try {
+      return await this.client.$transaction(work, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+        throw new DomainError('CONCURRENT_MODIFICATION', 'dữ liệu luyện đan vừa được thay đổi bởi request khác');
+      }
+      throw error;
+    }
+  }
+
   async listRecipes(): Promise<AlchemyRecipeRecord[]> {
     const rows = await this.client.alchemyRecipe.findMany({ include: { ingredients: true }, orderBy: { id: 'asc' } });
     return rows.map(toRecipe);
@@ -120,7 +133,7 @@ export class PrismaAlchemyRepository implements AlchemyRepository {
   async upgradeFurnace(input: {
     userId: string; characterId: string; targetLevel: number; danKhiCost: number; linhThachCost: number;
   }): Promise<AlchemyProfileRecord> {
-    return this.client.$transaction(async (tx) => {
+    return this.runSerializable(async (tx) => {
       const profile = await tx.alchemyProfile.updateMany({
         where: { userId: input.userId, furnaceLevel: input.targetLevel - 1, danKhi: { gte: input.danKhiCost } },
         data: { furnaceLevel: input.targetLevel, danKhi: { decrement: input.danKhiCost } },
@@ -132,7 +145,7 @@ export class PrismaAlchemyRepository implements AlchemyRepository {
       });
       if (character.count !== 1) throw new DomainError('INSUFFICIENT_LINH_THACH', 'không đủ Linh Thạch');
       return tx.alchemyProfile.findUniqueOrThrow({ where: { userId: input.userId } });
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    });
   }
 
   async enqueue(input: {
@@ -146,7 +159,7 @@ export class PrismaAlchemyRepository implements AlchemyRepository {
       throw new DomainError('ALCHEMY_QUEUE_INVALID', 'alchemy quantity must be a positive integer');
     }
 
-    return this.client.$transaction(async (tx) => {
+    return this.runSerializable(async (tx) => {
       const settled = await this.settleInTransaction(tx, input.userId, input.now);
       const recipeRows = await tx.alchemyRecipe.findMany({ include: { ingredients: true } });
       const recipe = recipeRows.map(toRecipe).find((item) => item.id === input.recipeId);
@@ -196,13 +209,11 @@ export class PrismaAlchemyRepository implements AlchemyRepository {
       });
 
       return { jobs: [...settled.jobs, toJob(created)], outputGrants: settled.outputGrants };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    });
   }
 
   async settleCompleted(userId: string, now: Date): Promise<AlchemyQueueOutput> {
-    return this.client.$transaction(async (tx) => this.settleInTransaction(tx, userId, now), {
-      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-    });
+    return this.runSerializable((tx) => this.settleInTransaction(tx, userId, now));
   }
 
   private async settleInTransaction(tx: Prisma.TransactionClient, userId: string, now: Date): Promise<AlchemyQueueOutput> {
