@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { validateLoadout } from './expedition.loadout';
 import { PillRecord } from '../pills/pill';
+import { DomainError } from '../errors';
+
+function expectLoadoutInvalid(pills: readonly PillRecord[]): void {
+  try {
+    validateLoadout(pills);
+    expect.unreachable('should have thrown');
+  } catch (e) {
+    expect(e).toBeInstanceOf(DomainError);
+    expect((e as DomainError).code).toBe('LOADOUT_INVALID');
+  }
+}
 
 function combatPill(id: string, overrides: Partial<PillRecord> = {}): PillRecord {
   return {
@@ -33,6 +44,6 @@ describe('validateLoadout', () => {
     ['combatAttribute lạ', [combatPill('a', { combatAttribute: 'xyz' as never })]],
     ['combatTrigger lạ', [combatPill('a', { combatTrigger: 'mid' as never })]],
   ])('LOADOUT_INVALID khi %s', (_label, pills) => {
-    expect(() => validateLoadout(pills)).toThrowError(/LOADOUT_INVALID/);
+    expectLoadoutInvalid(pills);
   });
 });
