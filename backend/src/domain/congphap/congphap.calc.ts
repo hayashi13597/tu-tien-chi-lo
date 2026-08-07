@@ -16,3 +16,15 @@ export function materialUpgradeCost(def: CongPhapRecord, currentLevel: number): 
   if (!def.upgradeMaterialId) return 0;
   return materialCostAtLevel(def.baseMaterialCost, def.materialCostGrowth, currentLevel);
 }
+
+// Học môn qua Bí Tịch: giá Linh Thạch phẳng theo spec Phase 2 (mọi môn tier 2 = 300).
+export const LEARN_LINH_THACH_COST = 300;
+
+export type LearnGateResult = { ok: true } | { ok: false; reason: 'not-learnable' | 'realm-gate' };
+
+// Gate học môn bằng Bí Tịch: môn không gắn Bí Tịch chỉ nhận qua redeem/grant.
+export function learnGate(def: CongPhapRecord, realmMajor: number): LearnGateResult {
+  if (def.biTichMaterialId === null) return { ok: false, reason: 'not-learnable' };
+  if (realmMajor < def.minRealmMajor) return { ok: false, reason: 'realm-gate' };
+  return { ok: true };
+}
