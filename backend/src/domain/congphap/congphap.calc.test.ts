@@ -7,7 +7,7 @@ const def: CongPhapRecord = {
   active: true, maxLevel: 10, baseCost: 100, costGrowth: 1.5,
   effects: [{ attribute: 'khiHuyet', flatPerLevel: 10, pctPerLevel: 0 }],
   powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null,
-  upgradeMaterialId: null, baseMaterialCost: 0, materialCostGrowth: 1, cooldownRounds: null,
+  upgradeMaterialId: null, baseMaterialCost: 0, materialCostGrowth: 1, cooldownRounds: null, tier: 1, branch: null, minRealmMajor: 0, biTichMaterialId: null,
 };
 
 describe('levelUpCost', () => {

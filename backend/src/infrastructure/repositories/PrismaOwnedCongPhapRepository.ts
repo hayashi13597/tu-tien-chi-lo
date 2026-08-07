@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { OwnedCongPhapRepository } from '../../domain/ports/OwnedCongPhapRepository';
-import { OwnedCongPhapEntry, CongPhapCategory } from '../../domain/congphap/congphap';
+import { OwnedCongPhapEntry, CongPhapCategory, CongPhapBranch } from '../../domain/congphap/congphap';
 import { PassiveEffect } from '../../domain/attributes/attributes.calc';
 
 function toEntry(r: {
@@ -11,12 +11,14 @@ function toEntry(r: {
     effects: unknown; powerPerLevel: number | null; chanNguyenCost: number | null;
     dupRefundLinhThach: number | null; upgradeMaterialId: string | null;
     baseMaterialCost: number; materialCostGrowth: number; cooldownRounds: number | null;
+    tier: number; branch: string | null; minRealmMajor: number; biTichMaterialId: string | null;
   };
 }): OwnedCongPhapEntry {
   return {
     def: {
       ...r.congPhap,
       category: r.congPhap.category as CongPhapCategory,
+      branch: (r.congPhap.branch as CongPhapBranch | null) ?? null,
       effects: (r.congPhap.effects as PassiveEffect[] | null) ?? null,
       upgradeMaterialId: r.congPhap.upgradeMaterialId,
       baseMaterialCost: r.congPhap.baseMaterialCost,

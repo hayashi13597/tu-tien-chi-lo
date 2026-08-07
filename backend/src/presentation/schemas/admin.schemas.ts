@@ -62,7 +62,8 @@ export const updatePillSchema = pillBodySchema;
 // còn bất biến theo category (passive cần effects, active cần powerPerLevel…)
 // nằm ở domain validateCongPhapDefinition.
 const passiveEffectSchema = z.object({
-  attribute: z.enum(['khiHuyet', 'chanNguyen', 'congVatLy', 'congPhep', 'phongThu', 'tocDo']),
+  // Hai key cuối là buff hệ thống Phase 2 (rule flat=0/pct>0 nằm ở domain validate).
+  attribute: z.enum(['khiHuyet', 'chanNguyen', 'congVatLy', 'congPhep', 'phongThu', 'tocDo', 'linhKhiRate', 'danDaoSuccess']),
   flatPerLevel: z.number(),
   pctPerLevel: z.number(),
 });
@@ -85,6 +86,11 @@ const congPhapBodySchema = z.object({
   baseMaterialCost: z.number().int().min(0).default(0),
   materialCostGrowth: z.number().min(1).default(1),
   cooldownRounds: z.number().int().min(0).nullable().default(null),
+  // Phase 2. Bất biến (tier>=2 => branch + biTich, key đặc biệt flat=0/pct>0) ở domain validate.
+  tier: z.number().int().min(1).max(3).default(1),
+  branch: z.enum(['tuLuyen', 'chienDao', 'danDao']).nullable().default(null),
+  minRealmMajor: z.number().int().min(0).default(0),
+  biTichMaterialId: z.string().regex(/^[a-z0-9-]+$/).nullable().default(null),
 });
 
 export const createCongPhapSchema = congPhapBodySchema.extend({

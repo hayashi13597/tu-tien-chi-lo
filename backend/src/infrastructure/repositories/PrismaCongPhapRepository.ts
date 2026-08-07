@@ -1,19 +1,21 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import { CongPhapRepository } from '../../domain/ports/CongPhapRepository';
-import { CongPhapRecord, CongPhapCategory } from '../../domain/congphap/congphap';
+import { CongPhapRecord, CongPhapCategory, CongPhapBranch } from '../../domain/congphap/congphap';
 import { PassiveEffect } from '../../domain/attributes/attributes.calc';
 
-// Prisma lưu category là string, effects là Json — narrow lại về domain ở biên.
+// Prisma lưu category/branch là string, effects là Json — narrow lại về domain ở biên.
 function toRecord(row: {
   id: string; name: string; glyph: string; rarity: number; category: string; desc: string;
   active: boolean; maxLevel: number; baseCost: number; costGrowth: number;
   effects: unknown; powerPerLevel: number | null; chanNguyenCost: number | null;
   dupRefundLinhThach: number | null; upgradeMaterialId: string | null;
   baseMaterialCost: number; materialCostGrowth: number; cooldownRounds: number | null;
+  tier: number; branch: string | null; minRealmMajor: number; biTichMaterialId: string | null;
 }): CongPhapRecord {
   return {
     ...row,
     category: row.category as CongPhapCategory,
+    branch: (row.branch as CongPhapBranch | null) ?? null,
     effects: (row.effects as PassiveEffect[] | null) ?? null,
     upgradeMaterialId: row.upgradeMaterialId,
     baseMaterialCost: row.baseMaterialCost,
