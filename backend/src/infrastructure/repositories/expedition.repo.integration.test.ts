@@ -37,7 +37,7 @@ describe('expedition Prisma repositories', () => {
     const rows = await config.listBranches();
     expect(rows).toHaveLength(8);
     expect(rows.reduce((sum, row) => sum + row.difficulties.length, 0)).toBe(24);
-    expect(rows[0].branch.upgradeMaterialWeights).toHaveLength(3);
+    expect(rows[0].branch.upgradeMaterialWeights).toHaveLength(4);
   });
 
   it('start trừ quota, completed giữ slot và claim grant reward idempotent', async () => {

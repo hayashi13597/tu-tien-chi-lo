@@ -34,7 +34,7 @@ describe('materials/alchemy routes', () => {
 
     const recipes = await agent.get('/alchemy/recipes');
     expect(recipes.status).toBe(200);
-    expect(recipes.body).toHaveLength(8);
+    expect(recipes.body).toHaveLength(16);
 
     const invalid = await agent.post('/alchemy/queue').send({ recipeId: 'recipe-hoi-khi-dan', quantity: 0 });
     expect(invalid.status).toBe(400);
