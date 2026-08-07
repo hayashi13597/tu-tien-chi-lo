@@ -14,6 +14,8 @@ export interface ExpeditionRepository {
     combatSnapshot: ExpeditionCombatSnapshot;
     combatResult: ExpeditionSimulation;
     rewardResult: RewardPayload;
+    // Phase 3 — đan loadout trừ nguyên tử trong transaction start.
+    loadoutConsumptions?: readonly { pillId: string; quantity: number }[];
   }): Promise<ExpeditionRecord>;
   getCurrent(userId: string, now: Date): Promise<CurrentExpeditionOutput>;
   claim(userId: string, now: Date): Promise<ClaimExpeditionOutput>;

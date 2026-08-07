@@ -26,6 +26,11 @@ export class PrismaPillRepository implements PillRepository {
     return row ? toPillRecord(row) : null;
   }
 
+  async listByIds(pillIds: readonly string[]): Promise<PillRecord[]> {
+    const rows = await this.client.pill.findMany({ where: { id: { in: [...pillIds] } } });
+    return rows.map(toPillRecord);
+  }
+
   async listAll(): Promise<PillRecord[]> {
     const rows = await this.client.pill.findMany({ orderBy: [{ rarity: 'asc' }, { id: 'asc' }] });
     return rows.map(toPillRecord);

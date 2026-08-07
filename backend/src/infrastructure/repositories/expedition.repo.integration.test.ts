@@ -33,6 +33,36 @@ const combatResult = { encounters: [], wins: 0 as const, reward: { multiplier: 0
 const reward = combatResult.reward;
 
 describe('expedition Prisma repositories', () => {
+  it('start với loadoutConsumptions trừ tồn kho nguyên tử; thiếu → INSUFFICIENT_INVENTORY', async () => {
+    const user = await prisma.user.create({ data: { username: `loadout_${Date.now()}`, passwordHash: 'x' } });
+    await prisma.character.create({ data: { userId: user.id, linhThach: 0 } });
+    await prisma.pill.upsert({
+      where: { id: 'cuong-the-dan' },
+      create: { id: 'cuong-the-dan', name: 'Cường Thể Đan', glyph: '強', rarity: 3, tier: 2, effectKind: 'combatBuff', bonusPct: 25, combatAttribute: 'congVatLy', combatTrigger: 'start', desc: 'd', active: true, starterQuantity: 0 },
+      update: {},
+    });
+    await prisma.inventoryItem.create({ data: { userId: user.id, pillId: 'cuong-the-dan', quantity: 1 } });
+    const startInput = {
+      branchId: 'hoa-vuc', difficulty: 'easy' as const, durationSec: 1_800 as const, ticketCostUnits: 1 as const,
+      gameDay: '2026-08-07', now: new Date('2026-08-07T00:00:00Z'), seed: 1,
+      combatSnapshot: { ...snapshot, loadout: [{ pillId: 'cuong-the-dan', combatAttribute: 'congVatLy' as const, combatTrigger: 'start' as const, pct: 25 }] },
+      combatResult, rewardResult: reward,
+      loadoutConsumptions: [{ pillId: 'cuong-the-dan', quantity: 1 }],
+    };
+    const started = await expeditions.start({ userId: user.id, ...startInput });
+    expect(started.status).toBe('running');
+    const inv = await prisma.inventoryItem.findUnique({ where: { userId_pillId: { userId: user.id, pillId: 'cuong-the-dan' } } });
+    expect(inv?.quantity).toBe(0);
+    // Xóa expedition đang chạy rồi start lần nữa với đan hết → INSUFFICIENT_INVENTORY, không tạo expedition.
+    await prisma.expedition.deleteMany({ where: { userId: user.id } });
+    await expect(expeditions.start({ userId: user.id, ...startInput, seed: 2 })).rejects.toMatchObject({ code: 'INSUFFICIENT_INVENTORY' });
+    const remaining = await prisma.expedition.count({ where: { userId: user.id } });
+    expect(remaining).toBe(0);
+    const quota = await prisma.expeditionDailyQuota.findUnique({ where: { userId_gameDay: { userId: user.id, gameDay: '2026-08-07' } } });
+    expect(quota?.spentUnits).toBe(1); // lần start thất bại đã rollback, không trừ vé thêm
+    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
+  });
+
   it('config đọc 8 branch và 24 difficulty', async () => {
     const rows = await config.listBranches();
     expect(rows).toHaveLength(8);
