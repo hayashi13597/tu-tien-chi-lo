@@ -9,7 +9,7 @@ import { PillRecord } from '../../src/domain/pills/pill';
 import { CharacterRecord } from '../../src/domain/entities/Character';
 
 function pill(id: string, over: Partial<PillRecord> = {}): PillRecord {
-  return { id, name: `N-${id}`, glyph: 'x', rarity: 0, effectKind: 'linhKhi', amount: 10, multiplier: null, durationSec: null, bonusPct: null, desc: 'd', active: true, starterQuantity: 0, ...over };
+  return { id, name: `N-${id}`, glyph: 'x', rarity: 0, tier: 1, effectKind: 'linhKhi', amount: 10, multiplier: null, durationSec: null, bonusPct: null, desc: 'd', active: true, starterQuantity: 0, ...over };
 }
 function code(over: Partial<RedeemCodeRecord> = {}): RedeemCodeRecord {
   return { id: 'c1', code: 'ABC', active: true, maxRedemptions: 2, redeemedCount: 0, expiresAt: null, rewards: [{ pillId: 'p1', quantity: 3 }], ...over };

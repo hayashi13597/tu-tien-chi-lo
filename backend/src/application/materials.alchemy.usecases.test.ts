@@ -38,10 +38,10 @@ function buildFakes(options: {
   const materials = {
     listInventory: async () => options.inventory ?? [{
       materialId: 'xich-viem-tinh', quantity: 5,
-      material: { id: 'xich-viem-tinh', name: 'Xích Viêm Tinh', glyph: '炎', rarity: 1, description: 'd', active: true },
+      material: { id: 'xich-viem-tinh', name: 'Xích Viêm Tinh', glyph: '炎', rarity: 1, tier: 1, description: 'd', active: true },
     }, {
       materialId: 'inactive', quantity: 9,
-      material: { id: 'inactive', name: 'Inactive', glyph: 'x', rarity: 1, description: 'd', active: false },
+      material: { id: 'inactive', name: 'Inactive', glyph: 'x', rarity: 1, tier: 1, description: 'd', active: false },
     }],
   };
   const alchemy = {
@@ -60,20 +60,20 @@ describe('material/alchemy use cases', () => {
     const f = buildFakes({ inventory: [
       {
         materialId: 'active', quantity: 2,
-        material: { id: 'active', name: 'Active', glyph: 'a', rarity: 1, description: 'd', active: true },
+        material: { id: 'active', name: 'Active', glyph: 'a', rarity: 1, tier: 1, description: 'd', active: true },
       },
       {
         materialId: 'inactive', quantity: 9,
-        material: { id: 'inactive', name: 'Inactive', glyph: 'x', rarity: 1, description: 'd', active: false },
+        material: { id: 'inactive', name: 'Inactive', glyph: 'x', rarity: 1, tier: 1, description: 'd', active: false },
       },
-      { materialId: 'empty', quantity: 0, material: { id: 'empty', name: 'Empty', glyph: 'e', rarity: 1, description: 'd', active: true } },
+      { materialId: 'empty', quantity: 0, material: { id: 'empty', name: 'Empty', glyph: 'e', rarity: 1, tier: 1, description: 'd', active: true } },
     ] });
     const result = await new GetMaterialInventoryUseCase(f.materials as never).execute('u');
     expect(result.map((item) => item.materialId)).toEqual(['active']);
   });
 
   it('enqueue thiếu nguyên liệu trả INSUFFICIENT_MATERIALS và không enqueue', async () => {
-    const f = buildFakes({ inventory: [{ materialId: 'xich-viem-tinh', quantity: 2, material: { id: 'xich-viem-tinh', name: 'X', glyph: 'x', rarity: 1, description: 'd', active: true } }] });
+    const f = buildFakes({ inventory: [{ materialId: 'xich-viem-tinh', quantity: 2, material: { id: 'xich-viem-tinh', name: 'X', glyph: 'x', rarity: 1, tier: 1, description: 'd', active: true } }] });
     await expect(new QueueAlchemyUseCase(f.alchemy as never, f.materials as never, f.characters as never).execute('u', recipe.id, 1))
       .rejects.toMatchObject({ code: 'INSUFFICIENT_MATERIALS' });
     expect(f.enqueueCalls).toBe(0);

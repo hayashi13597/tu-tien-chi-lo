@@ -5,7 +5,7 @@ import { PillRecord, InventoryEntry, PillEffectKind } from '../../domain/pills/p
 // Prisma stores effectKind as a plain string column; narrow it back to the
 // domain union at the boundary (the seed only ever writes valid kinds).
 function toPillRecord(row: {
-  id: string; name: string; glyph: string; rarity: number; effectKind: string;
+  id: string; name: string; glyph: string; rarity: number; tier: number; effectKind: string;
   amount: number | null; multiplier: number | null; durationSec: number | null;
   bonusPct: number | null; desc: string; active: boolean; starterQuantity: number;
 }): PillRecord {

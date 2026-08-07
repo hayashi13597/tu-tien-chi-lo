@@ -5,7 +5,7 @@ import { PillRecord } from '../../src/domain/pills/pill';
 const now = new Date('2026-01-01T00:00:00Z');
 const charBase = { cultivationBuffMultiplier: null, cultivationBuffUntil: null, breakthroughBonusPct: 0, punishedUntil: null as Date | null };
 function pill(over: Partial<PillRecord>): PillRecord {
-  return { id: 'p', name: 'p', glyph: 'x', rarity: 0, effectKind: 'linhKhi', amount: null, multiplier: null, durationSec: null, bonusPct: null, desc: '', ...over };
+  return { id: 'p', name: 'p', glyph: 'x', rarity: 0, tier: 1, effectKind: 'linhKhi', amount: null, multiplier: null, durationSec: null, bonusPct: null, desc: '', ...over };
 }
 
 describe('applyPillEffect', () => {

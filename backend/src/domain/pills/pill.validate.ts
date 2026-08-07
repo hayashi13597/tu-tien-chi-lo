@@ -27,6 +27,9 @@ export function validatePillDefinition(pill: PillRecord): void {
   if (!Number.isInteger(pill.rarity) || pill.rarity < 0 || pill.rarity > 4) {
     fail('rarity must be an integer between 0 and 4');
   }
+  if (!Number.isInteger(pill.tier) || pill.tier < 1 || pill.tier > 3) {
+    fail('tier must be an integer between 1 and 3');
+  }
   if (!Number.isInteger(pill.starterQuantity) || pill.starterQuantity < 0) {
     fail('starterQuantity must be an integer >= 0');
   }

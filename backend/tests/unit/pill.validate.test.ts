@@ -5,7 +5,7 @@ import { DomainError } from '../../src/domain/errors';
 
 function pill(over: Partial<PillRecord> = {}): PillRecord {
   return {
-    id: 'test-dan', name: 'Test Đan', glyph: '试', rarity: 0, effectKind: 'linhKhi',
+    id: 'test-dan', name: 'Test Đan', glyph: '试', rarity: 0, tier: 1, effectKind: 'linhKhi',
     amount: 50, multiplier: null, durationSec: null, bonusPct: null,
     desc: 'mô tả', active: true, starterQuantity: 0, ...over,
   };
@@ -39,6 +39,13 @@ describe('validatePillDefinition', () => {
     expectInvalid(pill({ rarity: -1 }));
     expectInvalid(pill({ rarity: 5 }));
     expectInvalid(pill({ rarity: 1.5 }));
+  });
+
+  it('tier chỉ chấp nhận 1..3: tier 0/4/non-integer reject, tier 2 hợp lệ', () => {
+    expectInvalid(pill({ tier: 0 }));
+    expectInvalid(pill({ tier: 4 }));
+    expectInvalid(pill({ tier: 1.5 }));
+    expect(() => validatePillDefinition(pill({ tier: 2 }))).not.toThrow();
   });
 
   it('rejects negative or non-integer starterQuantity', () => {

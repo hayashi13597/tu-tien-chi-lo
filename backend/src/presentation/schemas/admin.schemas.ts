@@ -39,6 +39,8 @@ const pillBodySchema = z.object({
   name: z.string().min(1),
   glyph: z.string().min(1),
   rarity: z.number().int().min(0).max(4),
+  // Default giữ hành vi cũ (tier 1) cho body admin chưa gửi field mới.
+  tier: z.number().int().min(1).max(3).default(1),
   effectKind: z.enum(['linhKhi', 'cultivationBuff', 'breakthroughBoost', 'clearPunishment']),
   amount: z.number().nullable(),
   multiplier: z.number().nullable(),
@@ -108,6 +110,7 @@ const materialCatalogRowSchema = z.object({
   name: z.string().min(1),
   glyph: z.string().min(1),
   rarity: z.number().int().min(0),
+  tier: z.number().int().min(1).max(3).default(1),
   description: z.string().min(1),
   active: z.boolean(),
 });

@@ -4,7 +4,7 @@ import { UpdateMaterialAdminUseCase } from './UpdateMaterialAdminUseCase';
 import { UpdateAlchemyRecipeAdminUseCase } from './UpdateAlchemyRecipeAdminUseCase';
 import { UpdateExpeditionConfigAdminUseCase } from './UpdateExpeditionConfigAdminUseCase';
 
-const material = { id: 'xich-viem-tinh', name: 'Xích', glyph: '炎', rarity: 1, description: 'd', active: true };
+const material = { id: 'xich-viem-tinh', name: 'Xích', glyph: '炎', rarity: 1, tier: 1, description: 'd', active: true };
 const recipe = {
   id: 'recipe-hoi-khi-dan', pillId: 'hoi-khi-dan', durationSec: 1_800, linhThachCost: 10, active: true,
   tier: 1, minAlchemyRank: 1, baseSuccessPct: 100,
@@ -26,6 +26,12 @@ describe('admin catalog validation', () => {
   it('reject duplicate material IDs', async () => {
     const useCase = new UpdateMaterialAdminUseCase({ replace: async () => [] } as never);
     await expect(useCase.execute([material, { ...material, name: 'Duplicate' }])).rejects.toMatchObject({ code: 'INVALID_MATERIAL_CONFIG' });
+  });
+
+  it('reject material tier ngoài 1..3', async () => {
+    const useCase = new UpdateMaterialAdminUseCase({ replace: async () => [] } as never);
+    await expect(useCase.execute([{ ...material, tier: 0 }])).rejects.toMatchObject({ code: 'INVALID_MATERIAL_CONFIG' });
+    await expect(useCase.execute([{ ...material, tier: 4 }])).rejects.toMatchObject({ code: 'INVALID_MATERIAL_CONFIG' });
   });
 
   it('reject duplicate recipe ingredient IDs và quantity không dương', async () => {
