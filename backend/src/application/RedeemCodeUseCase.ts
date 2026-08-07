@@ -3,6 +3,7 @@ import { PillRepository } from '../domain/ports/PillRepository';
 import { CongPhapRepository } from '../domain/ports/CongPhapRepository';
 import { OwnedCongPhapRepository } from '../domain/ports/OwnedCongPhapRepository';
 import { CharacterRepository } from '../domain/ports/CharacterRepository';
+import { MaterialRepository } from '../domain/ports/MaterialRepository';
 import { RedeemResultDto, RedeemRewardResult } from '../domain/redeem/redeemCode';
 import { normalizeCode } from '../domain/redeem/redeemCode.validate';
 import { duplicateRefund } from '../domain/congphap/congphap.calc';
@@ -15,6 +16,7 @@ export class RedeemCodeUseCase {
     private readonly congphap: CongPhapRepository,
     private readonly owned: OwnedCongPhapRepository,
     private readonly characters: CharacterRepository,
+    private readonly materials: MaterialRepository,
   ) {}
 
   async execute(input: { userId: string; code: string }): Promise<RedeemResultDto> {
@@ -63,6 +65,11 @@ export class RedeemCodeUseCase {
           if (refund > 0) await this.characters.addLinhThach(character.id, refund);
           results.push({ kind: 'linhThach', id: 'linh-thach', name: 'Linh Thạch', glyph: '晶', quantity: refund });
         }
+      } else if (r.materialId) {
+        // Reward vật phẩm (Phase 2 — tạm thời là đường phát Bí Tịch trước khi boss drop).
+        await this.materials.increment(input.userId, r.materialId, r.quantity);
+        const material = await this.materials.getById(r.materialId);
+        results.push({ kind: 'material', id: r.materialId, name: material?.name ?? r.materialId, glyph: material?.glyph ?? '?', quantity: r.quantity });
       } else if (r.linhThach) {
         await this.characters.addLinhThach(character.id, r.linhThach);
         results.push({ kind: 'linhThach', id: 'linh-thach', name: 'Linh Thạch', glyph: '晶', quantity: r.linhThach });

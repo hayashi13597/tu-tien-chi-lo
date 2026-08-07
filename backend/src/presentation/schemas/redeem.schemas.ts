@@ -11,6 +11,8 @@ const rewardSchema = z.object({
   pillId: z.string().min(1).optional(),
   congPhapId: z.string().regex(/^[a-z0-9-]+$/).optional(),
   linhThach: z.number().int().min(1).optional(),
+  // Loại thứ tư (Phase 2): material (vd: bi-tich-*).
+  materialId: z.string().regex(/^[a-z0-9-]+$/).optional(),
   quantity: z.number().int().min(1),
 });
 

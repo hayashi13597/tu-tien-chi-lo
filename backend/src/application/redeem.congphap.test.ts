@@ -18,8 +18,9 @@ function build(rewards: RewardEntry[], ownedAlready: string[] = []) {
   const congphap = { findById: async (id: string) => (id === 'cp1' ? cp : null) };
   const ownedRepo = { grant: async (_u: string, id: string) => { if (owned.has(id)) return false; owned.add(id); granted.push(id); return true; } };
   const chars = { findByUserId: async () => ({ id: 'c' } as never), addLinhThach: async (_i: string, a: number) => { refund += a; } };
+  const materialsFake = { increment: async () => {}, getById: async () => null, listInventory: async () => [], spendMany: async () => true };
   return {
-    uc: new RedeemCodeUseCase(codes as never, pills as never, congphap as never, ownedRepo as never, chars as never),
+    uc: new RedeemCodeUseCase(codes as never, pills as never, congphap as never, ownedRepo as never, chars as never, materialsFake as never),
     get refund() { return refund; },
     get granted() { return granted; },
   };

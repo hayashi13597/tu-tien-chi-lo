@@ -48,3 +48,15 @@ describe('validateRedeemCodeDefinition', () => {
     expect(() => validateRedeemCodeDefinition({ ...base, rewards: [{ pillId: 'x', quantity: 1 }, { congPhapId: 'x', quantity: 1 }] })).not.toThrow();
   });
 });
+
+describe('reward loại material (Phase 2)', () => {
+  it('chấp nhận reward materialId', () => {
+    expect(() => validateRedeemCodeDefinition({ ...base, rewards: [{ materialId: 'bi-tich-x', quantity: 1 }] })).not.toThrow();
+  });
+  it('chặn materialId đi kèm loại khác (đúng một loại)', () => {
+    expect(() => validateRedeemCodeDefinition({ ...base, rewards: [{ materialId: 'bi-tich-x', pillId: 'p1', quantity: 1 }] })).toThrow(DomainError);
+  });
+  it('chặn materialId trùng lặp', () => {
+    expect(() => validateRedeemCodeDefinition({ ...base, rewards: [{ materialId: 'bi-tich-x', quantity: 1 }, { materialId: 'bi-tich-x', quantity: 2 }] })).toThrow(DomainError);
+  });
+});
