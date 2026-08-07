@@ -617,6 +617,10 @@ describe("congphap api", () => {
       powerPerLevel: null,
       chanNguyenCost: null,
       dupRefundLinhThach: null,
+      tier: 1,
+      branch: "chienDao" as const,
+      minRealmMajor: 0,
+      biTichMaterialId: null,
     };
     const fetchMock = vi.fn(
       async (_input: RequestInfo | URL, _init?: RequestInit) =>

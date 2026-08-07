@@ -12,7 +12,7 @@ import {
   searchAdminUsers,
   updateAdminCongPhap,
 } from "@/lib/api";
-import { ATTRIBUTE_LABELS, ATTRIBUTE_ORDER } from "@/lib/attribute-constants";
+import { ATTRIBUTE_LABELS, ATTRIBUTE_ORDER, effectAttributeLabel } from "@/lib/attribute-constants";
 import { getCongPhapRarityMeta, levelUpCost } from "@/lib/congphap-display";
 import {
   findCongPhapError,
@@ -65,6 +65,10 @@ function emptyCongPhap(): CongPhapDTO {
     baseMaterialCost: 0,
     materialCostGrowth: 1,
     dupRefundLinhThach: null,
+    tier: 1,
+    branch: "chienDao" as const,
+    minRealmMajor: 0,
+    biTichMaterialId: null,
     ...fieldsForCategory("passive"),
   };
 }
@@ -80,7 +84,7 @@ function headline(def: CongPhapDTO): string {
       const parts: string[] = [];
       if (e.flatPerLevel !== 0) parts.push(`+${e.flatPerLevel}`);
       if (e.pctPerLevel !== 0) parts.push(`+${e.pctPerLevel}%`);
-      return `${ATTRIBUTE_LABELS[e.attribute]} ${parts.join(" ")}`;
+      return `${effectAttributeLabel(e.attribute)} ${parts.join(" ")}`;
     })
     .join(", ");
 }

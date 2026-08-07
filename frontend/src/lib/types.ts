@@ -147,7 +147,7 @@ export interface AdminPillDTO {
   starterQuantity: number;
 }
 
-export type RedeemRewardKind = "pill" | "congphap" | "linhThach";
+export type RedeemRewardKind = "pill" | "congphap" | "linhThach" | "material";
 
 export interface RedeemRewardDTO {
   kind: RedeemRewardKind;
@@ -183,8 +183,14 @@ export interface AdminRedeemCodeDTO {
 
 export type CongPhapCategory = "active" | "passive";
 
+// Ba nhánh công pháp (Phase 2). null = môn không thuộc nhánh (legacy).
+export type CongPhapBranch = "tuLuyen" | "chienDao" | "danDao";
+
+// Key hiệu ứng: 6 attribute chiến đấu HOẶC 2 key hệ thống Phase 2.
+export type SystemEffectAttribute = "linhKhiRate" | "danDaoSuccess";
+
 export interface PassiveEffectDTO {
-  attribute: AttributeKey;
+  attribute: AttributeKey | SystemEffectAttribute;
   flatPerLevel: number;
   pctPerLevel: number;
 }
@@ -212,6 +218,15 @@ export interface CongPhapDTO {
   powerPerLevel: number | null;
   chanNguyenCost: number | null;
   dupRefundLinhThach: number | null;
+  /** Phase 2: 1 Phàm / 2 Linh / 3 Thiên Giai. */
+  tier: number;
+  branch: CongPhapBranch | null;
+  /** Cảnh giới major (0-based) tối thiểu để học; 0 = không gate. */
+  minRealmMajor: number;
+  /** Material Bí Tịch cần để nhập môn; null = môn chỉ qua redeem/grant. */
+  biTichMaterialId: string | null;
+  /** Số Bí Tịch user đang có (player view; admin payload có thể không gửi → undefined-safe). */
+  biTichOwned?: number;
 }
 
 export interface OwnedCongPhapDTO {
@@ -226,6 +241,14 @@ export interface CongPhapListResult {
   owned: OwnedCongPhapDTO[];
   /** Catalog is active-only. */
   catalog: CongPhapDTO[];
+  /** Buff hệ thống gom từ mọi passive đang sở hữu (Phase 2). */
+  system: { linhKhiRatePct: number; danDaoSuccessPct: number };
+}
+
+export interface LearnCongPhapResult {
+  owned: string;
+  linhThach: number;
+  biTich: { id: string; quantity: number };
 }
 
 export interface LevelUpResult {

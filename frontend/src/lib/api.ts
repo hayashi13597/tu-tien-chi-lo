@@ -15,6 +15,7 @@ import type {
   ExpeditionBranchDTO,
   ExpeditionClaimDTO,
   ExpeditionDTO,
+  LearnCongPhapResult,
   LevelUpResult,
   MaterialDTO,
   MaterialInventoryDTO,
@@ -337,6 +338,13 @@ export function levelUpCongPhap(congPhapId: string): Promise<LevelUpResult> {
   return apiFetch<LevelUpResult>("/congphap/levelup", {
     method: "POST",
     body: JSON.stringify({ congPhapId }),
+  });
+}
+
+// POST /congphap/:id/learn — học môn bằng 1 Bí Tịch + 300 Linh Thạch (Phase 2).
+export function learnCongPhap(congPhapId: string): Promise<LearnCongPhapResult> {
+  return apiFetch<LearnCongPhapResult>(`/congphap/${congPhapId}/learn`, {
+    method: "POST",
   });
 }
 
