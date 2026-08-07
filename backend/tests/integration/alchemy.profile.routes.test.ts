@@ -105,6 +105,49 @@ describe('alchemy 2.0 routes', () => {
     expect(res.body.error.code).toBe('ALCHEMY_REALM_GATE');
   });
 
+  it('Phase 3 rank 7: thiếu Tủy → 409 ALCHEMY_MISSING_DAN_HOA_TUY; đủ Tủy + Hóa Thần → 200 rank 7', async () => {
+    const me = await agent.get('/auth/me');
+    const userId = me.body.id as string;
+    await prisma.character.update({ where: { userId }, data: { realmMajor: 5 } });
+    await prisma.alchemyProfile.update({ where: { userId }, data: { rank: 6, danKhi: 3100 } });
+
+    const missing = await agent.post('/alchemy/rank-up');
+    expect(missing.status).toBe(409);
+    expect(missing.body.error.code).toBe('ALCHEMY_MISSING_DAN_HOA_TUY');
+    // ĐK không bị trừ khi thiếu Tủy.
+    const profileAfterMiss = await prisma.alchemyProfile.findUniqueOrThrow({ where: { userId } });
+    expect(profileAfterMiss).toMatchObject({ rank: 6, danKhi: 3100 });
+
+    await prisma.materialInventory.upsert({
+      where: { userId_materialId: { userId, materialId: 'dan-hoa-tuy' } },
+      create: { userId, materialId: 'dan-hoa-tuy', quantity: 1 },
+      update: { quantity: 1 },
+    });
+    const res = await agent.post('/alchemy/rank-up');
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ rank: 7, danKhi: 0 });
+    const tuy = await prisma.materialInventory.findUnique({ where: { userId_materialId: { userId, materialId: 'dan-hoa-tuy' } } });
+    expect(tuy?.quantity).toBe(0);
+  });
+
+  it('Phase 3 rank 7 gate: realm thấp → 409 ALCHEMY_REALM_GATE; rank 9 → 409 ALCHEMY_RANK_LOCKED', async () => {
+    const me = await agent.get('/auth/me');
+    const userId = me.body.id as string;
+    await prisma.character.update({ where: { userId }, data: { realmMajor: 4 } });
+    await prisma.alchemyProfile.update({ where: { userId }, data: { rank: 6, danKhi: 9999 } });
+    const gated = await agent.post('/alchemy/rank-up');
+    expect(gated.status).toBe(409);
+    expect(gated.body.error.code).toBe('ALCHEMY_REALM_GATE');
+
+    await prisma.alchemyProfile.update({ where: { userId }, data: { rank: 9 } });
+    const locked = await agent.post('/alchemy/rank-up');
+    expect(locked.status).toBe(409);
+    expect(locked.body.error.code).toBe('ALCHEMY_RANK_LOCKED');
+    // dọn về rank thấp cho các test sau
+    await prisma.character.update({ where: { userId }, data: { realmMajor: 5 } });
+    await prisma.alchemyProfile.update({ where: { userId }, data: { rank: 1, danKhi: 0 } });
+  });
+
   it('upgrade furnace trừ Đan Khí + Linh Thạch; max lò trả 409 ALCHEMY_FURNACE_MAX', async () => {
     const me = await agent.get('/auth/me');
     const userId = me.body.id as string;
