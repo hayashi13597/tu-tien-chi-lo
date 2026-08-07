@@ -67,6 +67,16 @@ describe('alchemy domain', () => {
     expect(() => validateRecipe({ ...recipe, tier: 1, minAlchemyRank: 1, baseSuccessPct: 100 })).not.toThrow();
   });
 
+  it('validateRecipe giữ chặn nguyên liệu trùng', () => {
+    expect(() => validateRecipe({
+      ...recipe,
+      ingredients: [
+        { materialId: 'xich-viem-tinh', quantity: 3 },
+        { materialId: 'xich-viem-tinh', quantity: 2 },
+      ],
+    })).toThrow(DomainError);
+  });
+
   it('settle job hoàn tất, cấp output đúng một lần và bật job kế tiếp', () => {
     const now = new Date('2026-07-27T02:00:00Z');
     const settled = settleAlchemyQueue({

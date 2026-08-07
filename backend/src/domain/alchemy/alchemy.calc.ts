@@ -23,6 +23,7 @@ export function validateRecipe(recipe: AlchemyRecipeRecord): void {
     if (!ingredient.materialId || materialIds.has(ingredient.materialId) || !Number.isInteger(ingredient.quantity) || ingredient.quantity <= 0) {
       throw new DomainError('ALCHEMY_RECIPE_INVALID', `invalid ingredient in recipe: ${recipe.id}`);
     }
+    materialIds.add(ingredient.materialId);
   }
 
   const minRankByTier: Record<number, number> = { 1: 1, 2: 4, 3: 7 };
