@@ -27,7 +27,7 @@ Contributor workflows are summarized in the root `AGENTS.md`; keep that guide al
 - Backend env: `JWT_SECRET`, `JWT_REFRESH_SECRET`, `CORS_ORIGIN=http://localhost:3000`, `PORT=5000`. Frontend: `NEXT_PUBLIC_API_BASE=http://localhost:5000` in `frontend/.env.local`.
 - Docker/Prisma gotcha: `node:20-alpine` needs `openssl` in the image + `linux-musl-openssl-3.0.x` binary target in `prisma/schema.prisma`, or the query engine fails to load.
 - Integration-test gotchas: pre-warm Prisma connections before racing concurrent requests (cold pool makes races non-deterministic); usernames must satisfy `registerSchema` `min(3)`.
-- Current test counts: **backend 448, frontend 130**.
+- Current test counts: **backend 490, frontend 133**.
 
 ## Backend: Phase 1 (core) + Phase 2 (cookie auth)
 
@@ -107,7 +107,7 @@ Contributor workflows are summarized in the root `AGENTS.md`; keep that guide al
 - Frontend data layer: `useExpedition`, `useMaterialInventory`, `useAlchemyQueue` lazy-load server state and refetch after mutations; `lib/expedition-display.ts` formats duration/ticket cost/reward percentage and clamps countdowns.
 - Frontend UI: `ExpeditionCard`/`ExpeditionDrawer` và `AlchemyCard`/`AlchemyDrawer` dùng server-authoritative mutations, local countdown, accessible backdrop/Escape và responsive layout; page refetches cultivation/material balances after claim/enqueue.
 - Công Pháp frontend: `CongPhapDTO` carries material upgrade config; `CongPhapCard` shows Linh Thạch + material balance and disables level-up when either is insufficient. Level-up refetches material inventory and cultivation state; `LevelUpResult.material` carries the committed balance.
-- Backend gate hiện tại: **448 tests**, frontend **130 tests**, backend `npm run build`, frontend lint/typecheck/build pass. Integration cần `backend/.env` với PostgreSQL chạy ở `localhost:5432`.
+- Backend gate hiện tại: **490 tests**, frontend **133 tests**, backend `npm run build`, frontend lint/typecheck/build pass. Integration cần `backend/.env` với PostgreSQL chạy ở `localhost:5432`.
 
 ## Luyện Đan 2.0 (Tam hệ Liên hoàn — Phase 1)
 
@@ -119,7 +119,19 @@ Contributor workflows are summarized in the root `AGENTS.md`; keep that guide al
 - Error codes mới (map ở `errorHandler`): `ALCHEMY_RANK_TOO_LOW` 409, `ALCHEMY_RANK_LOCKED` 409 (rank-up quá cấp 6), `ALCHEMY_REALM_GATE` 409, `INSUFFICIENT_DAN_KHI` 409, `ALCHEMY_FURNACE_MAX` 409, `ALCHEMY_RANK_INVALID`/`ALCHEMY_FURNACE_INVALID` 400.
 - Admin: `PUT /admin/alchemy/recipes` nhận thêm `tier`/`minAlchemyRank`/`baseSuccessPct` (validate domain `validateRecipe`: tier 1..3, T2→minRank 4); editors `/admin/materials` + `/admin/pills` có ô `tier` — round-trip T2 đã pin bằng integration test.
 - Frontend: `lib/api.ts` thêm `fetchAlchemyProfile`/`rankUpAlchemy`/`upgradeAlchemyFurnace`; `use-alchemy-queue` expose `rankUp()`/`upgradeFurnace()`; `alchemy-drawer` header Cấp Đan Sư + Đan Khí + Đan Lô (nút kèm cost, disable khi thiếu), recipe row hiển thị `effectiveSuccessPct` + badge tier + trạng thái khóa; `alchemy-card` chip "Đan Sư cấp N · Lò M"; dòng kết quả settle trong drawer: "Thành công a · Xuất sắc b · Hỏng c".
-- Trạng thái: backend **448/448**, frontend **130/130** + lint + tsc + build xanh; 5 tiêu chí nghiệm thu spec §9 đã verify ở API level; phần UI (header, toast, lock tooltip) nghiệm thu bằng mắt người theo quy ước repo.
+- Trạng thái: backend **490/490**, frontend **133/133** + lint + tsc + build xanh; các tiêu chí nghiệm thu spec §9 Phase 1+2 đã verify ở API level; phần UI (header, toast, lock tooltip) nghiệm thu bằng mắt người theo quy ước repo.
+
+## Công Pháp 2.0 (Tam hệ Liên hoàn — Phase 2)
+
+- Mục tiêu (spec `docs/superpowers/specs/2026-08-07-cong-phap-2-design.md`): trục progression cho công pháp — mỗi môn có **tier (1–3)** + **nhánh** (`tuLuyen`/`chienDao`/`danDao`); 9 môn tier 2 (Linh Giai, gate `minRealmMajor = 3` = Kết Đan) học bằng **1 Bí Tịch + 300 Linh Thạch** (`LEARN_LINH_THACH_COST`); Bí Tịch là `Material` tier 2 thường → Phase 3 chỉ cần bật drop boss.
+- Hiệu ứng mới: union `EffectAttribute = keyof AttributeSet | 'linhKhiRate' | 'danDaoSuccess'`; key hệ thống bắt buộc `flatPerLevel = 0`, `pctPerLevel > 0`. `computeAttributes` giữ nguyên (bỏ qua key hệ thống); `sumSystemBuffs(passives)` gom %; `attributeState.buildSystemBuffs(owned)` trả thêm `linhKhiRateMultiplier` (filter giống attributeState: passive + active).
+- Tiêu thụ: `linhKhiRate` nhân `cultivationRate × (1 + pct/100)` ở cả 3 call-site `computeLinhKhi` (GetCultivationState/ConsumePill/AttemptBreakthrough — áp dụng cả tích lũy offline; pill buff nhân chồng riêng); `danDaoSuccessPct` truyền vào `computeSuccessPct(..., danDaoPct)` ở `ListAlchemyRecipesUseCase.executeForUser` + `PrismaAlchemyRepository.settleInTransaction` (đọc owned trong cùng tx Serializable).
+- Học môn: `POST /congphap/:id/learn` → `learnGate` (domain: not-learnable/realm-gate) → `ProgressionRepository.learnWithCosts` (Serializable tx: tạo OwnedCongPhap → P2002 = already-owned; trừ 1 Bí Tịch guard quantity ≥ 1; trừ LT guard gte; P2034 = concurrent). Error codes mới: `CONGPHAP_NOT_LEARNABLE` 400, `CONGPHAP_REALM_GATE`/`CONGPHAP_MISSING_BITICH`/`CONGPHAP_ALREADY_OWNED` 409.
+- GET /congphap trả thêm: field theo môn `tier`/`branch`/`minRealmMajor`/`biTichMaterialId`/`biTichOwned`, cộng top-level `system = { linhKhiRatePct, danDaoSuccessPct }`.
+- Redeem: `RedeemCodeReward.materialId` (loại thứ tư) — `RedeemCodeUseCase` increment MaterialRepository, kết quả kind `material`; code cũ đổi hành vi **không đổi**. Grant công pháp qua redeem không tiêu thụ Bí Tịch (vai trò quà).
+- Migration `20260807173000_cong_phap_2` (additive + backfill 3 môn cũ → `branch = 'chienDao'`); seed thêm 9 môn tier 2 + 9 `bi-tich-*` + 2 linh tài (`linh-tai-tu-luyen`, `linh-tai-dan-dao`); deploy: `prisma migrate deploy` trước code mới.
+- Validation mirror FE/BE: `congphap.validate.ts` ↔ `frontend/src/lib/congphap-validation.ts` (tier 1..3, tier ≥ 2 ⇒ branch + biTich, key hệ thống flat=0/pct>0); `MIN_REALM_BY_TIER` gợi ý {1→0, 2→3, 3→5} cả hai phía.
+- Frontend player: `use-congphap` expose `learn(id)` + `system`; `congphap-modal` strip buff hệ thống (ẩn khi 0), mục Chưa Sở Hữu group theo nhánh (Tu Luyện/Chiến Đạo/Đan Đạo/Cơ Bản) với nút "Học · 1 Bí Tịch + 300 LT" + hint khóa (`alchemy-recipe-lock`), toast thành công; admin `/admin/congphap` có section "Phân Hệ" (tier/branch/gate/Bí Tịch), effect select thêm 2 key hệ thống (khóa flat), `/admin/codes` reward thêm loại "Vật phẩm" (select từ catalog materials).
 
 ## Security hardening (backend)
 

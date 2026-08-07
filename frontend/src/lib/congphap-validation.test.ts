@@ -139,3 +139,81 @@ describe("validateCongPhapDraft", () => {
     expect(findCongPhapError(errors, "glyph")).toBeUndefined();
   });
 });
+
+describe("Phase 2 rules (mirror backend validate)", () => {
+  it("chấp nhận key hệ thống danDaoSuccess/linhKhiRate (flat=0, pct>0)", () => {
+    expect(
+      validateCongPhapDraft(
+        {
+          ...passive,
+          effects: [
+            { attribute: "danDaoSuccess", flatPerLevel: 0, pctPerLevel: 1 },
+          ],
+        },
+        { isNew: false },
+      ),
+    ).toEqual([]);
+  });
+
+  it("chặn key hệ thống có flat ≠ 0 hoặc pct ≤ 0", () => {
+    const bad1 = validateCongPhapDraft(
+      {
+        ...passive,
+        effects: [
+          { attribute: "linhKhiRate", flatPerLevel: 1, pctPerLevel: 2 },
+        ],
+      },
+      { isNew: false },
+    );
+    expect(findCongPhapError(bad1, "effects")).toBeDefined();
+
+    const bad2 = validateCongPhapDraft(
+      {
+        ...passive,
+        effects: [
+          { attribute: "danDaoSuccess", flatPerLevel: 0, pctPerLevel: 0 },
+        ],
+      },
+      { isNew: false },
+    );
+    expect(findCongPhapError(bad2, "effects")).toBeDefined();
+  });
+
+  it("tier ≥ 2 bắt buộc branch + biTich; tier hợp lệ 1..3; gate ≥ 0", () => {
+    const noBranch = validateCongPhapDraft(
+      { ...passive, tier: 2, branch: null, biTichMaterialId: "bi-tich-x" },
+      { isNew: false },
+    );
+    expect(findCongPhapError(noBranch, "branch")).toBeDefined();
+
+    const noBitich = validateCongPhapDraft(
+      { ...passive, tier: 2, biTichMaterialId: null },
+      { isNew: false },
+    );
+    expect(findCongPhapError(noBitich, "biTichMaterialId")).toBeDefined();
+
+    const badTier = validateCongPhapDraft(
+      { ...passive, tier: 4 },
+      { isNew: false },
+    );
+    expect(findCongPhapError(badTier, "tier")).toBeDefined();
+
+    const badGate = validateCongPhapDraft(
+      { ...passive, minRealmMajor: -1 },
+      { isNew: false },
+    );
+    expect(findCongPhapError(badGate, "minRealmMajor")).toBeDefined();
+
+    const ok = validateCongPhapDraft(
+      {
+        ...passive,
+        tier: 2,
+        branch: "danDao",
+        biTichMaterialId: "bi-tich-x",
+        minRealmMajor: 3,
+      },
+      { isNew: false },
+    );
+    expect(ok).toEqual([]);
+  });
+});
