@@ -1,10 +1,12 @@
 import { DomainError } from '../errors';
 import { RandomSource } from '../ports/RandomSource';
+import type { LoadoutEntry } from '../expedition/expedition';
 import { BattleResult, CombatSkill, CombatTurn, CombatantSnapshot } from './combat';
 
 interface CombatState {
   snapshot: CombatantSnapshot;
   hp: number;
+  maxHp: number;
   chanNguyen: number;
   cooldowns: Map<string, number>;
 }
@@ -22,6 +24,8 @@ export function simulateBattle(input: {
   enemy: CombatantSnapshot;
   random: RandomSource;
   maxTurns: number;
+  // Phase 3 — đan combatBuff từ loadout bí cảnh. Optional: bỏ qua = hành vi cũ.
+  pillBuffs?: LoadoutEntry[];
 }): BattleResult {
   if (!Number.isInteger(input.maxTurns) || input.maxTurns < 1) {
     throw new DomainError('INVALID_COMBAT_CONFIG', 'maxTurns must be a positive integer');
@@ -30,6 +34,10 @@ export function simulateBattle(input: {
     player: createState(input.player),
     enemy: createState(input.enemy),
   };
+  // Đan 'start' áp ngay trước lượt 1. Buff tính trên bản copy attributes để
+  // không rò sang encounter kế tiếp (simulateExpedition tái dùng snapshot gốc).
+  applyLoadoutBuffs(states.player, (input.pillBuffs ?? []).filter((buff) => buff.combatTrigger === 'start'));
+  const lowHpFired = new Set<string>();
   const turns: CombatTurn[] = [];
   let rounds = 0;
 
@@ -45,6 +53,15 @@ export function simulateBattle(input: {
       const target = states[targetId];
       if (actor.hp <= 0 || target.hp <= 0) continue;
       turns.push(resolveTurn(actor, target, round, input.random));
+      if (targetId === 'player' && target.hp > 0 && target.hp <= 0.3 * target.maxHp) {
+        const pending = (input.pillBuffs ?? []).filter(
+          (buff) => buff.combatTrigger === 'lowHp30' && !lowHpFired.has(buff.pillId),
+        );
+        if (pending.length > 0) {
+          applyLoadoutBuffs(target, pending);
+          for (const buff of pending) lowHpFired.add(buff.pillId);
+        }
+      }
       if (target.hp <= 0) {
         return resultFor(targetId === 'player' ? 'enemy' : 'player', turns, rounds, states);
       }
@@ -68,9 +85,30 @@ function createState(snapshot: CombatantSnapshot): CombatState {
   return {
     snapshot,
     hp: snapshot.attributes.khiHuyet,
+    maxHp: snapshot.attributes.khiHuyet,
     chanNguyen: snapshot.maxChanNguyen,
     cooldowns: new Map(),
   };
+}
+
+// Cộng tuyến tính pct cùng attribute rồi nhân attribute × (1 + pct/100).
+// khiHuyet: maxHp và hp hiện tại cùng tăng theo delta, cap tại maxHp mới.
+function applyLoadoutBuffs(state: CombatState, buffs: readonly LoadoutEntry[]): void {
+  if (buffs.length === 0) return;
+  const pctByAttr = new Map<string, number>();
+  for (const buff of buffs) pctByAttr.set(buff.combatAttribute, (pctByAttr.get(buff.combatAttribute) ?? 0) + buff.pct);
+  const attrs = { ...state.snapshot.attributes };
+  const oldMax = state.maxHp;
+  for (const [attr, pct] of pctByAttr) {
+    if (typeof attrs[attr as keyof typeof attrs] === 'number') {
+      (attrs as Record<string, number>)[attr] *= 1 + pct / 100;
+    }
+  }
+  state.snapshot = { ...state.snapshot, attributes: attrs };
+  if (pctByAttr.has('khiHuyet')) {
+    state.maxHp = attrs.khiHuyet;
+    state.hp = Math.min(state.maxHp, state.hp + (state.maxHp - oldMax));
+  }
 }
 
 function resolveTurn(actor: CombatState, target: CombatState, round: number, random: RandomSource): CombatTurn {

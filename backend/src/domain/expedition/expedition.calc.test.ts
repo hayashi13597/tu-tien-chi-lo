@@ -114,3 +114,19 @@ describe('expeditionStartGate', () => {
     expect(() => expeditionStartGate(branch, 0, 'Phàm Nhân')).not.toThrow();
   });
 });
+
+describe('simulateExpedition với pillBuffs', () => {
+  it('buff start áp cho mọi encounter (reset mỗi battle, không dồn)', () => {
+    const buff = { pillId: 'p', combatAttribute: 'congVatLy' as const, combatTrigger: 'start' as const, pct: 100 };
+    const input = { player, branch, difficulty: easy, realmMultiplier: 0.01, realmReferencePower: 200, ticketCostUnits: 1 as const, random: new SeededRandom(42), maxTurns: 5 };
+    const plain = simulateExpedition({ ...input });
+    const buffed = simulateExpedition({ ...input, random: new SeededRandom(42), pillBuffs: [buff] });
+    const dmgOf = (sim: typeof plain, idx: number) =>
+      sim.encounters[idx]?.result.turns.filter((t) => t.actor === 'player').reduce((s, t) => s + t.damage, 0) ?? 0;
+    expect(buffed.wins).toBe(3);
+    expect(dmgOf(buffed, 0)).toBeGreaterThan(dmgOf(plain, 0));
+    expect(dmgOf(buffed, 1)).toBeGreaterThan(dmgOf(plain, 1));
+    // encounter 2 buff ≈ encounter 1 buff (không nhân chồng cộng dồn giữa battles)
+    expect(Math.abs(dmgOf(buffed, 0) - dmgOf(buffed, 1))).toBeLessThanOrEqual(Math.max(1, dmgOf(buffed, 0) * 0.3));
+  });
+});

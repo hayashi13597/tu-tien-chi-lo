@@ -8,6 +8,7 @@ import {
   ExpeditionDifficultyConfig,
   ExpeditionEncounterResult,
   ExpeditionSimulation,
+  LoadoutEntry,
   RewardPayload,
   RewardRollInput,
 } from './expedition';
@@ -74,6 +75,8 @@ export function simulateExpedition(input: {
   ticketCostUnits: 1 | 2 | 4;
   random: RandomSource;
   maxTurns: number;
+  // Phase 3 — đan combatBuff từ loadout; áp lại từ đầu mỗi encounter.
+  pillBuffs?: LoadoutEntry[];
 }): ExpeditionSimulation {
   const encounters: ExpeditionEncounterResult[] = [];
   let wins = 0;
@@ -91,6 +94,7 @@ export function simulateExpedition(input: {
       enemy: enemyForPower(power, input.player.attributes.tocDo),
       random: input.random,
       maxTurns: input.maxTurns,
+      pillBuffs: input.pillBuffs,
     });
     encounters.push({ kind, result: battle });
     if (battle.winner !== 'player') break;

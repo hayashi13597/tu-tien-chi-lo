@@ -105,3 +105,52 @@ describe('turn-based combat simulator', () => {
     expect(activeSkillPower(120, 3)).toBe(360);
   });
 });
+
+describe('simulateBattle với pillBuffs (Phase 3)', () => {
+  const startBuff = (pillId: string, attr: 'congVatLy' | 'phongThu' | 'khiHuyet', pct: number) =>
+    ({ pillId, combatAttribute: attr, combatTrigger: 'start' as const, pct });
+  const lowBuff = (pillId: string, attr: 'khiHuyet', pct: number) =>
+    ({ pillId, combatAttribute: attr, combatTrigger: 'lowHp30' as const, pct });
+
+  it('trigger start: buff congVatLy áp ngay lượt 1, damage tăng tỉ lệ', () => {
+    const player = fighter('player', { attributes: attrs({ congVatLy: 50, tocDo: 10 }) });
+    const enemy = fighter('enemy', { attributes: attrs({ khiHuyet: 10_000, tocDo: 1 }) });
+    const plain = simulateBattle({ player: { ...player, attributes: { ...player.attributes } }, enemy, random: new SequenceRandom([0.5]), maxTurns: 1 });
+    const buffed = simulateBattle({ player: { ...player, attributes: { ...player.attributes } }, enemy: { ...enemy, attributes: { ...enemy.attributes } }, random: new SequenceRandom([0.5]), maxTurns: 1, pillBuffs: [startBuff('p1', 'congVatLy', 100)] });
+    const dmg = (r: typeof plain) => r.turns.find((t) => t.actor === 'player')?.damage ?? 0;
+    // variance 1.0 cả hai (random 0.5) → damage nhân đúng 2 khi công 50→100.
+    expect(dmg(buffed)).toBe(dmg(plain) * 2);
+  });
+
+  it('trigger lowHp30: kích khi HP ≤ 30% max, một lần; khiHuyet tăng cả max lẫn current', () => {
+    // player máu 100 (ngưỡng 30), enemy đánh trước ~40/hit → sau hit đầu HP 60>30, hit 2 HP 20≤30 → buff +100% khiHuyet → maxHp 200, hp 120; buff chỉ kích 1 lần nên giúp trụ thêm.
+    const fragile = fighter('player', { attributes: attrs({ khiHuyet: 100, congVatLy: 1, tocDo: 1 }) });
+    const strong = fighter('enemy', { attributes: attrs({ khiHuyet: 100_000, congVatLy: 41, phongThu: 0, tocDo: 50 }) });
+    const result = simulateBattle({
+      player: fragile, enemy: strong, random: new SequenceRandom([0.5]), maxTurns: 20,
+      pillBuffs: [lowBuff('hp-pill', 'khiHuyet', 100)],
+    });
+    // Enemy 41 damage/hit (variance 1.0). Không buff: 100→59→18→0 chết round 3.
+    // Có buff: hit 2 hạ còn 18 ≤ 30 → +100% khiHuyet (max 200, hp 118) → sống thêm
+    // đúng 2 round (118→77→36→0): buff kích 1 lần, không tái kích.
+    const plain = simulateBattle({ player: { ...fragile, attributes: { ...fragile.attributes } }, enemy: { ...strong, attributes: { ...strong.attributes } }, random: new SequenceRandom([0.5]), maxTurns: 20 });
+    expect(plain.winner).toBe('enemy');
+    expect(plain.rounds).toBe(3);
+    expect(result.winner).toBe('enemy');
+    expect(result.rounds).toBe(5);
+  });
+
+  it('lowHp30 không kích khi HP không chạm ngưỡng', () => {
+    const tank = fighter('player', { attributes: attrs({ khiHuyet: 100_000, tocDo: 50 }) });
+    const weak = fighter('enemy', { attributes: attrs({ congVatLy: 5, tocDo: 1 }) });
+    const buffed = simulateBattle({ player: tank, enemy: weak, random: new SequenceRandom([0.5]), maxTurns: 3, pillBuffs: [lowBuff('hp-pill', 'khiHuyet', 100)] });
+    const plain = simulateBattle({ player: { ...tank, attributes: { ...tank.attributes } }, enemy: { ...weak, attributes: { ...weak.attributes } }, random: new SequenceRandom([0.5]), maxTurns: 3 });
+    expect(buffed.turns.map((t) => t.damage)).toEqual(plain.turns.map((t) => t.damage));
+  });
+
+  it('không mutate snapshot đầu vào (battle sau buff lại từ đầu)', () => {
+    const player = fighter('player');
+    simulateBattle({ player, enemy: fighter('enemy'), random: new SequenceRandom([0.5]), maxTurns: 2, pillBuffs: [startBuff('p1', 'congVatLy', 100)] });
+    expect(player.attributes.congVatLy).toBe(10);
+  });
+});
