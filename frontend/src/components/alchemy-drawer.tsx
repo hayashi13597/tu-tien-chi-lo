@@ -139,28 +139,41 @@ export function AlchemyDrawer({
                         disabled={
                           !profile.nextRank.affordable ||
                           !profile.nextRank.realmMet ||
+                          !profile.nextRank.affordableDanHoaTuy ||
                           busy
                         }
                         onClick={onRankUp}
                         title={
-                          profile.nextRank.realmMet
-                            ? `Tốn ${profile.nextRank.danKhiCost} Đan Khí`
-                            : "Cần cảnh giới cao hơn (Kết Đan)"
+                          !profile.nextRank.realmMet
+                            ? `Cần cảnh giới cao hơn (realmMajor ${profile.nextRank.realmGateMajor})`
+                            : !profile.nextRank.affordableDanHoaTuy
+                              ? "Cần Đan Hỏa Tủy — rơi từ boss bí cảnh tầng 2+"
+                              : `Tốn ${profile.nextRank.danKhiCost} Đan Khí${profile.nextRank.danHoaTuyCost > 0 ? ` + ${profile.nextRank.danHoaTuyCost} Đan Hỏa Tủy` : ""}`
                         }
                       >
                         Thăng cấp {profile.nextRank.target} ·{" "}
                         {profile.nextRank.danKhiCost} ĐK
+                        {profile.nextRank.danHoaTuyCost > 0 &&
+                          ` + Tủy ×${profile.nextRank.danHoaTuyCost}`}
                       </button>
                       {!profile.nextRank.realmMet && (
                         <small className="alchemy-recipe-lock">
-                          Cần đạt cảnh giới Kết Đan để lên cấp{" "}
+                          Cần đạt cảnh giới cao hơn (realmMajor{" "}
+                          {profile.nextRank.realmGateMajor}) để lên cấp{" "}
                           {profile.nextRank.target}
                         </small>
                       )}
+                      {profile.nextRank.realmMet &&
+                        !profile.nextRank.affordableDanHoaTuy && (
+                          <small className="alchemy-recipe-lock">
+                            Thiếu Đan Hỏa Tủy — rơi từ boss bí cảnh tầng 2+ (có{" "}
+                            {profile.nextRank.danHoaTuyOwned})
+                          </small>
+                        )}
                     </>
                   ) : (
                     <small className="alchemy-cap-note">
-                      Cấp tối đa — chờ nội dung Thiên Giai
+                      Đan Sư cấp tối đa 9
                     </small>
                   )}
                 </div>

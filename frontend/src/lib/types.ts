@@ -502,6 +502,10 @@ export interface AlchemyProfileDTO {
     realmMet: boolean;
     affordable: boolean;
     locked: boolean;
+    // Phase 3 Thiên Giai (cấp 7-9): cần thêm Đan Hỏa Tủy (boss bí cảnh tầng 2+).
+    danHoaTuyCost: number;
+    danHoaTuyOwned: number;
+    affordableDanHoaTuy: boolean;
   } | null;
   nextFurnace: {
     target: number;
