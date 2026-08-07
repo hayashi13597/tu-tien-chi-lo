@@ -21,6 +21,14 @@ const EFFECT_KINDS: { value: PillEffectKind; label: string }[] = [
 
 const RARITIES: PillRarity[] = [0, 1, 2, 3, 4];
 
+// Bậc đan mirror backend tier (int 1..3) — chọn qua select nên không cần
+// rule NaN trong pill-validation (khác input số tự do).
+const TIERS: { value: number; label: string }[] = [
+  { value: 1, label: "Phàm Giai" },
+  { value: 2, label: "Linh Giai" },
+  { value: 3, label: "Thiên Giai" },
+];
+
 const EFFECT_HINTS: Record<PillEffectKind, string> = {
   linhKhi: "cộng thẳng một lần vào linh khí khi dùng",
   cultivationBuff:
@@ -242,6 +250,22 @@ function PillForm({
               {RARITIES.map((r) => (
                 <option key={r} value={r}>
                   {getRarityMeta(r).name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="admin-field">
+            <span className="admin-field-label">Bậc</span>
+            <select
+              className="admin-input"
+              value={draft.tier}
+              onChange={(e) => set("tier", Number(e.target.value))}
+              disabled={saving}
+              aria-label="Bậc đan dược"
+            >
+              {TIERS.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
                 </option>
               ))}
             </select>

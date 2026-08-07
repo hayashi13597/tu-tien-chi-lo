@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  findAdminCatalogError,
   validateAlchemyRecipes,
   validateExpeditionConfig,
   validateMaterialCatalog,
@@ -91,6 +92,21 @@ describe("admin catalog validation", () => {
     );
   });
 
+  it("rejects a material tier outside 1–3", () => {
+    expect(
+      findAdminCatalogError(
+        validateMaterialCatalog([{ ...material, tier: 0 }]),
+        "0.tier",
+      ),
+    ).toBeDefined();
+    expect(
+      findAdminCatalogError(
+        validateMaterialCatalog([{ ...material, tier: 4 }]),
+        "0.tier",
+      ),
+    ).toBeDefined();
+  });
+
   it("rejects duplicate material ids and negative rarity", () => {
     const errors = validateMaterialCatalog([
       material,
@@ -103,6 +119,56 @@ describe("admin catalog validation", () => {
         expect.objectContaining({ path: "1.rarity" }),
       ]),
     );
+  });
+
+  it("rejects a recipe tier outside 1–3", () => {
+    expect(
+      findAdminCatalogError(
+        validateAlchemyRecipes([{ ...recipe, tier: 5 }]),
+        "0.tier",
+      ),
+    ).toBeDefined();
+  });
+
+  it("rejects baseSuccessPct outside 5–100", () => {
+    for (const baseSuccessPct of [4, 120]) {
+      expect(
+        findAdminCatalogError(
+          validateAlchemyRecipes([{ ...recipe, baseSuccessPct }]),
+          "0.baseSuccessPct",
+        ),
+      ).toBeDefined();
+    }
+  });
+
+  it("rejects minAlchemyRank lệch map bậc (tier 1→1, 2→4, 3→7)", () => {
+    expect(
+      findAdminCatalogError(
+        validateAlchemyRecipes([{ ...recipe, tier: 2, minAlchemyRank: 3 }]),
+        "0.minAlchemyRank",
+      ),
+    ).toBeDefined();
+    expect(
+      findAdminCatalogError(
+        validateAlchemyRecipes([
+          { ...recipe, tier: 2, minAlchemyRank: Number.NaN },
+        ]),
+        "0.minAlchemyRank",
+      ),
+    ).toBeDefined();
+  });
+
+  it("accepts tier/rank đúng map và baseSuccessPct ở biên", () => {
+    expect(
+      validateAlchemyRecipes([
+        { ...recipe, tier: 2, minAlchemyRank: 4, baseSuccessPct: 5 },
+      ]),
+    ).toEqual([]);
+    expect(
+      validateAlchemyRecipes([
+        { ...recipe, tier: 3, minAlchemyRank: 7, baseSuccessPct: 100 },
+      ]),
+    ).toEqual([]);
   });
 
   it("rejects invalid recipe numbers, duplicate outputs and ingredients", () => {

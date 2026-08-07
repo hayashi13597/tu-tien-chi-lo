@@ -64,10 +64,25 @@ export function validateMaterialCatalog(
         message: "Độ hiếm phải là số nguyên ≥ 0",
       });
     }
+    // Mirror backend materialCatalogRowSchema (admin.schemas.ts): tier int 1..3.
+    if (
+      !finiteInteger(material.tier) ||
+      material.tier < 1 ||
+      material.tier > 3
+    ) {
+      errors.push({
+        path: path("tier"),
+        message: "Bậc phải là số nguyên trong khoảng 1–3",
+      });
+    }
   });
 
   return errors;
 }
+
+// Mirror backend validateRecipe (domain/alchemy/alchemy.calc.ts): cấp Đan Sư
+// tối thiểu gắn cứng theo bậc công thức.
+const MIN_RANK_BY_TIER: Record<number, number> = { 1: 1, 2: 4, 3: 7 };
 
 export function validateAlchemyRecipes(
   recipes: AlchemyRecipeDTO[],
@@ -115,6 +130,35 @@ export function validateAlchemyRecipes(
       errors.push({
         path: path("linhThachCost"),
         message: "Phải là số nguyên ≥ 0",
+      });
+    }
+    // Mirror backend validateRecipe: tier int 1..3.
+    if (!finiteInteger(recipe.tier) || recipe.tier < 1 || recipe.tier > 3) {
+      errors.push({
+        path: path("tier"),
+        message: "Bậc phải là số nguyên trong khoảng 1–3",
+      });
+    }
+    // Mirror backend validateRecipe: baseSuccessPct int 5..100.
+    if (
+      !finiteInteger(recipe.baseSuccessPct) ||
+      recipe.baseSuccessPct < 5 ||
+      recipe.baseSuccessPct > 100
+    ) {
+      errors.push({
+        path: path("baseSuccessPct"),
+        message: "Phải là số nguyên trong khoảng 5–100",
+      });
+    }
+    // Mirror backend validateRecipe: minAlchemyRank === MIN_RANK_BY_TIER[tier]
+    // (tier ngoài 1..3 thì map tra undefined → rule này cũng fail như backend).
+    if (
+      !finiteInteger(recipe.minAlchemyRank) ||
+      recipe.minAlchemyRank !== MIN_RANK_BY_TIER[recipe.tier]
+    ) {
+      errors.push({
+        path: path("minAlchemyRank"),
+        message: "Phải là 1/4/7 tương ứng bậc 1/2/3",
       });
     }
     if (recipe.ingredients.length === 0) {
