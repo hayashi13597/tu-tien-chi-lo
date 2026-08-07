@@ -11,6 +11,9 @@ const recipe: AlchemyRecipeRecord = {
   durationSec: 1_800,
   linhThachCost: 10,
   active: true,
+  tier: 1,
+  minAlchemyRank: 1,
+  baseSuccessPct: 100,
   ingredients: [{ materialId: 'xich-viem-tinh', quantity: 3 }],
 };
 
@@ -19,6 +22,7 @@ function job(): AlchemyJobRecord {
     id: 'job-1', userId: 'u', characterId: 'c', recipeId: recipe.id, quantity: 2,
     queuedAt: new Date('2026-07-27T00:00:00Z'), startsAt: new Date('2026-07-27T00:00:00Z'),
     completesAt: new Date('2026-07-27T01:00:00Z'), completedAt: null, outputGrantedAt: null, status: 'running',
+    successCount: 0, failCount: 0, critCount: 0,
   };
 }
 
