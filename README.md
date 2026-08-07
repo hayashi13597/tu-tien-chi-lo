@@ -73,6 +73,8 @@ Mở http://localhost:3000 → đăng ký tài khoản (tên 3–32 ký tự, m�
 | `POST` | `/pills/consume` | Dùng một viên đan |
 | `GET` | `/congphap` | Công pháp sở hữu + danh mục (kèm `tier`/`branch`/gate, `biTichOwned`, buff hệ thống `system`) |
 | `POST` | `/congphap/:id/learn` | Học môn bằng 1 Bí Tịch + 300 Linh Thạch (gate cảnh giới) |
+| `GET` | `/expeditions/branches` | Nhánh bí cảnh (kèm `tier`/`minRealmMajor`/`recommendedPower`/`bossDropWeights`) |
+| `POST` | `/expeditions/start` | Xuất phát (body thêm `loadoutPillIds?` — ≤2 đan combatBuff, trừ kho ngay) |
 | `GET` | `/alchemy/profile` | Hồ sơ Đan Sư (lazy-create) + bước rank/lò tiếp theo |
 | `POST` | `/alchemy/rank-up` | Thăng cấp Đan Sư (tốn Đan Khí, gate cảnh giới) |
 | `POST` | `/alchemy/furnace/upgrade` | Nâng Đan Lô (Đan Khí + Linh Thạch) |
@@ -86,8 +88,8 @@ Lỗi trả về dạng `{ "error": { "code", "message" } }`. Endpoint `/admin/*
 ## Kiểm thử
 
 ```bash
-cd backend && npm test     # 490 test: unit (fake in-memory) + integration (Postgres thật)
-cd frontend && pnpm test   # 133 test logic thuần: format, realm-constants, luồng refresh của api, validation
+cd backend && npm test     # 530+ test: unit (fake in-memory) + integration (Postgres thật)
+cd frontend && pnpm test   # 139 test logic thuần: format, realm-constants, luồng refresh của api, validation
 pnpm lint                  # Biome (frontend)
 ```
 

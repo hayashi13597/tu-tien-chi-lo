@@ -112,4 +112,35 @@ describe('expedition routes', () => {
     expect(again.body.error.code).toBe('INSUFFICIENT_INVENTORY');
     await prisma.user.deleteMany({ where: { username: user2 } });
   });
+
+  it('Phase 3: claim chuyến rơi Bí Tịch → MaterialInventory có bí tịch đó', async () => {
+    const user3 = `route_exp3_${Date.now()}`;
+    const agent3 = request.agent(app);
+    expect((await agent3.post('/auth/register').send({ username: user3, password: 'password123' })).status).toBe(201);
+    const u3 = await prisma.user.findUniqueOrThrow({ where: { username: user3 } });
+    const difficulty = await prisma.expeditionDifficulty.findUniqueOrThrow({ where: { branchId_key: { branchId: 'thanh-lam', key: 'normal' } } });
+    await prisma.expedition.create({
+      data: {
+        userId: u3.id, branchId: 'thanh-lam', difficultyId: difficulty.id,
+        durationSec: 1800, ticketCostUnits: 1,
+        startedAt: new Date(Date.now() - 3_600_000), completesAt: new Date(Date.now() - 1_000),
+        status: 'completed', seed: '1',
+        combatSnapshot: {}, combatResult: {},
+        rewardResult: { multiplier: 1, linhThach: 10, materials: [{ materialId: 'bi-tich-vong-coc', quantity: 1 }, { materialId: 'dan-hoa-tuy', quantity: 1 }] },
+      },
+    });
+    const claimed = await agent3.post('/expeditions/claim');
+    expect(claimed.status).toBe(200);
+    expect(claimed.body.reward.materials).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ materialId: 'bi-tich-vong-coc', quantity: 1 }),
+        expect.objectContaining({ materialId: 'dan-hoa-tuy', quantity: 1 }),
+      ]),
+    );
+    const biTich = await prisma.materialInventory.findUnique({ where: { userId_materialId: { userId: u3.id, materialId: 'bi-tich-vong-coc' } } });
+    expect(biTich?.quantity).toBe(1);
+    const tuy = await prisma.materialInventory.findUnique({ where: { userId_materialId: { userId: u3.id, materialId: 'dan-hoa-tuy' } } });
+    expect(tuy?.quantity).toBe(1);
+    await prisma.user.delete({ where: { id: u3.id } });
+  });
 });
