@@ -45,6 +45,21 @@ describe('admin material/alchemy/expedition catalog routes', () => {
     expect(res.body.error.code).toBe('INVALID_EXPEDITION_CONFIG');
   });
 
+  it('material tier round-trip: PUT tier 2 → GET admin trả tier 2, sau đó restore', async () => {
+    const admin = request.agent(app);
+    await admin.post('/auth/login').send({ username: adminUsername, password: 'password123' });
+    // Đúng seed shape của xich-viem-tinh để restore không lệch dữ liệu cho test khác.
+    const seedRow = { id: 'xich-viem-tinh', name: 'Xích Viêm Tinh', glyph: '炎', rarity: 1, tier: 1, description: 'Tinh thạch hỏa thuộc tính từ Hỏa Vực.', active: true };
+
+    const put = await admin.put('/admin/materials').send({ materials: [{ ...seedRow, tier: 2 }] });
+    expect(put.status).toBe(200);
+    const list = await admin.get('/admin/materials');
+    expect(list.status).toBe(200);
+    expect(list.body.materials.find((row: { id: string }) => row.id === seedRow.id)?.tier).toBe(2);
+
+    await admin.put('/admin/materials').send({ materials: [seedRow] });
+  });
+
   it('admin PUT bật-tắt/bật lại recipe (active không bị domain rule chặn)', async () => {
     const admin = request.agent(app);
     await admin.post('/auth/login').send({ username: adminUsername, password: 'password123' });
