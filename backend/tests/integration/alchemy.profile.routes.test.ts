@@ -12,7 +12,7 @@ const agent = request.agent(app);
 
 beforeAll(async () => {
   execSync('npm run db:seed', { cwd: process.cwd(), stdio: 'ignore' });
-  await agent.post('/auth/register').send({ username, password: 'password123' });
+  expect((await agent.post('/auth/register').send({ username, password: 'password123' })).status).toBe(201);
 });
 
 afterAll(async () => {
@@ -34,6 +34,7 @@ async function grantMaterials(userId: string) {
 }
 
 describe('alchemy 2.0 routes', () => {
+  // Lưu ý: các it trong file là MỘT flow tuần tự dùng chung user (grantMaterials ở ca trước phục vụ ca sau) — không chạy lẻ bằng .only/-t.
   it('endpoint mới yêu cầu auth', async () => {
     expect((await request(app).get('/alchemy/profile')).status).toBe(401);
     expect((await request(app).post('/alchemy/rank-up')).status).toBe(401);
@@ -84,7 +85,7 @@ describe('alchemy 2.0 routes', () => {
     expect(queue.status).toBe(200);
     expect(queue.body.outputGrants).toEqual([]);
 
-    const job = queue.body.jobs.find((j: { status: string }) => j.status === 'completed');
+    const job = queue.body.jobs.find((j: { recipeId: string }) => j.recipeId === 'recipe-hoan-khi-dan');
     expect(job).toMatchObject({ successCount: 0, failCount: 2, critCount: 0 });
 
     const profile = await agent.get('/alchemy/profile');
@@ -108,13 +109,26 @@ describe('alchemy 2.0 routes', () => {
     const me = await agent.get('/auth/me');
     const userId = me.body.id as string;
     await prisma.alchemyProfile.update({ where: { userId }, data: { danKhi: 5000, furnaceLevel: 1 } });
+    const before = await prisma.character.findUniqueOrThrow({ where: { userId } });
     const res = await agent.post('/alchemy/furnace/upgrade');
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ furnaceLevel: 2, danKhi: 4950 });
+    const after = await prisma.character.findUniqueOrThrow({ where: { userId } });
+    expect(before.linhThach - after.linhThach).toBe(200);
 
     await prisma.alchemyProfile.update({ where: { userId }, data: { danKhi: 5000, furnaceLevel: 5 } });
     const maxRes = await agent.post('/alchemy/furnace/upgrade');
     expect(maxRes.status).toBe(409);
     expect(maxRes.body.error.code).toBe('ALCHEMY_FURNACE_MAX');
+  });
+
+  it('upgrade furnace thiếu Linh Thạch trả 409 INSUFFICIENT_LINH_THACH', async () => {
+    const me = await agent.get('/auth/me');
+    const userId = me.body.id as string;
+    await prisma.character.update({ where: { userId }, data: { linhThach: 0 } });
+    await prisma.alchemyProfile.update({ where: { userId }, data: { furnaceLevel: 1, danKhi: 5000 } });
+    const res = await agent.post('/alchemy/furnace/upgrade');
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe('INSUFFICIENT_LINH_THACH');
   });
 });
