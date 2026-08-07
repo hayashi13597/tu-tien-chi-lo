@@ -47,6 +47,7 @@ function buildFakes(options: {
   const alchemy = {
     listRecipes: async () => options.recipes ?? [recipe],
     listQueue: async () => [job()],
+    getProfile: async () => ({ id: 'p', userId: 'u', characterId: 'c', rank: 1, danKhi: 0, furnaceLevel: 1 }),
     settleCompleted: async () => settled,
     enqueue: async () => { enqueueCalls += 1; return settled; },
   };

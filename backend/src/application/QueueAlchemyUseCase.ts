@@ -34,6 +34,11 @@ export class QueueAlchemyUseCase {
       throw error;
     }
 
+    const profile = await this.alchemy.getProfile(userId);
+    if (profile.rank < recipe.minAlchemyRank) {
+      throw new DomainError('ALCHEMY_RANK_TOO_LOW', `cần Đan Sư cấp ${recipe.minAlchemyRank} cho công thức này`);
+    }
+
     const character = await this.characters.findByUserId(userId);
     if (!character) {
       throw new DomainError('CHARACTER_NOT_FOUND', `character not found for user: ${userId}`);
