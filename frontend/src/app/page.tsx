@@ -92,6 +92,8 @@ export default function Home() {
     equip: equipCongPhapAction,
     unequip: unequipCongPhapAction,
     levelUp: levelUpCongPhapAction,
+    learn: learnCongPhapAction,
+    system: congPhapSystem,
   } = useCongPhap(congPhapModalOpen);
   const {
     branches: expeditionBranches,
@@ -370,6 +372,29 @@ export default function Home() {
     [congPhapOwned, levelUpCongPhapAction, refetchMaterials, refetch, addToast],
   );
 
+  // Phase 2: học môn công pháp bằng Bí Tịch + Linh Thạch.
+  const handleLearnCongPhap = useCallback(
+    async (congPhapId: string) => {
+      const def = congPhapCatalog.find((c) => c.id === congPhapId);
+      setCongPhapBusy(true);
+      try {
+        await learnCongPhapAction(congPhapId);
+        await refetchMaterials();
+        await refetch();
+        addToast("Công Pháp", `Đã học ${def?.name ?? congPhapId}`, "success");
+      } catch (err) {
+        addToast(
+          "Lỗi",
+          err instanceof Error ? err.message : "Học công pháp thất bại",
+          "danger",
+        );
+      } finally {
+        setCongPhapBusy(false);
+      }
+    },
+    [congPhapCatalog, learnCongPhapAction, refetchMaterials, refetch, addToast],
+  );
+
   const handleEquipCongPhap = useCallback(
     async (congPhapId: string, slot: number) => {
       setCongPhapBusy(true);
@@ -637,6 +662,8 @@ export default function Home() {
         owned={congPhapOwned}
         catalog={congPhapCatalog}
         linhThach={state.linhThach}
+        realmMajor={state.realmMajor}
+        system={congPhapSystem}
         materialInventory={materialInventory}
         loading={congPhapLoading}
         error={congPhapError}
@@ -646,6 +673,7 @@ export default function Home() {
         onEquip={handleEquipCongPhap}
         onUnequip={handleUnequipCongPhap}
         onLevelUp={handleLevelUpCongPhap}
+        onLearn={handleLearnCongPhap}
       />
 
       <RedeemModal

@@ -2797,6 +2797,34 @@ body {
   font-size: 0.7rem;
   font-style: italic;
 }
+
+/* Phase 2: Công Pháp 2.0 — buff hệ thống + nhóm nhánh + học Bí Tịch. */
+.congphap-system-strip {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--jade) 35%, transparent);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--jade);
+  font-size: 0.78rem;
+}
+.congphap-branch-heading {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  margin: var(--space-3) 0 var(--space-2);
+}
+.congphap-learn {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
 .congphap-upgrade-cost {
   background: var(--surface-2);
   border: 1px solid rgba(212, 175, 55, 0.18);
