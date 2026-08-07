@@ -40,6 +40,14 @@ describe('admin catalog validation', () => {
     await expect(useCase.execute([{ ...recipe, ingredients: [{ materialId: 'm', quantity: 0 }] }])).rejects.toMatchObject({ code: 'ALCHEMY_RECIPE_INVALID' });
   });
 
+  it('admin được bật-tắt recipe: active:false hợp lệ ở admin path', async () => {
+    // Player path (QueueAlchemyUseCase) giữ rule "recipe phải active"; admin path
+    // quản lý vòng đời active nên validate bỏ qua cờ này.
+    const useCase = new UpdateAlchemyRecipeAdminUseCase({ replace: async (rows: unknown) => rows } as never);
+    const out = (await useCase.execute([{ ...recipe, active: false }])) as (typeof recipe)[];
+    expect(out[0].active).toBe(false);
+  });
+
   it('propagate recipe pill không tồn tại từ catalog repository', async () => {
     const useCase = new UpdateAlchemyRecipeAdminUseCase({ replace: async () => { throw new DomainError('PILL_NOT_FOUND', 'pill'); } } as never);
     await expect(useCase.execute([recipe])).rejects.toMatchObject({ code: 'PILL_NOT_FOUND' });

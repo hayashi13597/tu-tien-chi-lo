@@ -12,7 +12,9 @@ export class UpdateAlchemyRecipeAdminUseCase {
       // Rule từng recipe (shape, nguyên liệu, tier/minAlchemyRank/baseSuccessPct)
       // sống duy nhất ở domain validateRecipe — ném DomainError
       // ALCHEMY_RECIPE_INVALID, giữ nguyên error code cũ của use case này.
-      validateRecipe(recipe);
+      // admin quản lý vòng đời `active`; player path (queue) tự kiểm active.
+      // Validate shape/stats ở đây chỉ cần bỏ qua cờ active.
+      validateRecipe({ ...recipe, active: true });
       // Check liên-catalog (id trùng) là trách nhiệm của use case, không phải domain.
       if (recipeIds.has(recipe.id)) {
         throw new DomainError('ALCHEMY_RECIPE_INVALID', `invalid recipe: ${recipe.id}`);
