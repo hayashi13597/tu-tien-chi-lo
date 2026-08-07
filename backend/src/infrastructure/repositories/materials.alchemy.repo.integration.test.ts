@@ -118,6 +118,29 @@ describe('material/alchemy Prisma repositories', () => {
     await expect(alchemy.rankUp(rankUserId, 3, 300)).rejects.toMatchObject({ code: 'INSUFFICIENT_DAN_KHI' });
     expect(await alchemy.getProfile(rankUserId)).toMatchObject({ rank: 2, danKhi: 0 });
   });
+
+  it('rankUp Thiên Giai trừ ĐK + 1 Đan Hỏa Tủy; thiếu Tủy → rollback, không trừ ĐK', async () => {
+    const user = await prisma.user.create({ data: { username: `alchemy_tuy_${Date.now()}`, passwordHash: 'x' } });
+    const character = await prisma.character.create({ data: { userId: user.id } });
+    await prisma.alchemyProfile.create({ data: { userId: user.id, characterId: character.id, rank: 6, danKhi: 3100 } });
+    await prisma.material.upsert({
+      where: { id: 'dan-hoa-tuy' },
+      create: { id: 'dan-hoa-tuy', name: 'Đan Hỏa Tủy', glyph: '髓', rarity: 5, tier: 3, description: 'd', active: true },
+      update: {},
+    });
+
+    // 0 Tủy → ALCHEMY_MISSING_DAN_HOA_TUY; ĐK và rank nguyên vẹn.
+    await expect(alchemy.rankUp(user.id, 7, 3100, 1)).rejects.toMatchObject({ code: 'ALCHEMY_MISSING_DAN_HOA_TUY' });
+    expect(await alchemy.getProfile(user.id)).toMatchObject({ rank: 6, danKhi: 3100 });
+
+    // Grant 1 Tủy → rank 7, ĐK 0, Tủy 0.
+    await prisma.materialInventory.create({ data: { userId: user.id, materialId: 'dan-hoa-tuy', quantity: 1 } });
+    const profile = await alchemy.rankUp(user.id, 7, 3100, 1);
+    expect(profile).toMatchObject({ rank: 7, danKhi: 0 });
+    const tuy = await prisma.materialInventory.findUnique({ where: { userId_materialId: { userId: user.id, materialId: 'dan-hoa-tuy' } } });
+    expect(tuy?.quantity).toBe(0);
+    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
+  });
 });
 
 describe('settle với buff Đan Đạo (Phase 2)', () => {

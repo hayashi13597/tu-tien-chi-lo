@@ -122,13 +122,33 @@ export class PrismaAlchemyRepository implements AlchemyRepository {
     return character.id;
   }
 
-  async rankUp(userId: string, targetRank: number, danKhiCost: number): Promise<AlchemyProfileRecord> {
-    const updated = await this.client.alchemyProfile.updateMany({
-      where: { userId, rank: targetRank - 1, danKhi: { gte: danKhiCost } },
-      data: { rank: targetRank, danKhi: { decrement: danKhiCost } },
-    });
-    if (updated.count !== 1) throw new DomainError('INSUFFICIENT_DAN_KHI', 'không đủ Đan Khí hoặc sai cấp hiện tại');
-    return this.getProfile(userId);
+  async rankUp(userId: string, targetRank: number, danKhiCost: number, danHoaTuyCost = 0): Promise<AlchemyProfileRecord> {
+    try {
+      return await this.client.$transaction(async (tx) => {
+        const updated = await tx.alchemyProfile.updateMany({
+          where: { userId, rank: targetRank - 1, danKhi: { gte: danKhiCost } },
+          data: { rank: targetRank, danKhi: { decrement: danKhiCost } },
+        });
+        if (updated.count !== 1) throw new DomainError('INSUFFICIENT_DAN_KHI', 'không đủ Đan Khí hoặc sai cấp hiện tại');
+        if (danHoaTuyCost > 0) {
+          const tuy = await tx.materialInventory.updateMany({
+            where: { userId, materialId: 'dan-hoa-tuy', quantity: { gte: danHoaTuyCost } },
+            data: { quantity: { decrement: danHoaTuyCost } },
+          });
+          if (tuy.count !== 1) throw new DomainError('ALCHEMY_MISSING_DAN_HOA_TUY', 'không đủ Đan Hỏa Tủy');
+        }
+        const profile = await tx.alchemyProfile.findUniqueOrThrow({ where: { userId } });
+        return {
+          id: profile.id, userId: profile.userId, characterId: profile.characterId,
+          rank: profile.rank, danKhi: profile.danKhi, furnaceLevel: profile.furnaceLevel,
+        };
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+        throw new DomainError('CONCURRENT_MODIFICATION', 'Hồ sơ Đan Sư vừa được thay đổi bởi request khác');
+      }
+      throw error;
+    }
   }
 
   async upgradeFurnace(input: {
