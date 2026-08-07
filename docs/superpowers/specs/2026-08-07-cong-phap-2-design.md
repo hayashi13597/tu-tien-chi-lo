@@ -56,12 +56,29 @@ model CongPhap {
 model Material {
   // ... giữ nguyên cột cũ
   biTichCongPhaps CongPhap[] @relation("CongPhapBiTichMaterial")
+  redeemRewards    RedeemCodeReward[]
 }
+```
+
+`RedeemCodeReward` thêm loại reward thứ tư (đúng MỘT trong bốn loại khác null):
+
+```prisma
+model RedeemCodeReward {
+  // ... giữ nguyên pillId/congPhapId/linhThach
+  materialId String?
+  material   Material? @relation(fields: [materialId], references: [id])
+}
+```
+
+Backfill trong cùng migration: gán `branch = 'chienDao'` cho `thiet-cot-quyet`, `linh-tuc-quyet`, `liet-hoa-tam` (xem §4.1 — nhánh chỉ bắt buộc từ tier 2, nhưng ba môn cũ vốn là môn chiến đấu).
+
+```sql
+UPDATE "CongPhap" SET branch = 'chienDao' WHERE id IN ('thiet-cot-quyet', 'linh-tuc-quyet', 'liet-hoa-tam');
 ```
 
 - `realmMajor` là 0-based: Phàm Nhân=0, Luyện Khí=1, Trúc Cơ=2, **Kết Đan=3**, Nguyên Anh=4, **Hóa Thần=5** (đọc từ `RealmConfigSet`, không hard-code tên).
 - Giá trị mặc định (tier 1, branch null, minRealmMajor 0, biTich null) giữ nguyên hành vi cho 3 môn cũ và mọi môn admin đã tạo.
-- Backfill trong migration: 3 môn hiện có gán `branch = 'chienDao'` (chúng buff thuộc tính/chiến đấu); nhánh Tu Luyện/Đan Đạo chỉ xuất hiện từ tier 2 — khớp master spec.
+- Backfill trong migration: 3 môn hiện có gán `branch = 'chienDao'` (chúng buff thuộc tính/chiến đấu; SQL ở khối Prisma trên); nhánh Tu Luyện/Đan Đạo chỉ xuất hiện từ tier 2 — khớp master spec.
 
 ### 4.2 Domain record
 
@@ -128,7 +145,7 @@ Ngân sách cộng dồn tối đa khi sở hữu full: Tu Luyện +100% tốc �
 - `POST /cong-phap/:id/learn`: 200 `{ owned }`; lỗi: 400 `CONGPHAP_NOT_LEARNABLE`, 404 môn không tồn tại, 409 `CONGPHAP_REALM_GATE | CONGPHAP_MISSING_BITICH | INSUFFICIENT_LINH_THACH | CONGPHAP_ALREADY_OWNED | CONCURRENT_MODIFICATION`. Rate-limit như các mutation endpoint hiện có.
 - **Admin**: CongPhap editor thêm 4 field mới (tier select 1–3, branch select + trống, minRealmMajor int ≥ 0, biTichMaterialId select Material). Validation admin: `tier ∈ 1..3`; tier ≥ 2 ⇒ branch và biTich bắt buộc; gợi ý default minRealmMajor theo tier (1→0, 2→3, 3→5) nhưng cho sửa. `validateCongPhap({...record, active: true})` khi lưu (pattern recipe từ Phase 1) để sửa được môn đang tắt. Bí Tịch quản qua Materials editor sẵn có.
 - **Frontend player**: drawer công pháp group theo nhánh (Tu Luyện / Chiến Đạo / Đan Đạo; môn branch null vào mục chung). Môn tier 2 chưa học hiển thị mờ + nút "Học · 1 Bí Tịch + 300 LT" disabled kèm `<small class="alchemy-recipe-lock">` lý do (thiếu cảnh giới `<tên cảnh giới>` / thiếu Bí Tịch / thiếu Linh Thạch) — pattern Phase 1. Breakdown popup thêm hai dòng: "Tốc độ tu luyện +x%", "Hiệu suất luyện đan +y%" (ẩn khi bằng 0). Toast success "Đã học <tên môn>".
-- **Redeem**: không đổi; admin gắn `bi-tich-*` như reward vật phẩm ngay (đã là Material).
+- **Redeem**: mở rộng tối thiểu — `RedeemCodeReward.materialId` cho phép code thưởng Bí Tịch (và kể cả material thường); `RedeemCodeUseCase` xử lý bằng `MaterialRepository.increment`, kết quả thêm kind `material`. Validate tạo code: vẫn "đúng MỘT loại reward" nhưng trên bốn loại. Cơ chế grant công pháp qua redeem không đổi (không tiêu thụ Bí Tịch).
 
 ## 8. Error handling & concurrency
 
@@ -153,8 +170,9 @@ Ngân sách cộng dồn tối đa khi sở hữu full: Tu Luyện +100% tốc �
 5. Sở hữu `vong-coc-quyet` cấp 10 → tốc độ tích lũy linh khí ×1.2, kể cả khi recompute offline; pill buff vẫn nhân chồng độc lập.
 6. `computeAttributes` giữ nguyên kết quả `{base, final}` cho catalog cũ (không drift); `sumSystemBuffs` trả 0/0 khi chưa sở hữu môn nhánh mới.
 7. Admin tạo/sửa môn tier 2 mới không cần đổi code; validation chặn tier ≥ 2 thiếu branch/biTich và key đặc biệt sai hình (`flatPerLevel ≠ 0`).
-8. Seed idempotent: chạy lại seed không đổi dữ liệu admin đã chỉnh ngoài catalog reset (giữ semantic upsert hiện có).
-9. Backend `npm test` xanh, frontend `pnpm test`/`lint`/`build` xanh.
+8. Redeem code có reward `materialId` cộng đúng vào `MaterialInventory` và trả kind `material`; code cũ (pill/congPhap/linhThach) không đổi hành vi.
+9. Seed idempotent: chạy lại seed không đổi dữ liệu admin đã chỉnh ngoài catalog reset (giữ semantic upsert hiện có).
+10. Backend `npm test` xanh, frontend `pnpm test`/`lint`/`build` xanh.
 
 ## 10. Phụ thuộc và bước tiếp theo
 
