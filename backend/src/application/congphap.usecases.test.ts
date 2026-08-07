@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { EquipCongPhapUseCase } from './EquipCongPhapUseCase';
 import { UnequipCongPhapUseCase } from './UnequipCongPhapUseCase';
 import { LevelUpCongPhapUseCase } from './LevelUpCongPhapUseCase';
+import { LearnCongPhapUseCase } from './LearnCongPhapUseCase';
 import { ListCongPhapUseCase } from './ListCongPhapUseCase';
 import { CongPhapRecord, OwnedCongPhapEntry } from '../domain/congphap/congphap';
 import { DomainError } from '../domain/errors';
@@ -115,5 +116,71 @@ describe('LevelUpCongPhapUseCase', () => {
     await expect(new LevelUpCongPhapUseCase(f.ownedRepo as never, f.congphapRepo as never, f.charRepo as never, f.progression as never).execute('u', 'p'))
       .rejects.toMatchObject({ code: 'INSUFFICIENT_MATERIALS' });
     expect(f.linhThach).toBe(100);
+  });
+});
+
+describe('LearnCongPhapUseCase (Phase 2)', () => {
+  const learnDef: CongPhapRecord = { ...passive, id: 'learn', biTichMaterialId: 'bi-tich-learn', tier: 2, branch: 'danDao', minRealmMajor: 3, effects: [{ attribute: 'danDaoSuccess', flatPerLevel: 0, pctPerLevel: 1 }] };
+
+  function learnFakes(input: {
+    realmMajor?: number;
+    learnResult?: 'learned' | 'missing-bitich' | 'insufficient-linh-thach' | 'already-owned' | 'concurrent';
+    defActive?: boolean;
+    defKnown?: boolean;
+  } = {}) {
+    const defs = new Map<string, CongPhapRecord>();
+    if (input.defKnown !== false) defs.set('learn', { ...learnDef, active: input.defActive ?? true });
+    const congphapRepo = { findById: async (id: string) => defs.get(id) ?? null, listActive: async () => [], listAll: async () => [], create: async () => {}, update: async () => true };
+    const charRepo = {
+      findByUserId: async () => ({ id: 'c', userId: 'u', realmMajor: input.realmMajor ?? 3 } as never),
+    };
+    const kind = input.learnResult ?? 'learned';
+    let calledWith: unknown = null;
+    const progression = {
+      learnWithCosts: async (args: unknown) => {
+        calledWith = args;
+        if (kind === 'learned') return { kind: 'learned' as const, linhThach: 200, biTichQuantity: 0 };
+        return { kind } as never;
+      },
+    };
+    const realmSource = { get: () => ({ realmName: (major: number) => `Cảnh giới ${major}` }) };
+    return {
+      useCase: new (LearnCongPhapUseCase as never)(congphapRepo, progression, charRepo, realmSource) as InstanceType<typeof LearnCongPhapUseCase>,
+      calls: () => calledWith,
+    };
+  }
+
+  it('môn không tồn tại/inactive → CONGPHAP_NOT_FOUND', async () => {
+    await expect(learnFakes({ defKnown: false }).useCase.execute('u', 'learn')).rejects.toMatchObject({ code: 'CONGPHAP_NOT_FOUND' });
+    await expect(learnFakes({ defActive: false }).useCase.execute('u', 'learn')).rejects.toMatchObject({ code: 'CONGPHAP_NOT_FOUND' });
+  });
+
+  it('môn không có biTich → CONGPHAP_NOT_LEARNABLE', async () => {
+    const f = learnFakes();
+    (f as { useCase: unknown }).useCase;
+    const defs = [{ ...learnDef, biTichMaterialId: null }];
+    const congphapRepo = { findById: async () => defs[0], listActive: async () => [], listAll: async () => [], create: async () => {}, update: async () => true };
+    const charRepo = { findByUserId: async () => ({ id: 'c', userId: 'u', realmMajor: 3 } as never) };
+    const uc = new (LearnCongPhapUseCase as never)(congphapRepo, { learnWithCosts: async () => ({ kind: 'learned', linhThach: 0, biTichQuantity: 0 }) }, charRepo, { get: () => ({ realmName: () => 'Kết Đan' }) }) as InstanceType<typeof LearnCongPhapUseCase>;
+    await expect(uc.execute('u', 'learn')).rejects.toMatchObject({ code: 'CONGPHAP_NOT_LEARNABLE' });
+  });
+
+  it('realm thấp → CONGPHAP_REALM_GATE với message chứa tên cảnh giới', async () => {
+    await expect(learnFakes({ realmMajor: 2 }).useCase.execute('u', 'learn'))
+      .rejects.toMatchObject({ code: 'CONGPHAP_REALM_GATE', message: expect.stringContaining('Cảnh giới 3') });
+  });
+
+  it('map đúng các kind từ repo → DomainError', async () => {
+    await expect(learnFakes({ learnResult: 'missing-bitich' }).useCase.execute('u', 'learn')).rejects.toMatchObject({ code: 'CONGPHAP_MISSING_BITICH' });
+    await expect(learnFakes({ learnResult: 'insufficient-linh-thach' }).useCase.execute('u', 'learn')).rejects.toMatchObject({ code: 'INSUFFICIENT_LINH_THACH' });
+    await expect(learnFakes({ learnResult: 'already-owned' }).useCase.execute('u', 'learn')).rejects.toMatchObject({ code: 'CONGPHAP_ALREADY_OWNED' });
+    await expect(learnFakes({ learnResult: 'concurrent' }).useCase.execute('u', 'learn')).rejects.toMatchObject({ code: 'CONCURRENT_MODIFICATION' });
+  });
+
+  it('learned → trả về owned + số dư, gọi repo đúng tham số (cost 300)', async () => {
+    const f = learnFakes({ realmMajor: 4 });
+    const r = await f.useCase.execute('u', 'learn');
+    expect(r).toEqual({ owned: 'learn', linhThach: 200, biTich: { id: 'bi-tich-learn', quantity: 0 } });
+    expect(f.calls()).toMatchObject({ userId: 'u', congPhapId: 'learn', biTichMaterialId: 'bi-tich-learn', linhThachCost: 300 });
   });
 });
