@@ -6,6 +6,7 @@ import {
   MAX_RANK,
   RANK_UP_COSTS,
   RANK_REALM_GATES,
+  RANK_DAN_HOA_TUY_COSTS,
   AlchemyProfileRecord,
   danKhiForJob,
   furnaceSpeedPct,
@@ -67,15 +68,18 @@ describe('alchemy profile domain', () => {
   });
 
   it('rankUpCheck kiểm Đan Khí, cap phase 1 và gate cảnh giới', () => {
-    expect(MAX_RANK).toBe(6);
-    expect(RANK_UP_COSTS).toEqual({ 2: 100, 3: 300, 4: 700, 5: 1300, 6: 2100 });
-    expect(RANK_REALM_GATES).toEqual({ 4: 3, 7: 6 });
+    expect(MAX_RANK).toBe(9);
+    expect(RANK_UP_COSTS).toEqual({ 2: 100, 3: 300, 4: 700, 5: 1300, 6: 2100, 7: 3100, 8: 4300, 9: 5700 });
+    expect(RANK_REALM_GATES).toEqual({ 4: 3, 7: 5, 8: 5, 9: 5 });
+    expect(RANK_DAN_HOA_TUY_COSTS).toEqual({ 7: 1, 8: 1, 9: 1 });
     expect(rankUpCheck(profile({ danKhi: 100, rank: 1 }), 2)).toBeNull();
     expect(errorCode(() => rankUpCheck(profile({ danKhi: 99, rank: 1 }), 2))).toBe('INSUFFICIENT_DAN_KHI');
-    expect(() => rankUpCheck(profile({ danKhi: 700, rank: 3 }), 4, 2)).toThrow(/Kết Đan/);
+    expect(() => rankUpCheck(profile({ danKhi: 700, rank: 3 }), 4, 2)).toThrow(/realmMajor 3/);
     expect(errorCode(() => rankUpCheck(profile({ danKhi: 700, rank: 3 }), 4, 2))).toBe('ALCHEMY_REALM_GATE');
     expect(rankUpCheck(profile({ danKhi: 700, rank: 3 }), 4, 3)).toBeNull();
-    expect(errorCode(() => rankUpCheck(profile({ danKhi: 9_999, rank: 6 }), 7, 6))).toBe('ALCHEMY_RANK_LOCKED');
+    // Cap mới 9: rank 6→7 với realm thấp ném gate (không còn LOCKED); > 9 mới LOCKED.
+    expect(errorCode(() => rankUpCheck(profile({ danKhi: 9_999, rank: 6 }), 7, 0))).toBe('ALCHEMY_REALM_GATE');
+    expect(errorCode(() => rankUpCheck(profile({ danKhi: 9_999, rank: 9 }), 10, 9, 9))).toBe('ALCHEMY_RANK_LOCKED');
     expect(errorCode(() => rankUpCheck(profile({ rank: 2 }), 4, 0))).toBe('ALCHEMY_RANK_INVALID');
   });
 
