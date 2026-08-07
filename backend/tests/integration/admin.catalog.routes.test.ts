@@ -28,7 +28,7 @@ describe('admin material/alchemy/expedition catalog routes', () => {
     expect(materials.status).toBe(200);
     expect(materials.body.materials.length).toBeGreaterThanOrEqual(11);
     expect(recipes.status).toBe(200);
-    expect(recipes.body.recipes).toHaveLength(16);
+    expect(recipes.body.recipes).toHaveLength(19); // +3 recipe đan combat Phase 3
     expect(expeditions.status).toBe(200);
     expect(expeditions.body.branches).toHaveLength(8);
 

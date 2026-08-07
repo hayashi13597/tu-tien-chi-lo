@@ -34,9 +34,13 @@ describe('materials/alchemy routes', () => {
 
     const recipes = await agent.get('/alchemy/recipes');
     expect(recipes.status).toBe(200);
-    expect(recipes.body).toHaveLength(16);
+    expect(recipes.body).toHaveLength(19);
     // Player view: recipe tier 1 ở rank 1 → hiệu lực đầy đủ, không locked.
-    expect(recipes.body[0]).toMatchObject({ tier: 1, minAlchemyRank: 1, baseSuccessPct: 100, effectiveSuccessPct: 100, locked: false });
+    const starter = recipes.body.find((r: { id: string }) => r.id === 'recipe-hoi-khi-dan');
+    expect(starter).toMatchObject({ tier: 1, minAlchemyRank: 1, baseSuccessPct: 100, effectiveSuccessPct: 100, locked: false });
+    // Phase 3: recipe đan combat tồn tại, bị khóa ở rank 1 (minAlchemyRank 4).
+    const combat = recipes.body.find((r: { id: string }) => r.id === 'recipe-cuong-the-dan');
+    expect(combat).toMatchObject({ tier: 2, minAlchemyRank: 4, baseSuccessPct: 70, locked: true });
 
     const invalid = await agent.post('/alchemy/queue').send({ recipeId: 'recipe-hoi-khi-dan', quantity: 0 });
     expect(invalid.status).toBe(400);
