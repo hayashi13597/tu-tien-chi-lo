@@ -348,9 +348,9 @@ model AlchemyProfile {
   id           String    @id @default(uuid())
   userId       String    @unique
   characterId  String    @unique
-  rank         Int       @default(1)
+  rank         Int       @default(1) // 1..6 phase 1 (7-9 chờ nội dung Thiên Giai)
   danKhi       Int       @default(0)
-  furnaceLevel Int       @default(1)
+  furnaceLevel Int       @default(1) // 1..5
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
