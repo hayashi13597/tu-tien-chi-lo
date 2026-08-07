@@ -23,6 +23,18 @@ const profile = (overrides: Partial<AlchemyProfileRecord> = {}): AlchemyProfileR
 
 const roll = (value: number) => ({ next: () => value });
 
+// Bắt DomainError và trả code — code được Task 6 pin vào errorHandler → HTTP status,
+// nên domain test phải assert chính xác code, không chỉ message.
+const errorCode = (fn: () => unknown): string => {
+  try {
+    fn();
+  } catch (error) {
+    expect(error).toBeInstanceOf(DomainError);
+    return (error as DomainError).code;
+  }
+  throw new Error('expected DomainError, but nothing was thrown');
+};
+
 describe('alchemy profile domain', () => {
   it('rank/furnace bonus theo cấp', () => {
     expect(rankSuccessPct(1)).toBe(0);
@@ -59,11 +71,12 @@ describe('alchemy profile domain', () => {
     expect(RANK_UP_COSTS).toEqual({ 2: 100, 3: 300, 4: 700, 5: 1300, 6: 2100 });
     expect(RANK_REALM_GATES).toEqual({ 4: 3, 7: 6 });
     expect(rankUpCheck(profile({ danKhi: 100, rank: 1 }), 2)).toBeNull();
-    expect(() => rankUpCheck(profile({ danKhi: 99, rank: 1 }), 2)).toThrow(DomainError);
+    expect(errorCode(() => rankUpCheck(profile({ danKhi: 99, rank: 1 }), 2))).toBe('INSUFFICIENT_DAN_KHI');
     expect(() => rankUpCheck(profile({ danKhi: 700, rank: 3 }), 4, 2)).toThrow(/Kết Đan/);
+    expect(errorCode(() => rankUpCheck(profile({ danKhi: 700, rank: 3 }), 4, 2))).toBe('ALCHEMY_REALM_GATE');
     expect(rankUpCheck(profile({ danKhi: 700, rank: 3 }), 4, 3)).toBeNull();
-    expect(() => rankUpCheck(profile({ danKhi: 9_999, rank: 6 }), 7, 6)).toThrow(DomainError);
-    expect(() => rankUpCheck(profile({ rank: 2 }), 4, 0)).toThrow(DomainError);
+    expect(errorCode(() => rankUpCheck(profile({ danKhi: 9_999, rank: 6 }), 7, 6))).toBe('ALCHEMY_RANK_LOCKED');
+    expect(errorCode(() => rankUpCheck(profile({ rank: 2 }), 4, 0))).toBe('ALCHEMY_RANK_INVALID');
   });
 
   it('furnaceUpgradeCheck kiểm Đan Khí và thứ tự cấp', () => {
@@ -74,7 +87,7 @@ describe('alchemy profile domain', () => {
       5: { danKhi: 700, linhThach: 3000 },
     });
     expect(furnaceUpgradeCheck(profile({ danKhi: 50 }), 2)).toBeNull();
-    expect(() => furnaceUpgradeCheck(profile({ danKhi: 49 }), 2)).toThrow(DomainError);
-    expect(() => furnaceUpgradeCheck(profile({ furnaceLevel: 2, danKhi: 300 }), 4)).toThrow(DomainError);
+    expect(errorCode(() => furnaceUpgradeCheck(profile({ danKhi: 49 }), 2))).toBe('INSUFFICIENT_DAN_KHI');
+    expect(errorCode(() => furnaceUpgradeCheck(profile({ furnaceLevel: 2, danKhi: 300 }), 4))).toBe('ALCHEMY_FURNACE_INVALID');
   });
 });

@@ -86,7 +86,8 @@ export function rankUpCheck(
   }
   const gateRealm = RANK_REALM_GATES[targetRank];
   if (gateRealm !== undefined && realmMajor < gateRealm) {
-    throw new DomainError('ALCHEMY_RANK_INVALID', `cần cảnh giới tối thiểu Kết Đan (realmMajor ${gateRealm})`);
+    // Gameplay denial (đủ Đan Khí nhưng chưa đủ cảnh giới) → errorHandler map 409.
+    throw new DomainError('ALCHEMY_REALM_GATE', `cần cảnh giới tối thiểu Kết Đan (realmMajor ${gateRealm})`);
   }
   const cost = RANK_UP_COSTS[targetRank];
   if (cost !== undefined && profile.danKhi < cost) {
@@ -100,7 +101,8 @@ export function furnaceUpgradeCheck(
   targetLevel: number,
 ): null {
   if (!Number.isInteger(targetLevel) || targetLevel !== profile.furnaceLevel + 1 || targetLevel > 5) {
-    throw new DomainError('ALCHEMY_RANK_INVALID', `cấp lò kế tiếp phải là ${profile.furnaceLevel + 1}`);
+    // Request sai thứ tự/vượt cap lò → errorHandler map 400.
+    throw new DomainError('ALCHEMY_FURNACE_INVALID', `cấp lò kế tiếp phải là ${profile.furnaceLevel + 1}`);
   }
   const cost = FURNACE_UPGRADES[targetLevel];
   if (cost && profile.danKhi < cost.danKhi) {
