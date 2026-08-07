@@ -3,6 +3,7 @@ import { ListCongPhapUseCase } from '../../application/ListCongPhapUseCase';
 import { EquipCongPhapUseCase } from '../../application/EquipCongPhapUseCase';
 import { UnequipCongPhapUseCase } from '../../application/UnequipCongPhapUseCase';
 import { LevelUpCongPhapUseCase } from '../../application/LevelUpCongPhapUseCase';
+import { LearnCongPhapUseCase } from '../../application/LearnCongPhapUseCase';
 import { AuthedRequest } from '../middleware/auth';
 import { equipSchema, unequipSchema, levelUpSchema } from '../schemas/congphap.schemas';
 import { DomainError } from '../../domain/errors';
@@ -12,6 +13,7 @@ export interface CongPhapRouterDeps {
   equipCongPhapUseCase: EquipCongPhapUseCase;
   unequipCongPhapUseCase: UnequipCongPhapUseCase;
   levelUpCongPhapUseCase: LevelUpCongPhapUseCase;
+  learnCongPhapUseCase: LearnCongPhapUseCase;
   requireAuth: RequestHandler;
 }
 
@@ -60,6 +62,19 @@ export function createCongPhapRouter(deps: CongPhapRouterDeps): Router {
         throw new DomainError('INVALID_INPUT', 'congPhapId is required');
       }
       res.status(200).json(await deps.levelUpCongPhapUseCase.execute(req.userId as string, parsed.data.congPhapId));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Phase 2: học môn bằng Bí Tịch + Linh Thạch. id nằm trên path; body rỗng.
+  router.post('/:id/learn', async (req: AuthedRequest, res, next) => {
+    try {
+      const id = req.params.id;
+      if (!/^[a-z0-9-]+$/.test(id)) {
+        throw new DomainError('INVALID_INPUT', 'invalid cong phap id');
+      }
+      res.status(200).json(await deps.learnCongPhapUseCase.execute(req.userId as string, id));
     } catch (err) {
       next(err);
     }

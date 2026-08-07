@@ -145,7 +145,7 @@ describe('LearnCongPhapUseCase (Phase 2)', () => {
     };
     const realmSource = { get: () => ({ realmName: (major: number) => `Cảnh giới ${major}` }) };
     return {
-      useCase: new (LearnCongPhapUseCase as never)(congphapRepo, progression, charRepo, realmSource) as InstanceType<typeof LearnCongPhapUseCase>,
+      useCase: new LearnCongPhapUseCase(congphapRepo as never, progression as never, charRepo as never, realmSource as never),
       calls: () => calledWith,
     };
   }
@@ -161,7 +161,7 @@ describe('LearnCongPhapUseCase (Phase 2)', () => {
     const defs = [{ ...learnDef, biTichMaterialId: null }];
     const congphapRepo = { findById: async () => defs[0], listActive: async () => [], listAll: async () => [], create: async () => {}, update: async () => true };
     const charRepo = { findByUserId: async () => ({ id: 'c', userId: 'u', realmMajor: 3 } as never) };
-    const uc = new (LearnCongPhapUseCase as never)(congphapRepo, { learnWithCosts: async () => ({ kind: 'learned', linhThach: 0, biTichQuantity: 0 }) }, charRepo, { get: () => ({ realmName: () => 'Kết Đan' }) }) as InstanceType<typeof LearnCongPhapUseCase>;
+    const uc = new LearnCongPhapUseCase(congphapRepo as never, { learnWithCosts: async () => ({ kind: 'learned', linhThach: 0, biTichQuantity: 0 }) } as never, charRepo as never, { get: () => ({ realmName: () => 'Kết Đan' }) } as never);
     await expect(uc.execute('u', 'learn')).rejects.toMatchObject({ code: 'CONGPHAP_NOT_LEARNABLE' });
   });
 

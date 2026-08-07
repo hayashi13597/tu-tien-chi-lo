@@ -2,6 +2,7 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import { ProgressionRepository, LevelUpWithCostsResult, LearnWithCostsResult } from '../../domain/ports/ProgressionRepository';
 
 // Signal rollback-guard cho cả hai flow: levelUpWithCosts và learnWithCosts.
+// Mỗi catch biết flow mình đang chạy nên narrow lại union về đúng loại kết quả.
 type ProgressionSignalResult =
   | Exclude<LevelUpWithCostsResult, { kind: 'updated' }>
   | Exclude<LearnWithCostsResult, { kind: 'learned' }>;
@@ -63,7 +64,8 @@ export class PrismaProgressionRepository implements ProgressionRepository {
         };
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     } catch (error) {
-      if (error instanceof ProgressionSignal) return error.result;
+      // Flow này chỉ throw signal của levelUpWithCosts — narrow lại union.
+      if (error instanceof ProgressionSignal) return error.result as LevelUpWithCostsResult;
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
         return { kind: 'concurrent' };
       }
@@ -112,7 +114,8 @@ export class PrismaProgressionRepository implements ProgressionRepository {
         return { kind: 'learned' as const, linhThach: updatedCharacter.linhThach, biTichQuantity: biTich?.quantity ?? 0 };
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     } catch (error) {
-      if (error instanceof ProgressionSignal) return error.result;
+      // Flow này chỉ throw signal của learnWithCosts — narrow lại union.
+      if (error instanceof ProgressionSignal) return error.result as LearnWithCostsResult;
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
         return { kind: 'concurrent' };
       }

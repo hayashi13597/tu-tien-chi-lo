@@ -48,6 +48,7 @@ import { ListCongPhapUseCase } from './application/ListCongPhapUseCase';
 import { EquipCongPhapUseCase } from './application/EquipCongPhapUseCase';
 import { UnequipCongPhapUseCase } from './application/UnequipCongPhapUseCase';
 import { LevelUpCongPhapUseCase } from './application/LevelUpCongPhapUseCase';
+import { LearnCongPhapUseCase } from './application/LearnCongPhapUseCase';
 import { ListCongPhapAdminUseCase } from './application/ListCongPhapAdminUseCase';
 import { CreateCongPhapUseCase } from './application/CreateCongPhapUseCase';
 import { UpdateCongPhapUseCase } from './application/UpdateCongPhapUseCase';
@@ -171,6 +172,7 @@ export function createApp(overrides: AppOverrides = {}) {
   const equipCongPhapUseCase = new EquipCongPhapUseCase(ownedCongPhapRepository, congPhapRepository);
   const unequipCongPhapUseCase = new UnequipCongPhapUseCase(ownedCongPhapRepository);
   const levelUpCongPhapUseCase = new LevelUpCongPhapUseCase(ownedCongPhapRepository, congPhapRepository, characterRepository, progressionRepository);
+  const learnCongPhapUseCase = new LearnCongPhapUseCase(congPhapRepository, progressionRepository, characterRepository, realmConfigProvider);
   const listCongPhapAdminUseCase = new ListCongPhapAdminUseCase(congPhapRepository);
   const createCongPhapUseCase = new CreateCongPhapUseCase(congPhapRepository);
   const updateCongPhapUseCase = new UpdateCongPhapUseCase(congPhapRepository);
@@ -246,7 +248,7 @@ export function createApp(overrides: AppOverrides = {}) {
   app.use('/expeditions', createExpeditionsRouter({ listExpeditionBranchesUseCase, getCurrentExpeditionUseCase, startExpeditionUseCase, claimExpeditionUseCase, requireAuth }));
   app.use(
     '/congphap',
-    createCongPhapRouter({ listCongPhapUseCase, equipCongPhapUseCase, unequipCongPhapUseCase, levelUpCongPhapUseCase, requireAuth }),
+    createCongPhapRouter({ listCongPhapUseCase, equipCongPhapUseCase, unequipCongPhapUseCase, levelUpCongPhapUseCase, learnCongPhapUseCase, requireAuth }),
   );
   app.use(
     '/admin',
