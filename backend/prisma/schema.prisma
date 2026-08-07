@@ -31,6 +31,7 @@ model User {
   alchemyJobs           AlchemyJob[]
   expeditionDailyQuotas ExpeditionDailyQuota[]
   expeditions           Expedition[]
+  alchemyProfile        AlchemyProfile?
 }
 
 model Character {
@@ -58,8 +59,9 @@ model Character {
   // consumed pill; added to the next attempt's rate, then reset to 0.
   breakthroughBonusPct Float @default(0)
 
-  createdAt   DateTime     @default(now())
-  alchemyJobs AlchemyJob[]
+  createdAt      DateTime        @default(now())
+  alchemyJobs    AlchemyJob[]
+  alchemyProfile AlchemyProfile?
 }
 
 model Pill {
@@ -67,6 +69,7 @@ model Pill {
   name            String
   glyph           String
   rarity          Int
+  tier            Int                @default(1)
   effectKind      String
   amount          Float?
   multiplier      Float?
@@ -200,6 +203,7 @@ model Material {
   name                     String
   glyph                    String
   rarity                   Int
+  tier                     Int                               @default(1)
   description              String
   active                   Boolean                           @default(true)
   inventories              MaterialInventory[]
@@ -221,14 +225,17 @@ model MaterialInventory {
 }
 
 model AlchemyRecipe {
-  id            String                    @id
-  pillId        String                    @unique
-  durationSec   Int
-  linhThachCost Int
-  active        Boolean                   @default(true)
-  pill          Pill                      @relation(fields: [pillId], references: [id])
-  ingredients   AlchemyRecipeIngredient[]
-  jobs          AlchemyJob[]
+  id             String                    @id
+  pillId         String                    @unique
+  durationSec    Int
+  linhThachCost  Int
+  tier           Int                       @default(1)
+  minAlchemyRank Int                       @default(1)
+  baseSuccessPct Int                       @default(100)
+  active         Boolean                   @default(true)
+  pill           Pill                      @relation(fields: [pillId], references: [id])
+  ingredients    AlchemyRecipeIngredient[]
+  jobs           AlchemyJob[]
 }
 
 model AlchemyRecipeIngredient {
@@ -254,6 +261,9 @@ model AlchemyJob {
   completedAt     DateTime?
   outputGrantedAt DateTime?
   status          String        @default("queued")
+  successCount    Int           @default(0)
+  failCount       Int           @default(0)
+  critCount       Int           @default(0)
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   character       Character     @relation(fields: [characterId], references: [id], onDelete: Cascade)
   recipe          AlchemyRecipe @relation(fields: [recipeId], references: [id])
@@ -330,4 +340,19 @@ model Expedition {
   difficulty      ExpeditionDifficulty @relation(fields: [difficultyId], references: [id])
 
   @@index([userId, status])
+}
+
+// Hồ sơ luyện đan của người chơi (Luyện Đan 2.0). Lazy-create: user cũ được tạo
+// profile lần đầu khi đọc/ghi — không cần backfill.
+model AlchemyProfile {
+  id           String    @id @default(uuid())
+  userId       String    @unique
+  characterId  String    @unique
+  rank         Int       @default(1)
+  danKhi       Int       @default(0)
+  furnaceLevel Int       @default(1)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  character    Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
 }
