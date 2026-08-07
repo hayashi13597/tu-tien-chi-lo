@@ -130,3 +130,15 @@ describe('simulateExpedition với pillBuffs', () => {
     expect(Math.abs(dmgOf(buffed, 0) - dmgOf(buffed, 1))).toBeLessThanOrEqual(Math.max(1, dmgOf(buffed, 0) * 0.3));
   });
 });
+
+describe('boss drop (Phase 3)', () => {
+  it('boss roll thêm từ bossDropWeights (quantity 1) khi trúng rate', () => {
+    const bossBranch = { ...branch, bossDropWeights: [{ materialId: 'bi-tich-vong-coc', weight: 1 }] };
+    const reward = rollExpeditionRewards({ branch: bossBranch, difficulty: { ...easy, bossDropRate: 1, normalDropRate: 0 }, ticketCostUnits: 1, wins: 3, random: new ConstantRandom(0.01) });
+    expect(reward.materials.find((m) => m.materialId === 'bi-tich-vong-coc')?.quantity).toBe(1);
+  });
+  it('bảng boss rỗng → hành vi cũ y nguyên', () => {
+    const reward = rollExpeditionRewards({ branch, difficulty: { ...easy, bossDropRate: 1, normalDropRate: 0 }, ticketCostUnits: 1, wins: 3, random: new ConstantRandom(0.01) });
+    expect(reward.materials.every((m) => !m.materialId.startsWith('bi-tich'))).toBe(true);
+  });
+});

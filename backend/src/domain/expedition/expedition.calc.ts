@@ -60,6 +60,11 @@ export function rollExpeditionRewards(input: RewardRollInput): RewardPayload {
       const selected = weightedMaterial(input.branch.upgradeMaterialWeights, input.random.next());
       if (selected) addMaterial(materials, selected, 1);
     }
+    // Phase 3 — bảng boss riêng (Bí Tịch / Đan Hỏa Tủy): chỉ encounter boss roll.
+    if (kind === 'boss' && input.branch.bossDropWeights.length > 0 && input.random.next() < chance) {
+      const selected = weightedMaterial(input.branch.bossDropWeights, input.random.next());
+      if (selected) addMaterial(materials, selected, 1);
+    }
   }
 
   const linhThach = Math.max(0, Math.round(20 * input.ticketCostUnits * input.difficulty.rewardMultiplier * multiplier));
