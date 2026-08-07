@@ -5,10 +5,13 @@ import { PrismaAlchemyRepository } from './PrismaAlchemyRepository';
 
 const prisma = new PrismaClient();
 const materials = new PrismaMaterialRepository(prisma);
-const alchemy = new PrismaAlchemyRepository(prisma);
+// Random constant: base 100 → luôn success; 0.5 không < CRIT_CHANCE (0.1) → không crit.
+const alchemy = new PrismaAlchemyRepository(prisma, { next: () => 0.5 });
 
 let userId = '';
 let characterId = '';
+let rankUserId = '';
+let rankCharacterId = '';
 
 beforeAll(async () => {
   await prisma.pill.upsert({
@@ -35,9 +38,10 @@ beforeAll(async () => {
     where: { id: 'test-alchemy-recipe' },
     create: {
       id: 'test-alchemy-recipe', pillId: 'test-alchemy-pill', durationSec: 1_800, linhThachCost: 10, active: true,
+      tier: 1, minAlchemyRank: 1, baseSuccessPct: 100,
       ingredients: { create: [{ id: 'test-alchemy-recipe-test-alchemy-material', materialId: 'test-alchemy-material', quantity: 3 }] },
     },
-    update: { pillId: 'test-alchemy-pill', durationSec: 1_800, linhThachCost: 10, active: true },
+    update: { pillId: 'test-alchemy-pill', durationSec: 1_800, linhThachCost: 10, active: true, tier: 1, minAlchemyRank: 1, baseSuccessPct: 100 },
   });
   const user = await prisma.user.create({ data: { username: `alchemy_${Date.now()}`, passwordHash: 'x' } });
   userId = user.id;
@@ -45,10 +49,16 @@ beforeAll(async () => {
   characterId = character.id;
   await prisma.materialInventory.create({ data: { userId, materialId: 'test-alchemy-material', quantity: 5 } });
   await prisma.materialInventory.create({ data: { userId, materialId: 'test-alchemy-material-2', quantity: 1 } });
+  const rankUser = await prisma.user.create({ data: { username: `alchemy_rank_${Date.now()}`, passwordHash: 'x' } });
+  rankUserId = rankUser.id;
+  const rankCharacter = await prisma.character.create({ data: { userId: rankUserId, linhThach: 0 } });
+  rankCharacterId = rankCharacter.id;
+  await prisma.alchemyProfile.create({ data: { userId: rankUserId, characterId: rankCharacterId, danKhi: 100 } });
 });
 
 afterAll(async () => {
   await prisma.user.delete({ where: { id: userId } }).catch(() => {});
+  await prisma.user.delete({ where: { id: rankUserId } }).catch(() => {});
   await prisma.alchemyRecipe.delete({ where: { id: 'test-alchemy-recipe' } }).catch(() => {});
   await prisma.pill.delete({ where: { id: 'test-alchemy-pill' } }).catch(() => {});
   await prisma.material.deleteMany({ where: { id: { in: ['test-alchemy-material', 'test-alchemy-material-2'] } } });
@@ -65,6 +75,15 @@ describe('material/alchemy Prisma repositories', () => {
     expect(rows.map((row) => row.quantity)).toEqual([5, 1]);
   });
 
+  // Chạy trước test enqueue: lúc này userId chưa từng đụng tới alchemy nên chưa có profile.
+  it('getProfile lazy-create rank 1 cho user chưa có profile, gọi lại idempotent', async () => {
+    expect(await prisma.alchemyProfile.findUnique({ where: { userId } })).toBeNull();
+    const profile = await alchemy.getProfile(userId);
+    expect(profile).toMatchObject({ userId, characterId, rank: 1, danKhi: 0, furnaceLevel: 1 });
+    const again = await alchemy.getProfile(userId);
+    expect(again.id).toBe(profile.id);
+  });
+
   it('enqueue trừ material và Linh Thạch trong transaction, settle grant Pill idempotent', async () => {
     const now = new Date('2026-07-27T00:00:00Z');
     const queued = await alchemy.enqueue({ userId, characterId, recipeId: 'test-alchemy-recipe', quantity: 1, now });
@@ -75,9 +94,27 @@ describe('material/alchemy Prisma repositories', () => {
     const settled = await alchemy.settleCompleted(userId, new Date('2026-07-27T00:30:01Z'));
     expect(settled.outputGrants).toEqual([{ pillId: 'test-alchemy-pill', quantity: 1 }]);
     expect((await prisma.inventoryItem.findUniqueOrThrow({ where: { userId_pillId: { userId, pillId: 'test-alchemy-pill' } } })).quantity).toBe(1);
+    // Roll outcome deterministic (random 0.5, base 100): 1 success, 0 fail/crit — counters phải persist.
+    const jobRow = await prisma.alchemyJob.findUniqueOrThrow({ where: { id: queued.jobs[0]!.id } });
+    expect({ successCount: jobRow.successCount, failCount: jobRow.failCount, critCount: jobRow.critCount }).toEqual({ successCount: 1, failCount: 0, critCount: 0 });
 
     const repeated = await alchemy.settleCompleted(userId, new Date('2026-07-27T00:30:02Z'));
     expect(repeated.outputGrants).toEqual([]);
     expect((await prisma.inventoryItem.findUniqueOrThrow({ where: { userId_pillId: { userId, pillId: 'test-alchemy-pill' } } })).quantity).toBe(1);
+    // tier 1 success = 2 Đan Khí (DAN_KHI_TABLE); settle lặp không cộng double.
+    expect((await alchemy.getProfile(userId)).danKhi).toBe(2);
+  });
+
+  // Impl rankUp/upgradeFurnace đi kèm Step 2 của plan (guard updateMany atomic) — test viết sau
+  // impl theo note của plan, xác nhận hành vi guard + decrement đúng một lần.
+  it('rankUp guard atomic: trù count khi sai cấp hoặc thiếu Đan Khí, thành công khi đủ', async () => {
+    // targetRank 3 trong khi rank hiện tại 1 → count 0 → throw, không trừ gì.
+    await expect(alchemy.rankUp(rankUserId, 3, 300)).rejects.toMatchObject({ code: 'INSUFFICIENT_DAN_KHI' });
+    // đúng cấp kế tiếp + đủ 100 Đan Khí → rank 2, decrement đúng 100.
+    const profile = await alchemy.rankUp(rankUserId, 2, 100);
+    expect(profile).toMatchObject({ rank: 2, danKhi: 0 });
+    // hết Đan Khí → guard chặn, rank giữ nguyên, không bị âm.
+    await expect(alchemy.rankUp(rankUserId, 3, 300)).rejects.toMatchObject({ code: 'INSUFFICIENT_DAN_KHI' });
+    expect(await alchemy.getProfile(rankUserId)).toMatchObject({ rank: 2, danKhi: 0 });
   });
 });

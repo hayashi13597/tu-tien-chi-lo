@@ -7,6 +7,7 @@ import { UpdateExpeditionConfigAdminUseCase } from './UpdateExpeditionConfigAdmi
 const material = { id: 'xich-viem-tinh', name: 'Xích', glyph: '炎', rarity: 1, description: 'd', active: true };
 const recipe = {
   id: 'recipe-hoi-khi-dan', pillId: 'hoi-khi-dan', durationSec: 1_800, linhThachCost: 10, active: true,
+  tier: 1, minAlchemyRank: 1, baseSuccessPct: 100,
   ingredients: [{ materialId: material.id, quantity: 2 }],
 };
 const branch = {

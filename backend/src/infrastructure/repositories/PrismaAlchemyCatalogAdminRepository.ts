@@ -10,6 +10,7 @@ export class PrismaAlchemyCatalogAdminRepository implements AlchemyCatalogAdminR
     const rows = await this.client.alchemyRecipe.findMany({ include: { ingredients: true }, orderBy: { id: 'asc' } });
     return rows.map((row) => ({
       id: row.id, pillId: row.pillId, durationSec: row.durationSec, linhThachCost: row.linhThachCost, active: row.active,
+      tier: row.tier, minAlchemyRank: row.minAlchemyRank, baseSuccessPct: row.baseSuccessPct,
       ingredients: row.ingredients.map((ingredient) => ({ materialId: ingredient.materialId, quantity: ingredient.quantity })),
     }));
   }
@@ -27,8 +28,8 @@ export class PrismaAlchemyCatalogAdminRepository implements AlchemyCatalogAdminR
         }
         await tx.alchemyRecipe.upsert({
           where: { id: row.id },
-          create: { id: row.id, pillId: row.pillId, durationSec: row.durationSec, linhThachCost: row.linhThachCost, active: row.active },
-          update: { pillId: row.pillId, durationSec: row.durationSec, linhThachCost: row.linhThachCost, active: row.active },
+          create: { id: row.id, pillId: row.pillId, durationSec: row.durationSec, linhThachCost: row.linhThachCost, active: row.active, tier: row.tier, minAlchemyRank: row.minAlchemyRank, baseSuccessPct: row.baseSuccessPct },
+          update: { pillId: row.pillId, durationSec: row.durationSec, linhThachCost: row.linhThachCost, active: row.active, tier: row.tier, minAlchemyRank: row.minAlchemyRank, baseSuccessPct: row.baseSuccessPct },
         });
         await tx.alchemyRecipeIngredient.deleteMany({ where: { recipeId: row.id } });
         await tx.alchemyRecipeIngredient.createMany({ data: row.ingredients.map((ingredient) => ({ recipeId: row.id, materialId: ingredient.materialId, quantity: ingredient.quantity })) });

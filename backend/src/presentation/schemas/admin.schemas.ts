@@ -119,6 +119,10 @@ const alchemyRecipeSchema = z.object({
   durationSec: z.number().int().positive(),
   linhThachCost: z.number().int().min(0),
   active: z.boolean(),
+  // Default giữ hành vi cũ (tier 1, deterministic) cho payload admin chưa gửi field mới.
+  tier: z.number().int().min(1).max(3).default(1),
+  minAlchemyRank: z.number().int().min(1).default(1),
+  baseSuccessPct: z.number().int().min(5).max(100).default(100),
   ingredients: z.array(z.object({ materialId: z.string().regex(/^[a-z0-9-]+$/), quantity: z.number().int().positive() })).min(1),
 });
 export const updateAlchemyRecipesSchema = z.object({ recipes: z.array(alchemyRecipeSchema).min(1) });
