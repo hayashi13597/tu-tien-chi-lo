@@ -101,6 +101,8 @@ Công thức: `furnaceSuccess(f) = (f−1)×4`, `furnaceSpeed(f) = (f−1)×4` (
 
 ### 4.2 Đan dược (8, `tier = 2`, dùng 4 effectKind hiện có)
 
+(Ghi chú review sau triển khai: `giai-kiep-dan` clearPunishment ban đầu bị loại vì bị `giai-phat-dan` tier 1 dominate hoàn toàn — thay bằng `nhat-nguyet-dan` để buff tier 2 thành thang ×2/×2.5/×3 rõ rệt.)
+
 | id | Tên | rarity | effectKind | Chỉ số |
 |---|---|---|---|---|
 | `hoan-khi-dan` | Hoàn Khí Đan | 2 | linhKhi | +800 |
@@ -110,7 +112,7 @@ Công thức: `furnaceSuccess(f) = (f−1)×4`, `furnaceSpeed(f) = (f−1)×4` (
 | `hoa-than-dan` | Hóa Thần Đan | 4 | cultivationBuff | ×2.5 / 360s |
 | `dinh-can-dan` | Định Căn Đan | 3 | breakthroughBoost | +25% |
 | `cuu-thien-dan` | Cửu Thiên Đan | 4 | breakthroughBoost | +60% |
-| `giai-kiep-dan` | Giải Kiếp Đan | 4 | clearPunishment | — |
+| `nhat-nguyet-dan` | Nhật Nguyệt Đan | 4 | cultivationBuff | ×3 / 240s |
 
 ### 4.3 Công thức (8, `tier = 2`, `minAlchemyRank = 4`)
 
@@ -122,7 +124,7 @@ Mỗi công thức: 2 nguyên liệu tier 2 (3 + 2) + 1 nguyên liệu tier 1 (2
 | minh-tam-dan | loi-minh-thach ×3 + huyet-long-sam ×2 + han-bang-ngoc ×2 | 75 | 9600 | 72 |
 | dinh-can-dan | huyet-long-sam ×3 + kim-sa-luc ×2 + kiem-nguyen-thach ×2 | 90 | 10800 | 70 |
 | hoan-linh-dan | kim-sa-luc ×3 + huyen-thiet-tam ×2 + thanh-moc-tinh ×2 | 90 | 10800 | 70 |
-| giai-kiep-dan | huyen-thiet-tam ×3 + ngoc-tuyet-tinh ×2 + u-minh-thao ×2 | 80 | 9600 | 70 |
+| nhat-nguyet-dan | huyen-thiet-tam ×3 + ngoc-tuyet-tinh ×2 + u-minh-thao ×2 | 80 | 9600 | 70 |
 | hoa-than-dan | ngoc-tuyet-tinh ×3 + chu-tuoc-vu ×2 + van-hai-chau ×2 | 120 | 14400 | 65 |
 | cuu-thien-dan | chu-tuoc-vu ×3 + hoang-tuyen-thuy ×2 + long-mach-sa ×2 | 120 | 14400 | 65 |
 | van-chuyen-kim-dan | hoang-tuyen-thuy ×3 + nguyet-hoa-thao ×2 + tinh-than-hoa ×2 | 150 | 21600 | 60 |
