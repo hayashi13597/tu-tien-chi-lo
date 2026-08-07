@@ -90,4 +90,12 @@ describe('alchemy profile domain', () => {
     expect(errorCode(() => furnaceUpgradeCheck(profile({ danKhi: 49 }), 2))).toBe('INSUFFICIENT_DAN_KHI');
     expect(errorCode(() => furnaceUpgradeCheck(profile({ furnaceLevel: 2, danKhi: 300 }), 4))).toBe('ALCHEMY_FURNACE_INVALID');
   });
+
+  it('furnaceUpgradeCheck phân biệt lò đã max (409) với sai thứ tự (400)', () => {
+    // Lò 5 nâng tiếp = gameplay denial giống rank max → ALCHEMY_FURNACE_MAX (errorHandler map 409).
+    expect(() => furnaceUpgradeCheck(profile({ furnaceLevel: 5, danKhi: 9_999 }), 6)).toThrow(/tối đa 5/);
+    expect(errorCode(() => furnaceUpgradeCheck(profile({ furnaceLevel: 5, danKhi: 9_999 }), 6))).toBe('ALCHEMY_FURNACE_MAX');
+    // Nhảy cấp 2→4 vẫn là request sai → ALCHEMY_FURNACE_INVALID.
+    expect(errorCode(() => furnaceUpgradeCheck(profile({ furnaceLevel: 2, danKhi: 300 }), 4))).toBe('ALCHEMY_FURNACE_INVALID');
+  });
 });

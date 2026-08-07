@@ -102,8 +102,12 @@ export function furnaceUpgradeCheck(
   profile: Pick<AlchemyProfileRecord, 'furnaceLevel' | 'danKhi'>,
   targetLevel: number,
 ): null {
-  if (!Number.isInteger(targetLevel) || targetLevel !== profile.furnaceLevel + 1 || targetLevel > 5) {
-    // Request sai thứ tự/vượt cap lò → errorHandler map 400.
+  if (targetLevel > 5) {
+    // Lò đã max mà vẫn nâng = gameplay denial (đối xứng rank max → ALCHEMY_RANK_LOCKED) → 409.
+    throw new DomainError('ALCHEMY_FURNACE_MAX', 'Đan Lô đã đạt cấp tối đa 5');
+  }
+  if (!Number.isInteger(targetLevel) || targetLevel !== profile.furnaceLevel + 1) {
+    // Request sai thứ tự lò → errorHandler map 400.
     throw new DomainError('ALCHEMY_FURNACE_INVALID', `cấp lò kế tiếp phải là ${profile.furnaceLevel + 1}`);
   }
   const cost = FURNACE_UPGRADES[targetLevel];
