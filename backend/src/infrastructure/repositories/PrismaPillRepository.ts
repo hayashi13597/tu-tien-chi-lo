@@ -7,9 +7,15 @@ import { PillRecord, InventoryEntry, PillEffectKind } from '../../domain/pills/p
 function toPillRecord(row: {
   id: string; name: string; glyph: string; rarity: number; tier: number; effectKind: string;
   amount: number | null; multiplier: number | null; durationSec: number | null;
-  bonusPct: number | null; desc: string; active: boolean; starterQuantity: number;
+  bonusPct: number | null; combatAttribute: string | null; combatTrigger: string | null;
+  desc: string; active: boolean; starterQuantity: number;
 }): PillRecord {
-  return { ...row, effectKind: row.effectKind as PillEffectKind };
+  return {
+    ...row,
+    effectKind: row.effectKind as PillEffectKind,
+    combatAttribute: row.combatAttribute as PillRecord['combatAttribute'],
+    combatTrigger: row.combatTrigger as PillRecord['combatTrigger'],
+  };
 }
 
 export class PrismaPillRepository implements PillRepository {

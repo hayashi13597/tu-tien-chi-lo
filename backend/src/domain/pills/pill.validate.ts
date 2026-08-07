@@ -1,5 +1,6 @@
 import { PillRecord, PillEffectKind } from './pill';
 import { DomainError } from '../errors';
+import { ATTRIBUTE_KEYS } from '../attributes/attributes';
 
 type StatField = 'amount' | 'multiplier' | 'durationSec' | 'bonusPct';
 
@@ -11,6 +12,7 @@ const KIND_FIELDS: Record<PillEffectKind, StatField[]> = {
   cultivationBuff: ['multiplier', 'durationSec'],
   breakthroughBoost: ['bonusPct'],
   clearPunishment: [],
+  combatBuff: ['bonusPct'],
 };
 
 function fail(message: string): never {
@@ -48,6 +50,18 @@ export function validatePillDefinition(pill: PillRecord): void {
   }
   if (pill.effectKind === 'breakthroughBoost' && !(pill.bonusPct !== null && pill.bonusPct > 0)) {
     fail('breakthroughBoost pills require bonusPct > 0');
+  }
+  if (pill.effectKind === 'combatBuff') {
+    if (!(pill.bonusPct !== null && pill.bonusPct > 0)) fail('combatBuff pills require bonusPct > 0');
+    if (!pill.combatAttribute || !ATTRIBUTE_KEYS.includes(pill.combatAttribute)) {
+      fail('combatBuff pills require a valid combatAttribute');
+    }
+    if (pill.combatTrigger !== 'start' && pill.combatTrigger !== 'lowHp30') {
+      fail('combatBuff pills require combatTrigger start|lowHp30');
+    }
+  } else {
+    if (pill.combatAttribute !== null) fail('combatAttribute must be null unless effectKind is "combatBuff"');
+    if (pill.combatTrigger !== null) fail('combatTrigger must be null unless effectKind is "combatBuff"');
   }
 
   // Orphan check: every stat field not used by this kind must be null.

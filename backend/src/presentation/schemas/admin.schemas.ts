@@ -41,7 +41,10 @@ const pillBodySchema = z.object({
   rarity: z.number().int().min(0).max(4),
   // Default giữ hành vi cũ (tier 1) cho body admin chưa gửi field mới.
   tier: z.number().int().min(1).max(3).default(1),
-  effectKind: z.enum(['linhKhi', 'cultivationBuff', 'breakthroughBoost', 'clearPunishment']),
+  effectKind: z.enum(['linhKhi', 'cultivationBuff', 'breakthroughBoost', 'clearPunishment', 'combatBuff']),
+  // Phase 3 combatBuff: bất biến (field ngoài kind phải null) ở domain validatePillDefinition.
+  combatAttribute: z.enum(['khiHuyet', 'chanNguyen', 'congVatLy', 'congPhep', 'phongThu', 'tocDo']).nullable().default(null),
+  combatTrigger: z.enum(['start', 'lowHp30']).nullable().default(null),
   amount: z.number().nullable(),
   multiplier: z.number().nullable(),
   durationSec: z.number().int().nullable(),

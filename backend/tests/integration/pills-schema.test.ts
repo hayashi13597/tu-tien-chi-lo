@@ -14,7 +14,7 @@ describe('pills schema + seed', () => {
   it('seeds all 8 pills with valid rarities and effect kinds', async () => {
     const pills = await prisma.pill.findMany();
     expect(pills.length).toBeGreaterThanOrEqual(8);
-    const kinds = ['linhKhi', 'cultivationBuff', 'breakthroughBoost', 'clearPunishment'];
+    const kinds = ['linhKhi', 'cultivationBuff', 'breakthroughBoost', 'clearPunishment', 'combatBuff'];
     for (const p of pills) {
       expect(p.rarity).toBeGreaterThanOrEqual(0);
       expect(p.rarity).toBeLessThanOrEqual(4);

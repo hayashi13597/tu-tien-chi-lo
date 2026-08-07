@@ -1,4 +1,5 @@
 import { PillRecord } from './pill';
+import { DomainError } from '../errors';
 
 export interface PillEffectResult {
   linhKhi: number;
@@ -47,6 +48,9 @@ export function applyPillEffect(input: {
     case 'clearPunishment':
       result.punishedUntil = null;
       break;
+    case 'combatBuff':
+      // Đan combat không tiêu thụ trực tiếp — chỉ mang vào loadout bí cảnh.
+      throw new DomainError('PILL_NOT_CONSUMABLE', 'Đan combat chỉ dùng cho loadout bí cảnh');
   }
   return result;
 }

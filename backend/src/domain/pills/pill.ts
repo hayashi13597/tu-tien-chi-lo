@@ -1,8 +1,12 @@
+import { AttributeSet } from '../attributes/attributes';
+
 export type PillEffectKind =
   | 'linhKhi'
   | 'cultivationBuff'
   | 'breakthroughBoost'
-  | 'clearPunishment';
+  | 'clearPunishment'
+  // Phase 3 — đan combat: chỉ dùng qua loadout bí cảnh, không consume trực tiếp.
+  | 'combatBuff';
 
 export interface PillRecord {
   id: string;
@@ -16,6 +20,9 @@ export interface PillRecord {
   multiplier: number | null;
   durationSec: number | null;
   bonusPct: number | null;
+  // Phase 3 combatBuff: attribute bị buff trong simulateBattle + thời điểm kích.
+  combatAttribute: keyof AttributeSet | null;
+  combatTrigger: 'start' | 'lowHp30' | null;
   desc: string;
   // Soft-disable flag: inactive pills are invisible/unusable to players but
   // keep their InventoryItem rows (see spec: removal is never a hard delete).
