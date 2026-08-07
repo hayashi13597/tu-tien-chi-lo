@@ -11,6 +11,9 @@ export interface InventoryDto {
   multiplier: number | null;
   durationSec: number | null;
   bonusPct: number | null;
+  // Phase 3 — combatBuff pills: FE loadout picker lọc theo effectKind + hiển thị 2 field này.
+  combatAttribute: string | null;
+  combatTrigger: 'start' | 'lowHp30' | null;
   desc: string;
   quantity: number;
 }
@@ -30,6 +33,8 @@ export class GetInventoryUseCase {
       multiplier: e.pill.multiplier,
       durationSec: e.pill.durationSec,
       bonusPct: e.pill.bonusPct,
+      combatAttribute: e.pill.combatAttribute,
+      combatTrigger: e.pill.combatTrigger,
       desc: e.pill.desc,
       quantity: e.quantity,
     }));
