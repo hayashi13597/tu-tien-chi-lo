@@ -155,13 +155,13 @@ model AlchemyProfile {
 
 ### Domain (framework-free)
 
-- `alchemy.profile.ts` (mới): `AlchemyProfileRecord`, bảng hằng `RANK_TABLE`, `FURNACE_TABLE`, `DAN_KHI_BY_TIER`, `MAX_RANK_PHASE1 = 6`.
+- `alchemy.profile.ts` (mới): `AlchemyProfileRecord`, bảng hằng `RANK_UP_COSTS` (+ `RANK_REALM_GATES`), `FURNACE_UPGRADES`, `DAN_KHI_TABLE`, `MAX_RANK = 6`.
 - `alchemy.calc.ts` mở rộng:
   - `computeSuccessPct({ basePct, rank, furnaceLevel, danDaoPct? })` → clamp 5..95.
   - `computeDurationSec({ durationSec, rank, furnaceLevel })` → clamp factor 0.5.
   - `rollJobOutcome(quantity, successPct, random)` → `{ successCount, failCount, critCount, grantQuantity }` (crit x2 tính vào grantQuantity).
   - `danKhiForJob(tier, successCount, failCount)`.
-  - `canRankUp(profile, realmMajor, now)` / `rankUpCost(targetRank)` / `furnaceUpgradeCost(targetLevel)`.
+  - `rankUpCheck(profile, targetRank, realmMajor)` / `furnaceUpgradeCheck(profile, targetLevel)` — throw DomainError khi vi phạm, cost/gate tra từ bảng hằng.
   - `settleAlchemyQueue` nhận thêm `{ profiles: Map<userId, profile>, random }` → settlement trả thêm `danKhiGrants`, `linhThachRefunds`, `jobOutcomes`; vẫn idempotent theo `outputGrantedAt`.
 - `validateRecipe` mở rộng: `tier 1..3`, `minAlchemyRank` hợp lệ theo tier (t2→4, t3→7), `baseSuccessPct` 5..100; công thức tier 1 vẫn pass với giá trị default.
 
