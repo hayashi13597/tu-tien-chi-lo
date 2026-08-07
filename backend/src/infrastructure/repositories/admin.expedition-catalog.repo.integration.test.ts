@@ -35,4 +35,30 @@ describe('admin catalog Prisma repositories', () => {
     expect(branchAfter.find((row) => row.branch.id === branchBefore.branch.id)?.branch.basePower).toBe(branchBefore.branch.basePower + 1);
     await expeditions.replace([branchBefore]);
   });
+
+  it('round-trip tier/gate/recommendedPower/bossDropWeights (Phase 3)', async () => {
+    await prisma.material.upsert({
+      where: { id: 'dan-hoa-tuy' },
+      create: { id: 'dan-hoa-tuy', name: 'Đan Hỏa Tủy', glyph: '髓', rarity: 5, tier: 3, description: 'test' },
+      update: {},
+    });
+    const before = (await expeditions.list()).find((row) => row.branch.id === 'hoa-vuc')!;
+    const modified: typeof before = {
+      ...before,
+      branch: {
+        ...before.branch,
+        tier: 2,
+        minRealmMajor: 3,
+        recommendedPower: 600,
+        bossDropWeights: [{ materialId: 'dan-hoa-tuy', weight: 0.3 }],
+      },
+    };
+    const saved = await expeditions.replace([modified]);
+    const row = saved.find((r) => r.branch.id === 'hoa-vuc')!.branch;
+    expect(row.tier).toBe(2);
+    expect(row.minRealmMajor).toBe(3);
+    expect(row.recommendedPower).toBe(600);
+    expect(row.bossDropWeights).toEqual([{ materialId: 'dan-hoa-tuy', weight: 0.3 }]);
+    await expeditions.replace([before]);
+  });
 });

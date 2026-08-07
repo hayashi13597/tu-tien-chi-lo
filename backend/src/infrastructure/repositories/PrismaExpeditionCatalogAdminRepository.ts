@@ -26,10 +26,15 @@ export class PrismaExpeditionCatalogAdminRepository implements ExpeditionCatalog
             throw new DomainError('MATERIAL_NOT_FOUND', `upgrade material not found: ${weight.materialId}`);
           }
         }
+        for (const weight of row.branch.bossDropWeights) {
+          if (!await tx.material.findUnique({ where: { id: weight.materialId }, select: { id: true } })) {
+            throw new DomainError('MATERIAL_NOT_FOUND', `boss drop material not found: ${weight.materialId}`);
+          }
+        }
         await tx.expeditionBranch.upsert({
           where: { id: row.branch.id },
-          create: { id: row.branch.id, name: row.branch.name, glyph: row.branch.glyph, description: row.branch.description, basePower: row.branch.basePower, alchemyMaterialId: row.branch.alchemyMaterialId },
-          update: { name: row.branch.name, glyph: row.branch.glyph, description: row.branch.description, basePower: row.branch.basePower, alchemyMaterialId: row.branch.alchemyMaterialId },
+          create: { id: row.branch.id, name: row.branch.name, glyph: row.branch.glyph, description: row.branch.description, basePower: row.branch.basePower, alchemyMaterialId: row.branch.alchemyMaterialId, tier: row.branch.tier, minRealmMajor: row.branch.minRealmMajor, recommendedPower: row.branch.recommendedPower },
+          update: { name: row.branch.name, glyph: row.branch.glyph, description: row.branch.description, basePower: row.branch.basePower, alchemyMaterialId: row.branch.alchemyMaterialId, tier: row.branch.tier, minRealmMajor: row.branch.minRealmMajor, recommendedPower: row.branch.recommendedPower },
         });
         for (const difficulty of row.difficulties) {
           await tx.expeditionDifficulty.upsert({
@@ -40,6 +45,8 @@ export class PrismaExpeditionCatalogAdminRepository implements ExpeditionCatalog
         }
         await tx.expeditionUpgradeMaterialWeight.deleteMany({ where: { branchId: row.branch.id } });
         await tx.expeditionUpgradeMaterialWeight.createMany({ data: row.branch.upgradeMaterialWeights.map((weight) => ({ branchId: row.branch.id, materialId: weight.materialId, weight: weight.weight })) });
+        await tx.expeditionBossDropWeight.deleteMany({ where: { branchId: row.branch.id } });
+        await tx.expeditionBossDropWeight.createMany({ data: row.branch.bossDropWeights.map((weight) => ({ branchId: row.branch.id, materialId: weight.materialId, weight: weight.weight })) });
       }
     });
     return this.list();
