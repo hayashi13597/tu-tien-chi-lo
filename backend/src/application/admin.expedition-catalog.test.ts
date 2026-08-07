@@ -14,6 +14,7 @@ const branch = {
   branch: {
     id: 'hoa-vuc', name: 'Hỏa Vực', glyph: '火', description: 'd', basePower: 100, alchemyMaterialId: material.id,
     upgradeMaterialWeights: [{ materialId: 'linh-tai-khi-huyet', weight: 1 }, { materialId: 'linh-tai-than-phap', weight: 1 }, { materialId: 'linh-tai-hoa-luc', weight: 1 }],
+    tier: 1, minRealmMajor: 0, recommendedPower: 0, bossDropWeights: [],
   },
   difficulties: [
     { key: 'easy' as const, enemyMultiplier: 0.8, normalDropRate: 0.5, bossDropRate: 0.7, rewardMultiplier: 0.8, adaptiveCoefficient: 0.1 },
@@ -56,7 +57,7 @@ describe('admin catalog validation', () => {
   it('reject branch thiếu easy/normal/hard và weight âm', async () => {
     const useCase = new UpdateExpeditionConfigAdminUseCase({ replace: async () => [] } as never);
     await expect(useCase.execute([{ ...branch, difficulties: branch.difficulties.slice(0, 2) }])).rejects.toMatchObject({ code: 'INVALID_EXPEDITION_CONFIG' });
-    await expect(useCase.execute([{ ...branch, branch: { ...branch.branch, upgradeMaterialWeights: [{ materialId: 'm', weight: -1 }] } }])).rejects.toMatchObject({ code: 'INVALID_EXPEDITION_CONFIG' });
+    await expect(useCase.execute([{ ...branch, branch: { ...branch.branch, upgradeMaterialWeights: [{ materialId: 'm', weight: -1 }], tier: 1, minRealmMajor: 0, recommendedPower: 0, bossDropWeights: [] } }])).rejects.toMatchObject({ code: 'INVALID_EXPEDITION_CONFIG' });
   });
 
   it('reject reward multiplier không dương và duration ngoài whitelist', async () => {

@@ -1,9 +1,20 @@
 import { CombatantSnapshot, BattleResult } from '../combat/combat';
+import { AttributeSet } from '../attributes/attributes';
 import { RandomSource } from '../ports/RandomSource';
 
 export type ExpeditionDuration = 1_800 | 7_200 | 28_800;
 export type ExpeditionDifficultyKey = 'easy' | 'normal' | 'hard';
 export type ExpeditionStatus = 'running' | 'completed' | 'claimed';
+
+// Phase 3 — đan combatBuff mang vào bí cảnh (tối đa 2 slot).
+export type CombatBuffTrigger = 'start' | 'lowHp30';
+
+export interface LoadoutEntry {
+  pillId: string;
+  combatAttribute: keyof AttributeSet;
+  combatTrigger: CombatBuffTrigger;
+  pct: number; // từ Pill.bonusPct
+}
 
 export interface ExpeditionUpgradeMaterialWeight {
   materialId: string;
@@ -18,6 +29,11 @@ export interface ExpeditionBranchConfig {
   basePower: number;
   alchemyMaterialId: string;
   upgradeMaterialWeights: ExpeditionUpgradeMaterialWeight[];
+  // Phase 3 — tầng 1..3 (Phàm/Linh/Thiên); gate cảnh giới hard, chiến lực soft.
+  tier: number;
+  minRealmMajor: number;
+  recommendedPower: number;
+  bossDropWeights: ExpeditionUpgradeMaterialWeight[]; // chỉ boss encounter roll
 }
 
 export interface ExpeditionDifficultyConfig {
@@ -65,6 +81,7 @@ export interface ExpeditionCombatSnapshot {
   realmSub: number;
   realmMultiplier: number;
   realmReferencePower: number;
+  loadout?: LoadoutEntry[];
 }
 
 export interface ExpeditionRecord {

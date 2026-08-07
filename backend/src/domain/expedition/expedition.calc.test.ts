@@ -18,6 +18,7 @@ const branch: ExpeditionBranchConfig = {
     { materialId: 'linh-tai-than-phap', weight: 2 },
     { materialId: 'linh-tai-hoa-luc', weight: 3 },
   ],
+  tier: 1, minRealmMajor: 0, recommendedPower: 0, bossDropWeights: [],
 };
 
 const easy: ExpeditionDifficultyConfig = {

@@ -149,6 +149,11 @@ const expeditionBranchSchema = z.object({
     id: z.string().regex(/^[a-z0-9-]+$/), name: z.string().min(1), glyph: z.string().min(1), description: z.string().min(1),
     basePower: z.number().positive(), alchemyMaterialId: z.string().regex(/^[a-z0-9-]+$/),
     upgradeMaterialWeights: z.array(z.object({ materialId: z.string().regex(/^[a-z0-9-]+$/), weight: z.number().min(0) })).min(1),
+    // Phase 3. Defaults giữ hành vi cũ cho payload admin chưa gửi field mới.
+    tier: z.number().int().min(1).max(3).default(1),
+    minRealmMajor: z.number().int().min(0).max(10).default(0),
+    recommendedPower: z.number().min(0).default(0),
+    bossDropWeights: z.array(z.object({ materialId: z.string().regex(/^[a-z0-9-]+$/), weight: z.number().min(0) })).default([]),
   }),
   difficulties: z.array(expeditionDifficultySchema).min(1),
 });

@@ -8,6 +8,7 @@ const branch = {
   id: 'hoa-vuc', name: 'Hỏa Vực', glyph: '火', description: 'd', basePower: 10,
   alchemyMaterialId: 'xich-viem-tinh',
   upgradeMaterialWeights: [{ materialId: 'linh-tai-khi-huyet', weight: 1 }, { materialId: 'linh-tai-than-phap', weight: 1 }, { materialId: 'linh-tai-hoa-luc', weight: 1 }],
+  tier: 1, minRealmMajor: 0, recommendedPower: 0, bossDropWeights: [],
 };
 const difficulty = {
   key: 'easy' as const, enemyMultiplier: 0.8, normalDropRate: 0.5, bossDropRate: 0.7, rewardMultiplier: 0.8, adaptiveCoefficient: 0.1,
