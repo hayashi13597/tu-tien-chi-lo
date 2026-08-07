@@ -3,6 +3,8 @@ import { RandomSource } from '../ports/RandomSource';
 import { AlchemyJobRecord, AlchemyRecipeRecord, AlchemySettlement } from './alchemy';
 import {
   AlchemyProfileRecord,
+  SUCCESS_PCT_MAX,
+  SUCCESS_PCT_MIN,
   danKhiForJob,
   failRefundPerUnit,
   furnaceSpeedPct,
@@ -49,8 +51,12 @@ export function reserveRecipeInput(recipe: AlchemyRecipeRecord, quantity: number
 export function computeSuccessPct(input: {
   baseSuccessPct: number; rank: number; furnaceLevel: number; danDaoPct?: number;
 }): number {
+  // base 100 = recipe deterministic (8 công thức cũ + nút admin opt-out khỏi RNG):
+  // miễn roll fail, bảo toàn hành vi người chơi cũ. Bonus rank/lò/đan đạo không
+  // vượt quá 100.
+  if (input.baseSuccessPct >= 100) return 100;
   const raw = input.baseSuccessPct + rankSuccessPct(input.rank) + furnaceSuccessPct(input.furnaceLevel) + (input.danDaoPct ?? 0);
-  return Math.min(95, Math.max(5, raw));
+  return Math.min(SUCCESS_PCT_MAX, Math.max(SUCCESS_PCT_MIN, raw));
 }
 
 // Thời gian luyện giảm theo tốc độ rank + lò, không dưới 50% gốc.
@@ -68,6 +74,7 @@ export function settleAlchemyQueue(input: {
   danDaoPct?: number;
 }): AlchemySettlement {
   const jobs = [...input.jobs]
+    // chú ý bất biến: shares Date refs với input rows — chỉ thay reference, không mutate in-place
     .map((job) => ({ ...job }))
     .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime() || a.queuedAt.getTime() - b.queuedAt.getTime() || a.id.localeCompare(b.id));
   const completedJobIds: string[] = [];

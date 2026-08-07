@@ -12,7 +12,7 @@ Biến luyện đan từ hàng đợi deterministic thành một hệ progressio
 - Thêm tỉ lệ thành công/phẩm chất với công thức minh bạch, admin chỉnh được qua catalog recipe.
 - Cảnh giới Kết Đan + Đan Sư cấp 4 là điều kiện mở công thức tier 2 — gating chéo đầu tiên theo master spec.
 - 8 đan/nguyên liệu/công thức tier 2 mới có đường rơi ngay từ bí cảnh hiện có (bảng drop trọng số), không chờ tầng bí cảnh (Phase 3 sẽ cơ cấu lại).
-- Giữ nguyên hành vi người chơi cũ: 8 công thức tier 1 giữ `baseSuccessPct = 100` (deterministic như hiện tại), migration chỉ additive.
+- Giữ nguyên hành vi người chơi cũ: 8 công thức tier 1 giữ `baseSuccessPct = 100` (deterministic như hiện tại; xuất sắc ×2 là quy tắc mới, áp dụng thống nhất cho mọi tier), migration chỉ additive.
 
 ### Không nằm trong phạm vi
 
@@ -33,6 +33,7 @@ roll #1 < successPct     → thành công; roll #2 < 10% → xuất sắc (×2 o
 roll #1 ≥ successPct     → hỏng: không đan, hoàn floor(30% × linhThachCost), vẫn cho Đan Khí mức hỏng
 ```
 
+- `baseSuccessPct >= 100` → luôn thành công (recipe deterministic, giữ đúng hành vi 8 công thức tier 1 hiện có; admin có thể opt-in deterministic). Với base < 100, clamp 5..95 áp dụng như trên.
 - `danDaoPct` mặc định 0 (hook Phase 2). Tier 1 giữ baseSuccessPct 100 → không đổi hành vi cũ.
 - Roll dùng `RandomSource` inject (đúng pattern expedition); production dùng nguồn ngẫu nhiên thật, test dùng constant.
 

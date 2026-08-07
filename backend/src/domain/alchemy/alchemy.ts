@@ -13,7 +13,7 @@ export interface AlchemyRecipeRecord {
   active: boolean;
   tier: number;          // 1..3 (Phàm/Linh/Thiên Giai)
   minAlchemyRank: number; // 1 / 4 / 7 theo tier
-  baseSuccessPct: number; // 5..100 (tier 1 = 100 → deterministic như cũ)
+  baseSuccessPct: number; // 5..100 (100 = deterministic: luôn thành công như hệ cũ)
   ingredients: AlchemyIngredientLine[];
 }
 

@@ -31,6 +31,8 @@ export const DAN_KHI_TABLE: Readonly<Record<number, { success: number; fail: num
 };
 
 export const CRIT_CHANCE = 0.1; // 10% đơn vị thành công cho x2 output
+export const SUCCESS_PCT_MIN = 5;  // luôn giữ ít nhất 5% cho recipe có base thật
+export const SUCCESS_PCT_MAX = 95; // recipe non-deterministic không bao giờ chắc chắn 100%
 
 export const rankSuccessPct = (rank: number): number => (rank - 1) * 3;
 export const rankSpeedPct = (rank: number): number => (rank - 1) * 2;

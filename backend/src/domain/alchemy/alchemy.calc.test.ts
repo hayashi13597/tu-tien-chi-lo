@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { DomainError } from '../errors';
 import {
+  computeDurationSec,
+  computeSuccessPct,
   reserveRecipeInput,
   settleAlchemyQueue,
   validateRecipe,
@@ -9,6 +11,7 @@ import { AlchemyJobRecord, AlchemyRecipeRecord } from './alchemy';
 
 const defaultProfile = { id: 'p', userId: 'user-1', characterId: 'character-1', rank: 1, danKhi: 0, furnaceLevel: 1 };
 
+// tier 2/base 60: cặp với roll 0.5 để giữ nghĩa các ca settle cũ (success, không crit)
 const recipe: AlchemyRecipeRecord = {
   id: 'recipe-hoi-khi-dan',
   pillId: 'hoi-khi-dan',
@@ -64,6 +67,8 @@ describe('alchemy domain', () => {
     expect(() => validateRecipe({ ...recipe, minAlchemyRank: 1 })).toThrow(DomainError); // tier 2 phải là 4
     expect(() => validateRecipe({ ...recipe, baseSuccessPct: 4 })).toThrow(DomainError);
     expect(() => validateRecipe({ ...recipe, baseSuccessPct: 101 })).toThrow(DomainError);
+    expect(() => validateRecipe({ ...recipe, baseSuccessPct: 5 })).not.toThrow();
+    expect(() => validateRecipe({ ...recipe, tier: 3, minAlchemyRank: 7 })).not.toThrow();
     expect(() => validateRecipe({ ...recipe, tier: 1, minAlchemyRank: 1, baseSuccessPct: 100 })).not.toThrow();
   });
 
@@ -107,6 +112,7 @@ describe('alchemy domain', () => {
     expect(settled.nextRunning?.id).toBe('job-2');
     expect(settled.outputGrants).toEqual([{ pillId: 'hoi-khi-dan', quantity: 2 }]);
     expect(settled.jobs.find((item) => item.id === 'job-1')?.outputGrantedAt).toEqual(now);
+    expect(settled.jobs.find((item) => item.id === 'job-1')?.successCount).toBe(2);
     expect(settled.jobs.find((item) => item.id === 'job-2')?.status).toBe('running');
   });
 
@@ -140,9 +146,7 @@ describe('alchemy domain', () => {
     expect(settled.outputGrants).toEqual([]);
   });
 
-  it('computeSuccessPct clamp 5..95 và computeDurationSec giảm theo rank/lò', async () => {
-    // Dynamic import để RED phase chỉ fail ca này (export chưa tồn tại), không vỡ cả file.
-    const { computeSuccessPct, computeDurationSec } = await import('./alchemy.calc');
+  it('computeSuccessPct clamp 5..95 và computeDurationSec giảm theo rank/lò', () => {
     // base 60 + rank 1 (+0) + lò 1 (+0) = 60 — khớp roll 0.5*100=50 < 60 trong các ca settle.
     expect(computeSuccessPct({ baseSuccessPct: 60, rank: 1, furnaceLevel: 1 })).toBe(60);
     // 90 + 15 (rank 6) + 16 (lò 5) = 121 → clamp 95.
@@ -156,7 +160,7 @@ describe('alchemy domain', () => {
     expect(computeDurationSec({ durationSec: 1800, rank: 1, furnaceLevel: 1 })).toBe(1800);
   });
 
-  it('settle roll outcome: hỏng vẫn có Đan Khí và refund 30%, thành công crit x2', () => {
+  it('settle roll outcome: hỏng vẫn có Đan Khí và refund 30%', () => {
     const now = new Date('2026-07-27T02:00:00Z');
     const settled = settleAlchemyQueue({
       now,
@@ -169,7 +173,33 @@ describe('alchemy domain', () => {
     const failed = settled.jobs.find((item) => item.id === 'job-fail');
     expect(failed).toMatchObject({ status: 'completed', successCount: 0, failCount: 2, critCount: 0 });
     expect(settled.danKhiGain).toBe(4); // tier 2 fail = 2 Đan Khí/đơn vị × 2 đơn vị
+    expect(settled.profile.danKhi).toBe(defaultProfile.danKhi + 4);
     expect(settled.linhThachRefund).toBe(Math.floor(recipe.linhThachCost * 0.3) * 2);
+  });
+
+  it('settle crit x2: grant vượt quantity khi roll thấp', () => {
+    const settled = settleAlchemyQueue({
+      now: new Date('2026-07-27T02:00:00Z'),
+      jobs: [job({ id: 'job-crit' })],
+      recipes: new Map([[recipe.id, recipe]]),
+      profile: defaultProfile,
+      random: { next: () => 0 }, // success + crit mọi đơn vị
+    });
+    expect(settled.outputGrants).toEqual([{ pillId: recipe.pillId, quantity: 4 }]); // 2 đơn vị ×2
+    expect(settled.jobs.find((j) => j.id === 'job-crit')).toMatchObject({ successCount: 2, critCount: 2, failCount: 0 });
+  });
+
+  it('recipe base 100 luôn thành công kể cả roll cao (giữ hành vi cũ)', () => {
+    const tierOne: AlchemyRecipeRecord = { ...recipe, tier: 1, minAlchemyRank: 1, baseSuccessPct: 100 };
+    const settled = settleAlchemyQueue({
+      now: new Date('2026-07-27T02:00:00Z'),
+      jobs: [job({ id: 'job-legacy' })],
+      recipes: new Map([[tierOne.id, tierOne]]),
+      profile: defaultProfile,
+      random: { next: () => 0.999 },
+    });
+    expect(settled.outputGrants).toEqual([{ pillId: tierOne.pillId, quantity: 2 }]);
+    expect(settled.jobs.find((j) => j.id === 'job-legacy')).toMatchObject({ successCount: 2, failCount: 0, critCount: 0 });
   });
 
   it('settle output idempotent: job đã grant không roll lại', () => {
