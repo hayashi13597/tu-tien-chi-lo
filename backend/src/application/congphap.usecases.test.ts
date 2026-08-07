@@ -184,3 +184,20 @@ describe('LearnCongPhapUseCase (Phase 2)', () => {
     expect(f.calls()).toMatchObject({ userId: 'u', congPhapId: 'learn', biTichMaterialId: 'bi-tich-learn', linhThachCost: 300 });
   });
 });
+
+describe('ListCongPhapUseCase (Phase 2 enrichment)', () => {
+  it('catalog gắn biTichOwned từ MaterialInventory; response có system buffs', async () => {
+    const learnable = { ...passive, id: 'learn2', biTichMaterialId: 'bi-tich-learn2', tier: 2, branch: 'danDao' as const, minRealmMajor: 3, effects: [{ attribute: 'danDaoSuccess' as const, flatPerLevel: 0, pctPerLevel: 1 }] };
+    const f = fakes({ owned: [{ def: learnable, level: 10, equippedSlot: null }] });
+    (f.congphapRepo as { listActive: () => Promise<unknown[]> }).listActive = async () => [
+      { ...learnable },
+      { ...passive },
+    ];
+    const materialsRepo = { listInventory: async () => [{ userId: 'u', materialId: 'bi-tich-learn2', quantity: 2 }] };
+    const result = await new ListCongPhapUseCase(f.ownedRepo as never, f.congphapRepo as never, materialsRepo as never).execute('u');
+    expect(result.catalog[0].biTichOwned).toBe(2);
+    expect(result.catalog[1].biTichOwned).toBe(0); // môn không cần biTich
+    expect(result.system).toEqual({ linhKhiRatePct: 0, danDaoSuccessPct: 10 });
+    expect(result.system).not.toHaveProperty('linhKhiRateMultiplier');
+  });
+});
