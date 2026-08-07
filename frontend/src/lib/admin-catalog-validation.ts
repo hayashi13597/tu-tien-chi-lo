@@ -244,6 +244,48 @@ export function validateExpeditionConfig(
     if (!Number.isFinite(branch.basePower) || branch.basePower <= 0) {
       errors.push({ path: branchPath("basePower"), message: "Phải là số > 0" });
     }
+    // Phase 3 — tầng/gate/chiến lực (mirror UpdateExpeditionConfigAdminUseCase).
+    if (!Number.isInteger(branch.tier) || branch.tier < 1 || branch.tier > 3) {
+      errors.push({ path: branchPath("tier"), message: "Tầng 1–3" });
+    }
+    if (
+      !Number.isInteger(branch.minRealmMajor) ||
+      branch.minRealmMajor < 0 ||
+      branch.minRealmMajor > 10
+    ) {
+      errors.push({
+        path: branchPath("minRealmMajor"),
+        message: "Số nguyên 0–10",
+      });
+    }
+    if (
+      !Number.isFinite(branch.recommendedPower) ||
+      branch.recommendedPower < 0
+    ) {
+      errors.push({
+        path: branchPath("recommendedPower"),
+        message: "Phải là số ≥ 0",
+      });
+    }
+    // Boss drop: được phép rỗng (tầng 1); không lặp material, weight ≥ 0.
+    const bossMaterialIds = new Set<string>();
+    branch.bossDropWeights.forEach((weight, weightIndex) => {
+      const bossPath = (field: string) =>
+        `${branchIndex}.branch.bossDropWeights.${weightIndex}.${field}`;
+      if (
+        !isSlug(weight.materialId) ||
+        bossMaterialIds.has(weight.materialId)
+      ) {
+        errors.push({
+          path: bossPath("materialId"),
+          message: "Nguyên liệu hợp lệ, không lặp",
+        });
+      }
+      bossMaterialIds.add(weight.materialId);
+      if (!Number.isFinite(weight.weight) || weight.weight < 0) {
+        errors.push({ path: bossPath("weight"), message: "Phải là số ≥ 0" });
+      }
+    });
     if (!isSlug(branch.alchemyMaterialId)) {
       errors.push({
         path: branchPath("alchemyMaterialId"),

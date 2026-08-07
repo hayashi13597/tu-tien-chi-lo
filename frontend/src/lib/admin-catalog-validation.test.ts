@@ -230,3 +230,61 @@ describe("admin catalog validation", () => {
     );
   });
 });
+
+describe("expedition Phase 3 fields", () => {
+  it("rejects tier ngoài 1..3 hoặc không nguyên", () => {
+    for (const tier of [0, 4, 1.5]) {
+      const errors = validateExpeditionConfig([
+        { ...branch, branch: { ...branch.branch, tier } },
+      ]);
+      expect(errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ path: "0.branch.tier" }),
+        ]),
+      );
+    }
+  });
+
+  it("rejects minRealmMajor ngoài 0..10 và recommendedPower âm", () => {
+    const bad = validateExpeditionConfig([
+      {
+        ...branch,
+        branch: { ...branch.branch, minRealmMajor: 11, recommendedPower: -1 },
+      },
+    ]);
+    expect(bad).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: "0.branch.minRealmMajor" }),
+        expect.objectContaining({ path: "0.branch.recommendedPower" }),
+      ]),
+    );
+  });
+
+  it("bossDropWeights: cho phép rỗng; chặn weight âm, material lạ hoặc lặp", () => {
+    expect(validateExpeditionConfig([branch])).toEqual([]);
+    const errors = validateExpeditionConfig([
+      {
+        ...branch,
+        branch: {
+          ...branch.branch,
+          bossDropWeights: [
+            { materialId: "", weight: -1 },
+            { materialId: "bi-tich-vong-coc", weight: 1 },
+            { materialId: "bi-tich-vong-coc", weight: 1 },
+          ],
+        },
+      },
+    ]);
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: "0.branch.bossDropWeights.0.materialId",
+        }),
+        expect.objectContaining({ path: "0.branch.bossDropWeights.0.weight" }),
+        expect.objectContaining({
+          path: "0.branch.bossDropWeights.2.materialId",
+        }),
+      ]),
+    );
+  });
+});
