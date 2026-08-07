@@ -2,6 +2,9 @@ import { PassiveEffect } from '../attributes/attributes.calc';
 
 export type CongPhapCategory = 'active' | 'passive';
 
+// Ba nhánh công pháp (Phase 2). null trên record = môn không thuộc nhánh (legacy tier 1).
+export type CongPhapBranch = 'tuLuyen' | 'chienDao' | 'danDao';
+
 // Số slot công pháp chủ động cố định (spec: 4).
 export const ACTIVE_SLOTS = 4;
 

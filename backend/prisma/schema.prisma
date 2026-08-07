@@ -138,12 +138,15 @@ model RedeemCodeReward {
   id         String     @id @default(uuid())
   codeId     String
   code       RedeemCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
-  // Đúng MỘT trong ba loại reward dưới đây khác null (validate ở domain khi tạo code).
+  // Đúng MỘT trong bốn loại reward dưới đây khác null (validate ở domain khi tạo code).
   pillId     String?
   pill       Pill?      @relation(fields: [pillId], references: [id])
   congPhapId String?
   congPhap   CongPhap?  @relation(fields: [congPhapId], references: [id])
   linhThach  Int?
+  // Loại reward thứ tư (Phase 2): vật phẩm material (vd: bi-tich-*).
+  materialId String?
+  material   Material? @relation(fields: [materialId], references: [id])
   quantity   Int
 }
 
@@ -183,6 +186,14 @@ model CongPhap {
   cooldownRounds     Int?
   owned              OwnedCongPhap[]
   redeemRewards      RedeemCodeReward[]
+  // Phase 2 (Công Pháp 2.0): tier chung + nhánh + gate cảnh giới + Bí Tịch nhập môn.
+  tier             Int       @default(1)
+  branch           String? // "tuLuyen" | "chienDao" | "danDao"; null = không thuộc nhánh
+  minRealmMajor    Int       @default(0)
+  biTichMaterialId String?
+  biTichMaterial   Material? @relation("CongPhapBiTichMaterial", fields: [biTichMaterialId], references: [id])
+
+  @@index([tier, branch])
 }
 
 model OwnedCongPhap {
@@ -211,6 +222,8 @@ model Material {
   branchAlchemyMaterial    ExpeditionBranch?                 @relation("BranchAlchemyMaterial")
   upgradeCongPhaps         CongPhap[]                        @relation("CongPhapUpgradeMaterial")
   expeditionUpgradeWeights ExpeditionUpgradeMaterialWeight[]
+  biTichCongPhaps          CongPhap[]                        @relation("CongPhapBiTichMaterial")
+  redeemRewards            RedeemCodeReward[]
 }
 
 model MaterialInventory {
