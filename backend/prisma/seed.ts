@@ -37,7 +37,7 @@ const CONG_PHAP = [
       { attribute: 'phongThu', flatPerLevel: 8, pctPerLevel: 0 },
     ],
     powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null,
-    upgradeMaterialId: 'linh-tai-khi-huyet', baseMaterialCost: 2, materialCostGrowth: 1.5, cooldownRounds: null,
+    upgradeMaterialId: 'linh-tai-khi-huyet', baseMaterialCost: 2, materialCostGrowth: 1.5, cooldownRounds: null, tier: 1, branch: 'chienDao', minRealmMajor: 0, biTichMaterialId: null,
   },
   {
     id: 'linh-tuc-quyet', name: 'Linh Tốc Quyết', glyph: '速', rarity: 2,
@@ -45,15 +45,118 @@ const CONG_PHAP = [
     active: true, maxLevel: 10, baseCost: 150, costGrowth: 1.5,
     effects: [{ attribute: 'tocDo', flatPerLevel: 5, pctPerLevel: 2 }],
     powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null,
-    upgradeMaterialId: 'linh-tai-than-phap', baseMaterialCost: 2, materialCostGrowth: 1.5, cooldownRounds: null,
+    upgradeMaterialId: 'linh-tai-than-phap', baseMaterialCost: 2, materialCostGrowth: 1.5, cooldownRounds: null, tier: 1, branch: 'chienDao', minRealmMajor: 0, biTichMaterialId: null,
   },
   {
     id: 'liet-hoa-tam', name: 'Liệt Hỏa Trảm', glyph: '火', rarity: 3,
     category: 'active', desc: 'Kiếm quyết liệt hỏa, gây sát thương lớn khi combat.',
     active: true, maxLevel: 10, baseCost: 200, costGrowth: 1.6,
     effects: null, powerPerLevel: 120, chanNguyenCost: 30, dupRefundLinhThach: null,
-    upgradeMaterialId: 'linh-tai-hoa-luc', baseMaterialCost: 2, materialCostGrowth: 1.6, cooldownRounds: 2,
+    upgradeMaterialId: 'linh-tai-hoa-luc', baseMaterialCost: 2, materialCostGrowth: 1.6, cooldownRounds: 2, tier: 1, branch: 'chienDao', minRealmMajor: 0, biTichMaterialId: null,
   },
+];
+
+// ── Công Pháp 2.0 (spec 2026-08-07-cong-phap-2-design §6) ──────────────────
+// 9 môn tier 2 (Linh Giai): minRealmMajor 3 (Kết Đan), học bằng 1 Bí Tịch + 300 LT.
+const CONG_PHAP_T2 = [
+  {
+    id: 'vong-coc-quyet', name: 'Vong Cốc Quyết', glyph: '忘', rarity: 3,
+    category: 'passive', desc: 'Quên cả cốc thần, tâm ý quy nhất, đẩy nhanh hấp thu linh khí.',
+    active: true, maxLevel: 10, baseCost: 300, costGrowth: 1.6,
+    effects: [{ attribute: 'linhKhiRate', flatPerLevel: 0, pctPerLevel: 2 }],
+    powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null,
+    upgradeMaterialId: 'linh-tai-tu-luyen', baseMaterialCost: 3, materialCostGrowth: 1.6, cooldownRounds: null,
+    tier: 2, branch: 'tuLuyen', minRealmMajor: 3, biTichMaterialId: 'bi-tich-vong-coc',
+  },
+  {
+    id: 'tieu-chu-thien-cong', name: 'Tiểu Chu Thiên Công', glyph: '周', rarity: 3,
+    category: 'passive', desc: 'Vận khí theo chu thiên nhỏ, linh khí tuần hoàn nhanh.',
+    active: true, maxLevel: 10, baseCost: 400, costGrowth: 1.6,
+    effects: [{ attribute: 'linhKhiRate', flatPerLevel: 0, pctPerLevel: 3 }],
+    powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null,
+    upgradeMaterialId: 'linh-tai-tu-luyen', baseMaterialCost: 3, materialCostGrowth: 1.6, cooldownRounds: null,
+    tier: 2, branch: 'tuLuyen', minRealmMajor: 3, biTichMaterialId: 'bi-tich-tieu-chu-thien',
+  },
+  {
+    id: 'dai-chu-thien-cong', name: 'Đại Chu Thiên Công', glyph: '天', rarity: 4,
+    category: 'passive', desc: 'Chu thiên đại thành, linh khí tự hội tụ không ngừng.',
+    active: true, maxLevel: 10, baseCost: 500, costGrowth: 1.6,
+    effects: [{ attribute: 'linhKhiRate', flatPerLevel: 0, pctPerLevel: 5 }],
+    powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null,
+    upgradeMaterialId: 'linh-tai-tu-luyen', baseMaterialCost: 4, materialCostGrowth: 1.6, cooldownRounds: null,
+    tier: 2, branch: 'tuLuyen', minRealmMajor: 3, biTichMaterialId: 'bi-tich-dai-chu-thien',
+  },
+  {
+    id: 'kim-cang-the', name: 'Kim Cang Thể', glyph: '金', rarity: 3,
+    category: 'passive', desc: 'Thân như kim cương bất hoại, khí huyết dồi dào.',
+    active: true, maxLevel: 10, baseCost: 350, costGrowth: 1.6,
+    effects: [
+      { attribute: 'khiHuyet', flatPerLevel: 200, pctPerLevel: 0 },
+      { attribute: 'phongThu', flatPerLevel: 0, pctPerLevel: 5 },
+    ],
+    powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null,
+    upgradeMaterialId: 'linh-tai-khi-huyet', baseMaterialCost: 3, materialCostGrowth: 1.6, cooldownRounds: null,
+    tier: 2, branch: 'chienDao', minRealmMajor: 3, biTichMaterialId: 'bi-tich-kim-cang',
+  },
+  {
+    id: 'ngu-kiem-thuat', name: 'Ngự Kiếm Thuật', glyph: '剑', rarity: 3,
+    category: 'passive', desc: 'Lấy ý ngự kiếm, kiếm khí tăng uy thế vật công.',
+    active: true, maxLevel: 10, baseCost: 400, costGrowth: 1.6,
+    effects: [{ attribute: 'congVatLy', flatPerLevel: 0, pctPerLevel: 8 }],
+    powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null,
+    upgradeMaterialId: 'linh-tai-hoa-luc', baseMaterialCost: 3, materialCostGrowth: 1.6, cooldownRounds: null,
+    tier: 2, branch: 'chienDao', minRealmMajor: 3, biTichMaterialId: 'bi-tich-ngu-kiem',
+  },
+  {
+    id: 'thien-loi-chi', name: 'Thiên Lôi Chỉ', glyph: '雷', rarity: 4,
+    category: 'active', desc: 'Một chỉ dẫn lôi thiên, phá vỡ vạn quân.',
+    active: true, maxLevel: 10, baseCost: 450, costGrowth: 1.6,
+    effects: null, powerPerLevel: 250, chanNguyenCost: 40, dupRefundLinhThach: null,
+    upgradeMaterialId: 'linh-tai-hoa-luc', baseMaterialCost: 4, materialCostGrowth: 1.6, cooldownRounds: 3,
+    tier: 2, branch: 'chienDao', minRealmMajor: 3, biTichMaterialId: 'bi-tich-thien-loi',
+  },
+  {
+    id: 'dieu-hoa-tan-quyet', name: 'Điều Hỏa Tán Quyết', glyph: '炭', rarity: 3,
+    category: 'passive', desc: 'Điều khiển hỏa lò nhuần nhuyễn, đan thành êm ả.',
+    active: true, maxLevel: 10, baseCost: 300, costGrowth: 1.6,
+    effects: [{ attribute: 'danDaoSuccess', flatPerLevel: 0, pctPerLevel: 1 }],
+    powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null,
+    upgradeMaterialId: 'linh-tai-dan-dao', baseMaterialCost: 3, materialCostGrowth: 1.6, cooldownRounds: null,
+    tier: 2, branch: 'danDao', minRealmMajor: 3, biTichMaterialId: 'bi-tich-dieu-hoa',
+  },
+  {
+    id: 'ninh-dan-kinh', name: 'Ngưng Đan Kinh', glyph: '凝', rarity: 3,
+    category: 'passive', desc: 'Kinh văn ngưng luyện đan tinh, giảm hỏa hầu thất thường.',
+    active: true, maxLevel: 10, baseCost: 400, costGrowth: 1.6,
+    effects: [{ attribute: 'danDaoSuccess', flatPerLevel: 0, pctPerLevel: 1.5 }],
+    powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null,
+    upgradeMaterialId: 'linh-tai-dan-dao', baseMaterialCost: 3, materialCostGrowth: 1.6, cooldownRounds: null,
+    tier: 2, branch: 'danDao', minRealmMajor: 3, biTichMaterialId: 'bi-tich-ninh-dan',
+  },
+  {
+    id: 'van-linh-lo-quyet', name: 'Vạn Linh Lô Quyết', glyph: '炉', rarity: 4,
+    category: 'passive', desc: 'Lô quyết vạn linh, đan đạo thông thiên.',
+    active: true, maxLevel: 10, baseCost: 500, costGrowth: 1.6,
+    effects: [{ attribute: 'danDaoSuccess', flatPerLevel: 0, pctPerLevel: 2 }],
+    powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null,
+    upgradeMaterialId: 'linh-tai-dan-dao', baseMaterialCost: 4, materialCostGrowth: 1.6, cooldownRounds: null,
+    tier: 2, branch: 'danDao', minRealmMajor: 3, biTichMaterialId: 'bi-tich-van-linh-lo',
+  },
+];
+
+// Hai linh tài nâng cấp riêng của hai nhánh mới + 9 Bí Tịch nhập môn (mỗi quyển ứng đúng một môn).
+const MATERIALS_CONGPHAP_T2 = [
+  { id: 'linh-tai-tu-luyen', name: 'Linh Tài Tu Luyện', glyph: '氣', rarity: 3, description: 'Linh tài chuyên dùng để tu tập tâm pháp vận khí.', tier: 2 },
+  { id: 'linh-tai-dan-dao', name: 'Linh Tài Đan Đạo', glyph: '丹', rarity: 3, description: 'Linh tài chuyên dùng để tu tập đan đạo tâm pháp.', tier: 2 },
+  { id: 'bi-tich-vong-coc', name: 'Bí Tịch: Vong Cốc Quyết', glyph: '秘', rarity: 4, description: 'Bí tịch cổ ghi lại Vong Cốc Quyết; dùng để nhập môn.', tier: 2 },
+  { id: 'bi-tich-tieu-chu-thien', name: 'Bí Tịch: Tiểu Chu Thiên Công', glyph: '秘', rarity: 4, description: 'Bí tịch cổ ghi lại Tiểu Chu Thiên Công; dùng để nhập môn.', tier: 2 },
+  { id: 'bi-tich-dai-chu-thien', name: 'Bí Tịch: Đại Chu Thiên Công', glyph: '秘', rarity: 4, description: 'Bí tịch cổ ghi lại Đại Chu Thiên Công; dùng để nhập môn.', tier: 2 },
+  { id: 'bi-tich-kim-cang', name: 'Bí Tịch: Kim Cang Thể', glyph: '秘', rarity: 4, description: 'Bí tịch cổ ghi lại Kim Cang Thể; dùng để nhập môn.', tier: 2 },
+  { id: 'bi-tich-ngu-kiem', name: 'Bí Tịch: Ngự Kiếm Thuật', glyph: '秘', rarity: 4, description: 'Bí tịch cổ ghi lại Ngự Kiếm Thuật; dùng để nhập môn.', tier: 2 },
+  { id: 'bi-tich-thien-loi', name: 'Bí Tịch: Thiên Lôi Chỉ', glyph: '秘', rarity: 4, description: 'Bí tịch cổ ghi lại Thiên Lôi Chỉ; dùng để nhập môn.', tier: 2 },
+  { id: 'bi-tich-dieu-hoa', name: 'Bí Tịch: Điều Hỏa Tán Quyết', glyph: '秘', rarity: 4, description: 'Bí tịch cổ ghi lại Điều Hỏa Tán Quyết; dùng để nhập môn.', tier: 2 },
+  { id: 'bi-tich-ninh-dan', name: 'Bí Tịch: Ngưng Đan Kinh', glyph: '秘', rarity: 4, description: 'Bí tịch cổ ghi lại Ngưng Đan Kinh; dùng để nhập môn.', tier: 2 },
+  { id: 'bi-tich-van-linh-lo', name: 'Bí Tịch: Vạn Linh Lô Quyết', glyph: '秘', rarity: 4, description: 'Bí tịch cổ ghi lại Vạn Linh Lô Quyết; dùng để nhập môn.', tier: 2 },
 ];
 
 const MATERIALS = [
@@ -152,7 +255,7 @@ async function main() {
     await prisma.pill.upsert({ where: { id: p.id }, create: p, update: p });
   }
 
-  for (const material of [...MATERIALS, ...MATERIALS_T2]) {
+  for (const material of [...MATERIALS, ...MATERIALS_T2, ...MATERIALS_CONGPHAP_T2]) {
     await prisma.material.upsert({
       where: { id: material.id },
       create: { ...material, active: true },
@@ -160,7 +263,7 @@ async function main() {
     });
   }
 
-  for (const c of CONG_PHAP) {
+  for (const c of [...CONG_PHAP, ...CONG_PHAP_T2]) {
     await prisma.congPhap.upsert({ where: { id: c.id }, create: c, update: c });
   }
 
