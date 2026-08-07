@@ -1,8 +1,9 @@
 import { AlchemyRepository } from '../domain/ports/AlchemyRepository';
 import { CharacterRepository } from '../domain/ports/CharacterRepository';
+import { MaterialRepository } from '../domain/ports/MaterialRepository';
 import { DomainError } from '../domain/errors';
 import {
-  FURNACE_UPGRADES, MAX_RANK, RANK_REALM_GATES, RANK_UP_COSTS,
+  FURNACE_UPGRADES, MAX_RANK, RANK_DAN_HOA_TUY_COSTS, RANK_REALM_GATES, RANK_UP_COSTS,
   furnaceSpeedPct, furnaceSuccessPct, rankSpeedPct, rankSuccessPct,
 } from '../domain/alchemy/alchemy.profile';
 
@@ -13,6 +14,8 @@ export interface AlchemyProfileSummary {
   nextRank: {
     target: number; danKhiCost: number; realmGateMajor: number | null; realmMet: boolean;
     affordable: boolean; locked: boolean;
+    // Phase 3 Thiên Giai (cấp 7-9): cần thêm Đan Hỏa Tủy.
+    danHoaTuyCost: number; danHoaTuyOwned: number; affordableDanHoaTuy: boolean;
   } | null;
   nextFurnace: {
     target: number; danKhiCost: number; linhThachCost: number;
@@ -24,6 +27,7 @@ export class GetAlchemyProfileUseCase {
   constructor(
     private readonly alchemy: AlchemyRepository,
     private readonly characters: CharacterRepository,
+    private readonly materials: MaterialRepository,
   ) {}
 
   async execute(userId: string): Promise<AlchemyProfileSummary> {
@@ -33,6 +37,7 @@ export class GetAlchemyProfileUseCase {
 
     // Đã MAX_RANK (hoặc lò max) thì bước kế tiếp là null — UI hiển thị trạng thái cap.
     const nextTarget = profile.rank + 1;
+    const tuyOwned = (await this.materials.listInventory(userId)).find((entry) => entry.materialId === 'dan-hoa-tuy')?.quantity ?? 0;
     const nextRank = nextTarget > MAX_RANK ? null : {
       target: nextTarget,
       danKhiCost: RANK_UP_COSTS[nextTarget] ?? 0,
@@ -40,6 +45,9 @@ export class GetAlchemyProfileUseCase {
       realmMet: character.realmMajor >= (RANK_REALM_GATES[nextTarget] ?? 0),
       affordable: profile.danKhi >= (RANK_UP_COSTS[nextTarget] ?? Number.POSITIVE_INFINITY),
       locked: false,
+      danHoaTuyCost: RANK_DAN_HOA_TUY_COSTS[nextTarget] ?? 0,
+      danHoaTuyOwned: tuyOwned,
+      affordableDanHoaTuy: tuyOwned >= (RANK_DAN_HOA_TUY_COSTS[nextTarget] ?? 0),
     };
     const furnaceTarget = profile.furnaceLevel + 1;
     const furnaceCost = FURNACE_UPGRADES[furnaceTarget];

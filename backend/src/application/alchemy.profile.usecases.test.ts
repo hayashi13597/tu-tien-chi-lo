@@ -18,7 +18,7 @@ const recipeT2 = {
 
 function buildFakes(options: {
   profile?: AlchemyProfileRecord; realmMajor?: number; linhThach?: number;
-  recipes?: typeof recipeT2[];
+  recipes?: typeof recipeT2[]; danHoaTuy?: number;
 } = {}) {
   const state = { rankUpCalls: 0, furnaceCalls: 0, enqueueCalls: 0 };
   const alchemy = {
@@ -33,7 +33,7 @@ function buildFakes(options: {
       id: 'c', userId: 'u', realmMajor: options.realmMajor ?? 0, linhThach: options.linhThach ?? 0,
     }),
   };
-  const materials = { listInventory: async () => [{ materialId: 'nguyet-hoa-thao', quantity: 99 }] };
+  const materials = { listInventory: async () => [{ materialId: 'nguyet-hoa-thao', quantity: 99 }, ...(options.danHoaTuy ? [{ materialId: 'dan-hoa-tuy', quantity: options.danHoaTuy }] : [])] };
   return { alchemy, characters, materials, state };
 }
 
@@ -51,34 +51,55 @@ const EMPTY_OWNED = ownedFake();
 describe('alchemy profile use cases', () => {
   it('GET profile trả bước kế tiếp cho rank và lò', async () => {
     const f = buildFakes({ profile: profile({ danKhi: 120 }), linhThach: 500 });
-    const dto = await new GetAlchemyProfileUseCase(f.alchemy as never, f.characters as never).execute('u');
+    const dto = await new GetAlchemyProfileUseCase(f.alchemy as never, f.characters as never, f.materials as never).execute('u');
     expect(dto.profile).toMatchObject({ rank: 1, danKhi: 120, furnaceLevel: 1 });
     expect(dto.nextRank).toMatchObject({ target: 2, danKhiCost: 100, affordable: true, locked: false });
     expect(dto.nextFurnace).toMatchObject({ target: 2, danKhiCost: 50, linhThachCost: 200, affordableDanKhi: true, affordableLinhThach: true });
   });
 
   it('nextRank null khi MAX_RANK, nextFurnace null khi lò max', async () => {
-    const f = buildFakes({ profile: profile({ rank: 6, furnaceLevel: 5, danKhi: 9999 }) });
-    const dto = await new GetAlchemyProfileUseCase(f.alchemy as never, f.characters as never).execute('u');
+    const f = buildFakes({ profile: profile({ rank: 9, furnaceLevel: 5, danKhi: 9999 }) });
+    const dto = await new GetAlchemyProfileUseCase(f.alchemy as never, f.characters as never, f.materials as never).execute('u');
     expect(dto.nextRank).toBeNull();
     expect(dto.nextFurnace).toBeNull();
   });
 
+  it('nextRank cấp 7 mang chi phí Đan Hỏa Tủy và trạng thái tồn kho', async () => {
+    const f = buildFakes({ profile: profile({ rank: 6, danKhi: 9999 }), realmMajor: 5 });
+    const dto = await new GetAlchemyProfileUseCase(f.alchemy as never, f.characters as never, f.materials as never).execute('u');
+    expect(dto.nextRank).toMatchObject({
+      target: 7, danKhiCost: 3100, realmGateMajor: 5, realmMet: true,
+      danHoaTuyCost: 1, danHoaTuyOwned: 0, affordableDanHoaTuy: false,
+    });
+    const rich = buildFakes({ profile: profile({ rank: 6, danKhi: 9999 }), realmMajor: 5, danHoaTuy: 1 });
+    const dtoRich = await new GetAlchemyProfileUseCase(rich.alchemy as never, rich.characters as never, rich.materials as never).execute('u');
+    expect(dtoRich.nextRank).toMatchObject({ danHoaTuyOwned: 1, affordableDanHoaTuy: true });
+  });
+
   it('rank-up đủ điều kiện gọi repo, thiếu Đan Khí / cảnh giới / cap thì ném lỗi', async () => {
     const ok = buildFakes({ profile: profile({ danKhi: 100 }), realmMajor: 3 });
-    await new RankUpAlchemyUseCase(ok.alchemy as never, ok.characters as never).execute('u');
+    await new RankUpAlchemyUseCase(ok.alchemy as never, ok.characters as never, ok.materials as never).execute('u');
     expect(ok.state.rankUpCalls).toBe(1);
 
     const poor = buildFakes({ profile: profile({ danKhi: 99 }), realmMajor: 9 });
-    await expect(new RankUpAlchemyUseCase(poor.alchemy as never, poor.characters as never).execute('u'))
+    await expect(new RankUpAlchemyUseCase(poor.alchemy as never, poor.characters as never, poor.materials as never).execute('u'))
       .rejects.toMatchObject({ code: 'INSUFFICIENT_DAN_KHI' });
 
     const lowRealm = buildFakes({ profile: profile({ rank: 3, danKhi: 999 }), realmMajor: 2 });
-    await expect(new RankUpAlchemyUseCase(lowRealm.alchemy as never, lowRealm.characters as never).execute('u'))
+    await expect(new RankUpAlchemyUseCase(lowRealm.alchemy as never, lowRealm.characters as never, lowRealm.materials as never).execute('u'))
       .rejects.toMatchObject({ code: 'ALCHEMY_REALM_GATE' });
 
-    const capped = buildFakes({ profile: profile({ rank: 6, danKhi: 9999 }), realmMajor: 11 });
-    await expect(new RankUpAlchemyUseCase(capped.alchemy as never, capped.characters as never).execute('u'))
+    const noTuy = buildFakes({ profile: profile({ rank: 6, danKhi: 9999 }), realmMajor: 5 });
+    await expect(new RankUpAlchemyUseCase(noTuy.alchemy as never, noTuy.characters as never, noTuy.materials as never).execute('u'))
+      .rejects.toMatchObject({ code: 'ALCHEMY_MISSING_DAN_HOA_TUY' });
+    expect(noTuy.state.rankUpCalls).toBe(0);
+
+    const withTuy = buildFakes({ profile: profile({ rank: 6, danKhi: 3100 }), realmMajor: 5, danHoaTuy: 1 });
+    await new RankUpAlchemyUseCase(withTuy.alchemy as never, withTuy.characters as never, withTuy.materials as never).execute('u');
+    expect(withTuy.state.rankUpCalls).toBe(1);
+
+    const capped = buildFakes({ profile: profile({ rank: 9, danKhi: 9999 }), realmMajor: 11 });
+    await expect(new RankUpAlchemyUseCase(capped.alchemy as never, capped.characters as never, capped.materials as never).execute('u'))
       .rejects.toMatchObject({ code: 'ALCHEMY_RANK_LOCKED' });
   });
 
