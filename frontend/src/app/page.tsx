@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlchemyCard } from "@/components/alchemy-card";
 import { AlchemyDrawer } from "@/components/alchemy-drawer";
 import { AttributePanel } from "@/components/attribute-panel";
@@ -82,7 +82,7 @@ export default function Home() {
     error: inventoryError,
     refetch: refetchInventory,
     consume,
-  } = usePillInventory(pillModalOpen);
+  } = usePillInventory(pillModalOpen || expeditionDrawerOpen);
   const {
     owned: congPhapOwned,
     catalog: congPhapCatalog,
@@ -199,15 +199,32 @@ export default function Home() {
     [addToast, startExpeditionAction],
   );
 
+  // Phase 3 — đan combat cho loadout bí cảnh (lọc từ inventory đã fetch).
+  const combatPills = useMemo(
+    () => inventory.filter((p) => p.effectKind === "combatBuff"),
+    [inventory],
+  );
+
   const handleClaimExpedition = useCallback(async () => {
     setExpeditionBusy(true);
     try {
       const result = await claimExpeditionAction();
       await refetch();
       await refetchMaterials();
+      // Phase 3 — nhấn riêng drop đặc biệt (Bí Tịch / Đan Hỏa Tủy) trong toast.
+      const biTich = result.reward.materials
+        .filter((m) => m.materialId.startsWith("bi-tich-"))
+        .reduce((sum, m) => sum + m.quantity, 0);
+      const danHoaTuy = result.reward.materials
+        .filter((m) => m.materialId === "dan-hoa-tuy")
+        .reduce((sum, m) => sum + m.quantity, 0);
+      const special = [
+        biTich > 0 ? `Bí Tịch ×${biTich}` : null,
+        danHoaTuy > 0 ? `Đan Hỏa Tủy ×${danHoaTuy}` : null,
+      ].filter(Boolean);
       addToast(
         "Nhận thưởng bí cảnh",
-        `Linh Thạch +${result.reward.linhThach} · ${result.reward.materials.length} loại nguyên liệu`,
+        `Linh Thạch +${result.reward.linhThach} · ${result.reward.materials.length} loại nguyên liệu${special.length > 0 ? ` · ${special.join(" · ")}` : ""}`,
         "success",
       );
     } catch (err) {
@@ -436,6 +453,10 @@ export default function Home() {
   const isPillDisabled = useCallback(
     (kind: PillEffectKind): { disabled: boolean; reason?: string } => {
       if (!state) return { disabled: true };
+      // Phase 3 — đan combat không consume trực tiếp; chỉ mang vào loadout bí cảnh.
+      if (kind === "combatBuff") {
+        return { disabled: true, reason: "Chỉ dùng trong loadout bí cảnh" };
+      }
       if (
         (kind === "linhKhi" || kind === "breakthroughBoost") &&
         state.isMaxStage
@@ -690,6 +711,9 @@ export default function Home() {
         error={expeditionError}
         busy={expeditionBusy}
         now={now}
+        realmMajor={state?.realmMajor ?? 0}
+        battlePower={state?.battlePower ?? 0}
+        combatPills={combatPills}
         onRetry={refetchExpedition}
         onClose={() => setExpeditionDrawerOpen(false)}
         onStart={handleStartExpedition}

@@ -109,7 +109,18 @@ export type PillEffectKind =
   | "linhKhi"
   | "cultivationBuff"
   | "breakthroughBoost"
-  | "clearPunishment";
+  | "clearPunishment"
+  // Phase 3 — đan combat: chỉ dùng qua loadout bí cảnh.
+  | "combatBuff";
+
+export type CombatAttribute =
+  | "khiHuyet"
+  | "chanNguyen"
+  | "congVatLy"
+  | "congPhep"
+  | "phongThu"
+  | "tocDo";
+export type CombatBuffTrigger = "start" | "lowHp30";
 
 // Flat inventory item as returned by GET /pills/inventory (backend InventoryDto).
 export interface PillInventoryItem {
@@ -122,6 +133,8 @@ export interface PillInventoryItem {
   multiplier: number | null;
   durationSec: number | null;
   bonusPct: number | null;
+  combatAttribute: CombatAttribute | null;
+  combatTrigger: CombatBuffTrigger | null;
   desc: string;
   quantity: number;
 }
@@ -142,6 +155,8 @@ export interface AdminPillDTO {
   multiplier: number | null;
   durationSec: number | null;
   bonusPct: number | null;
+  combatAttribute: CombatAttribute | null;
+  combatTrigger: CombatBuffTrigger | null;
   desc: string;
   active: boolean;
   starterQuantity: number;
@@ -353,6 +368,11 @@ export interface ExpeditionBranchConfigDTO {
   basePower: number;
   alchemyMaterialId: string;
   upgradeMaterialWeights: ExpeditionUpgradeMaterialWeightDTO[];
+  // Phase 3 — tầng 1..3, gate cảnh giới hard, chiến lực đề xuất soft.
+  tier: number;
+  minRealmMajor: number;
+  recommendedPower: number;
+  bossDropWeights: ExpeditionUpgradeMaterialWeightDTO[];
 }
 
 export interface ExpeditionDifficultyDTO {
@@ -419,8 +439,16 @@ export interface ExpeditionSimulationDTO {
   reward: ExpeditionRewardDTO;
 }
 
+export interface LoadoutEntryDTO {
+  pillId: string;
+  combatAttribute: CombatAttribute;
+  combatTrigger: CombatBuffTrigger;
+  pct: number;
+}
+
 export interface ExpeditionCombatSnapshotDTO {
   player: CombatantSnapshotDTO;
+  loadout?: LoadoutEntryDTO[];
   realmMajor: number;
   realmSub: number;
   realmMultiplier: number;
@@ -460,6 +488,7 @@ export interface StartExpeditionInput {
   branchId: string;
   difficulty: ExpeditionDifficultyKey;
   durationSec: ExpeditionDurationSec;
+  loadoutPillIds?: string[];
 }
 
 export interface AlchemyProfileDTO {

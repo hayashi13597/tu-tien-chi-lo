@@ -75,6 +75,10 @@ function emptyBranch(
       basePower: 100,
       alchemyMaterialId: materialId,
       upgradeMaterialWeights: materialId ? [{ materialId, weight: 1 }] : [],
+      tier: 1,
+      minRealmMajor: 0,
+      recommendedPower: 0,
+      bossDropWeights: [],
     },
     difficulties: DIFFICULTIES.map(({ key }) => emptyDifficulty(key)),
   };

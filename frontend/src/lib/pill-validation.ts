@@ -61,6 +61,25 @@ export function validatePillDraft(
   ) {
     fail("bonusPct", "Phải là số > 0");
   }
+  // Phase 3 combatBuff mirror backend validatePillDefinition.
+  if (pill.effectKind === "combatBuff") {
+    if (!(pill.bonusPct !== null && pill.bonusPct > 0)) {
+      fail("bonusPct", "Phải là số > 0");
+    }
+    if (pill.combatAttribute === null) {
+      fail("combatAttribute", "Chọn thuộc tính được buff");
+    }
+    if (pill.combatTrigger === null) {
+      fail("combatTrigger", "Chọn thời điểm kích hoạt");
+    }
+  } else {
+    if (pill.combatAttribute !== null) {
+      fail("combatAttribute", "Chỉ dùng cho đan combat (combatBuff)");
+    }
+    if (pill.combatTrigger !== null) {
+      fail("combatTrigger", "Chỉ dùng cho đan combat (combatBuff)");
+    }
+  }
 
   return errors;
 }
@@ -82,4 +101,5 @@ export const PILL_KIND_FIELDS: Record<
   cultivationBuff: ["multiplier", "durationSec"],
   breakthroughBoost: ["bonusPct"],
   clearPunishment: [],
+  combatBuff: ["bonusPct"],
 };

@@ -42,6 +42,10 @@ const branch: ExpeditionBranchDTO = {
     basePower: 100,
     alchemyMaterialId: material.id,
     upgradeMaterialWeights: [{ materialId: material.id, weight: 1 }],
+    tier: 1,
+    minRealmMajor: 0,
+    recommendedPower: 0,
+    bossDropWeights: [],
   },
   difficulties: [
     {
@@ -205,6 +209,10 @@ describe("admin catalog validation", () => {
             { materialId: material.id, weight: -1 },
             { materialId: material.id, weight: 0.5 },
           ],
+          tier: 1,
+          minRealmMajor: 0,
+          recommendedPower: 0,
+          bossDropWeights: [],
         },
       },
     ]);

@@ -14,6 +14,9 @@ function pill(over: Partial<AdminPillDTO> = {}): AdminPillDTO {
     multiplier: null,
     durationSec: null,
     bonusPct: null,
+    // Phase 3 — mặc định không phải đan combat.
+    combatAttribute: null,
+    combatTrigger: null,
     desc: "mô tả",
     active: true,
     starterQuantity: 0,
@@ -112,5 +115,55 @@ describe("validatePillDraft", () => {
         "bonusPct",
       ),
     ).toBeDefined();
+  });
+});
+
+describe("validatePillDraft — combatBuff (Phase 3)", () => {
+  const base = {
+    id: "cuong-the-dan",
+    name: "Cường Thể Đan",
+    glyph: "強",
+    rarity: 3 as const,
+    tier: 2,
+    effectKind: "combatBuff" as const,
+    amount: null,
+    multiplier: null,
+    durationSec: null,
+    bonusPct: 25,
+    combatAttribute: "congVatLy" as const,
+    combatTrigger: "start" as const,
+    desc: "d",
+    active: true,
+    starterQuantity: 0,
+  };
+
+  it("hợp lệ khi đủ field", () => {
+    expect(validatePillDraft({ ...base }, { isNew: true })).toEqual([]);
+  });
+
+  it("thiếu field combat → lỗi từng ô", () => {
+    const missingAttr = validatePillDraft(
+      { ...base, combatAttribute: null },
+      { isNew: true },
+    );
+    expect(missingAttr.find((e) => e.field === "combatAttribute")).toBeTruthy();
+    const missingTrigger = validatePillDraft(
+      { ...base, combatTrigger: null },
+      { isNew: true },
+    );
+    expect(
+      missingTrigger.find((e) => e.field === "combatTrigger"),
+    ).toBeTruthy();
+    const noPct = validatePillDraft({ ...base, bonusPct: 0 }, { isNew: true });
+    expect(noPct.find((e) => e.field === "bonusPct")).toBeTruthy();
+  });
+
+  it("kind thường mang field combat → lỗi orphan", () => {
+    const orphan = validatePillDraft(
+      { ...base, effectKind: "linhKhi" as const, amount: 50, bonusPct: null },
+      { isNew: true },
+    );
+    expect(orphan.find((e) => e.field === "combatAttribute")).toBeTruthy();
+    expect(orphan.find((e) => e.field === "combatTrigger")).toBeTruthy();
   });
 });

@@ -319,6 +319,8 @@ describe("admin pill api", () => {
     multiplier: null,
     durationSec: null,
     bonusPct: null,
+    combatAttribute: null,
+    combatTrigger: null,
     desc: "d",
     active: true,
     starterQuantity: 0,
@@ -396,6 +398,10 @@ describe("admin catalog api", () => {
       basePower: 100,
       alchemyMaterialId: material.id,
       upgradeMaterialWeights: [{ materialId: material.id, weight: 1 }],
+      tier: 1,
+      minRealmMajor: 0,
+      recommendedPower: 0,
+      bossDropWeights: [],
     },
     difficulties: [
       {

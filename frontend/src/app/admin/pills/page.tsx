@@ -17,6 +17,7 @@ const EFFECT_KINDS: { value: PillEffectKind; label: string }[] = [
   { value: "cultivationBuff", label: "Buff tốc độ tu" },
   { value: "breakthroughBoost", label: "Tăng tỉ lệ đột phá" },
   { value: "clearPunishment", label: "Giải trừng phạt" },
+  { value: "combatBuff", label: "Đan combat (bí cảnh)" },
 ];
 
 const RARITIES: PillRarity[] = [0, 1, 2, 3, 4];
@@ -35,6 +36,8 @@ const EFFECT_HINTS: Record<PillEffectKind, string> = {
     "nhân tốc độ tu luyện trong một khoảng thời gian; dùng lại thì làm mới, không cộng dồn",
   breakthroughBoost: "cộng tỉ lệ cho lần đột phá kế tiếp, dùng một lần rồi mất",
   clearPunishment: "gỡ trạng thái trọng thương ngay lập tức",
+  combatBuff:
+    "buff thuộc tính trong mô phỏng bí cảnh; chỉ dùng qua loadout, không consume trực tiếp",
 };
 
 // Human label for an effect kind, reusing the select's option list.
@@ -47,7 +50,15 @@ function effectLabel(kind: PillEffectKind): string {
 // kind's fields get a sensible starting point.
 function statsForKind(
   kind: PillEffectKind,
-): Pick<AdminPillDTO, "amount" | "multiplier" | "durationSec" | "bonusPct"> {
+): Pick<
+  AdminPillDTO,
+  | "amount"
+  | "multiplier"
+  | "durationSec"
+  | "bonusPct"
+  | "combatAttribute"
+  | "combatTrigger"
+> {
   switch (kind) {
     case "linhKhi":
       return {
@@ -55,6 +66,8 @@ function statsForKind(
         multiplier: null,
         durationSec: null,
         bonusPct: null,
+        combatAttribute: null,
+        combatTrigger: null,
       };
     case "cultivationBuff":
       return {
@@ -62,6 +75,8 @@ function statsForKind(
         multiplier: 1.5,
         durationSec: 60,
         bonusPct: null,
+        combatAttribute: null,
+        combatTrigger: null,
       };
     case "breakthroughBoost":
       return {
@@ -69,6 +84,8 @@ function statsForKind(
         multiplier: null,
         durationSec: null,
         bonusPct: 10,
+        combatAttribute: null,
+        combatTrigger: null,
       };
     case "clearPunishment":
       return {
@@ -76,6 +93,17 @@ function statsForKind(
         multiplier: null,
         durationSec: null,
         bonusPct: null,
+        combatAttribute: null,
+        combatTrigger: null,
+      };
+    case "combatBuff":
+      return {
+        amount: null,
+        multiplier: null,
+        durationSec: null,
+        bonusPct: 25,
+        combatAttribute: "congVatLy",
+        combatTrigger: "start",
       };
   }
 }
@@ -90,6 +118,8 @@ function emptyPill(): AdminPillDTO {
     tier: 1,
     effectKind: "linhKhi",
     ...statsForKind("linhKhi"),
+    combatAttribute: null,
+    combatTrigger: null,
     desc: "",
     active: true,
     starterQuantity: 0,
@@ -107,6 +137,10 @@ function headlineStat(pill: AdminPillDTO): string {
       return `+${pill.bonusPct ?? "?"}% đột phá`;
     case "clearPunishment":
       return "Giải trừng phạt";
+    case "combatBuff":
+      return `+${pill.bonusPct ?? "?"}% ${pill.combatAttribute ?? "?"} (${
+        pill.combatTrigger === "lowHp30" ? "HP ≤ 30%" : "vào trận"
+      })`;
   }
 }
 
