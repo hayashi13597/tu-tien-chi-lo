@@ -132,24 +132,32 @@ export function AlchemyDrawer({
                     {profile.speedBonusPct}% thời gian
                   </small>
                   {profile.nextRank ? (
-                    <button
-                      type="button"
-                      className="alchemy-btn"
-                      disabled={
-                        !profile.nextRank.affordable ||
-                        !profile.nextRank.realmMet ||
-                        busy
-                      }
-                      onClick={onRankUp}
-                      title={
-                        profile.nextRank.realmMet
-                          ? `Tốn ${profile.nextRank.danKhiCost} Đan Khí`
-                          : "Cần cảnh giới cao hơn (Kết Đan)"
-                      }
-                    >
-                      Thăng cấp {profile.nextRank.target} ·{" "}
-                      {profile.nextRank.danKhiCost} ĐK
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        className="alchemy-btn"
+                        disabled={
+                          !profile.nextRank.affordable ||
+                          !profile.nextRank.realmMet ||
+                          busy
+                        }
+                        onClick={onRankUp}
+                        title={
+                          profile.nextRank.realmMet
+                            ? `Tốn ${profile.nextRank.danKhiCost} Đan Khí`
+                            : "Cần cảnh giới cao hơn (Kết Đan)"
+                        }
+                      >
+                        Thăng cấp {profile.nextRank.target} ·{" "}
+                        {profile.nextRank.danKhiCost} ĐK
+                      </button>
+                      {!profile.nextRank.realmMet && (
+                        <small className="alchemy-recipe-lock">
+                          Cần đạt cảnh giới Kết Đan để lên cấp{" "}
+                          {profile.nextRank.target}
+                        </small>
+                      )}
+                    </>
                   ) : (
                     <small className="alchemy-cap-note">
                       Cấp tối đa — chờ nội dung Thiên Giai

@@ -20,6 +20,8 @@ export interface UseAlchemyQueueResult {
   queue: AlchemyQueueDTO | null;
   profile: AlchemyProfileDTO | null;
   lastSettled: { completedJobIds: string[] } | null;
+  // Xóa cờ settle sau khi UI toast xong để các refetch/render sau không toast lặp.
+  clearLastSettled: () => void;
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -94,6 +96,8 @@ export function useAlchemyQueue(enabled: boolean): UseAlchemyQueueResult {
     [refetch],
   );
 
+  const clearLastSettled = useCallback(() => setLastSettled(null), []);
+
   const rankUp = useCallback(async () => {
     await rankUpAlchemy();
     await refetch();
@@ -109,6 +113,7 @@ export function useAlchemyQueue(enabled: boolean): UseAlchemyQueueResult {
     queue,
     profile,
     lastSettled,
+    clearLastSettled,
     loading,
     error,
     refetch,

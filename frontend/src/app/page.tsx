@@ -115,6 +115,8 @@ export default function Home() {
     recipes: alchemyRecipes,
     queue: alchemyQueue,
     profile: alchemyProfile,
+    lastSettled: alchemyLastSettled,
+    clearLastSettled: clearAlchemyLastSettled,
     loading: alchemyLoading,
     error: alchemyError,
     refetch: refetchAlchemy,
@@ -150,6 +152,22 @@ export default function Home() {
     const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Spec §9.2: khi refetch thấy mẻ vừa settle (lastSettled), toast tổng hợp
+  // kết quả từng mẻ; reset cờ ngay sau đó để render/refetch sau không toast lặp.
+  useEffect(() => {
+    if (!alchemyLastSettled) return;
+    for (const jobId of alchemyLastSettled.completedJobIds) {
+      const job = alchemyQueue?.jobs.find((j) => j.id === jobId);
+      if (!job) continue; // queue refetch chưa về — bỏ qua, không toast
+      addToast(
+        "Luyện Đan",
+        `Hoàn thành mẻ: thành công ${job.successCount}, xuất sắc ${job.critCount}, hỏng ${job.failCount}`,
+        "success",
+      );
+    }
+    clearAlchemyLastSettled();
+  }, [alchemyLastSettled, alchemyQueue, addToast, clearAlchemyLastSettled]);
 
   const handleLogout = useCallback(async () => {
     await logout();
@@ -226,6 +244,7 @@ export default function Home() {
     setAlchemyBusy(true);
     try {
       await rankUpAlchemyAction();
+      addToast("Luyện Đan", "Đã thăng cấp Đan Sư", "success");
     } catch (err) {
       addToast(
         "Luyện Đan",
@@ -241,6 +260,7 @@ export default function Home() {
     setAlchemyBusy(true);
     try {
       await upgradeFurnaceAction();
+      addToast("Luyện Đan", "Đã nâng Đan Lô", "success");
     } catch (err) {
       addToast(
         "Luyện Đan",
