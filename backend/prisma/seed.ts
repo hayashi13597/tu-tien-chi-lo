@@ -13,7 +13,7 @@ const prisma = new PrismaClient();
 // Every optional stat field (amount/multiplier/durationSec/bonusPct) is set
 // explicitly — null when it doesn't apply to the effectKind — so the upsert's
 // update path clears stale values instead of leaving them behind.
-const NO_STATS = { amount: null, multiplier: null, durationSec: null, bonusPct: null };
+const NO_STATS = { amount: null, multiplier: null, durationSec: null, bonusPct: null, combatAttribute: null, combatTrigger: null };
 const PILLS = [
   { id: 'hoi-khi-dan', name: 'Hồi Khí Đan', glyph: '气', rarity: 0, effectKind: 'linhKhi', ...NO_STATS, amount: 50, desc: 'Hấp thu linh khí tán loạn, cộng ngay 50 linh khí.', active: true, starterQuantity: 0, tier: 1 },
   { id: 'tu-linh-dan', name: 'Tụ Linh Đan', glyph: '聚', rarity: 2, effectKind: 'linhKhi', ...NO_STATS, amount: 300, desc: 'Ngưng tụ linh khí thiên địa, cộng ngay 300 linh khí.', active: true, starterQuantity: 0, tier: 1 },
@@ -159,6 +159,33 @@ const MATERIALS_CONGPHAP_T2 = [
   { id: 'bi-tich-van-linh-lo', name: 'Bí Tịch: Vạn Linh Lô Quyết', glyph: '秘', rarity: 4, description: 'Bí tịch cổ ghi lại Vạn Linh Lô Quyết; dùng để nhập môn.', tier: 2 },
 ];
 
+// Phase 3 — Đan Hỏa Tủy: chỉ tích lũy (rank 7–9 tiêu thụ ở phase sau).
+const MATERIALS_PHASE3 = [
+  { id: 'dan-hoa-tuy', name: 'Đan Hỏa Tủy', glyph: '髓', rarity: 5, description: 'Tủy hỏa tinh ngưng vạn năm, chỉ rơi từ cường địch tầng cao.', tier: 3 },
+];
+
+// Phase 3 — đan combat: chỉ dùng qua loadout bí cảnh.
+const COMBAT_PILLS_T2 = [
+  { id: 'cuong-the-dan', name: 'Cường Thể Đan', glyph: '強', rarity: 3, effectKind: 'combatBuff', ...NO_STATS, bonusPct: 25, combatAttribute: 'congVatLy', combatTrigger: 'start', desc: 'Tăng 25% Công Vật Lý trong suốt chuyến bí cảnh.', active: true, starterQuantity: 0, tier: 2 },
+  { id: 'kim-cang-dan', name: 'Kim Cang Đan', glyph: '剛', rarity: 3, effectKind: 'combatBuff', ...NO_STATS, bonusPct: 30, combatAttribute: 'phongThu', combatTrigger: 'start', desc: 'Tăng 30% Phòng Thủ trong suốt chuyến bí cảnh.', active: true, starterQuantity: 0, tier: 2 },
+  { id: 'huyen-huyet-dan', name: 'Huyền Huyết Đan', glyph: '玄', rarity: 4, effectKind: 'combatBuff', ...NO_STATS, bonusPct: 35, combatAttribute: 'khiHuyet', combatTrigger: 'lowHp30', desc: 'Khi Khí Huyết tụt dưới 30%, tăng 35% Khí Huyết (một lần mỗi trận).', active: true, starterQuantity: 0, tier: 2 },
+];
+
+const COMBAT_RECIPES_T2 = [
+  { id: 'recipe-cuong-the-dan', pillId: 'cuong-the-dan', durationSec: 9600, linhThachCost: 80, tier: 2, minAlchemyRank: 4, baseSuccessPct: 70, ingredients: [['huyet-long-sam', 3], ['huyen-thiet-tam', 2], ['xich-viem-tinh', 2]] },
+  { id: 'recipe-kim-cang-dan', pillId: 'kim-cang-dan', durationSec: 9600, linhThachCost: 80, tier: 2, minAlchemyRank: 4, baseSuccessPct: 70, ingredients: [['kim-sa-luc', 3], ['chu-tuoc-vu', 2], ['han-bang-ngoc', 2]] },
+  { id: 'recipe-huyen-huyet-dan', pillId: 'huyen-huyet-dan', durationSec: 14400, linhThachCost: 120, tier: 2, minAlchemyRank: 4, baseSuccessPct: 65, ingredients: [['huyet-long-sam', 3], ['hoang-tuyen-thuy', 2], ['long-mach-sa', 2]] },
+];
+
+// Phase 3 — bảng drop boss theo nhánh (tầng 2/3): 3 Bí Tịch + Đan Hỏa Tủy.
+const BOSS_DROPS: Record<string, { biTich: readonly string[]; danHoaTuy: number }> = {
+  'thanh-lam': { biTich: ['bi-tich-vong-coc', 'bi-tich-ngu-kiem', 'bi-tich-dieu-hoa'], danHoaTuy: 0.3 },
+  'u-minh': { biTich: ['bi-tich-tieu-chu-thien', 'bi-tich-thien-loi', 'bi-tich-ninh-dan'], danHoaTuy: 0.3 },
+  'van-hai': { biTich: ['bi-tich-dai-chu-thien', 'bi-tich-kim-cang', 'bi-tich-van-linh-lo'], danHoaTuy: 0.3 },
+  'long-mach': { biTich: ['bi-tich-vong-coc', 'bi-tich-ngu-kiem', 'bi-tich-dieu-hoa'], danHoaTuy: 0.5 },
+  'tinh-thien': { biTich: ['bi-tich-tieu-chu-thien', 'bi-tich-thien-loi', 'bi-tich-ninh-dan'], danHoaTuy: 0.5 },
+};
+
 const MATERIALS = [
   { id: 'xich-viem-tinh', name: 'Xích Viêm Tinh', glyph: '炎', rarity: 1, description: 'Tinh thạch hỏa thuộc tính từ Hỏa Vực.', tier: 1 },
   { id: 'han-bang-ngoc', name: 'Hàn Băng Ngọc', glyph: '冰', rarity: 1, description: 'Ngọc lạnh kết tinh trong Băng Cốc.', tier: 1 },
@@ -250,12 +277,12 @@ const TIER2_DROPS: readonly (readonly [string, string, number])[] = [
 const UPGRADE_MATERIALS = ['linh-tai-khi-huyet', 'linh-tai-than-phap', 'linh-tai-hoa-luc'] as const;
 
 async function main() {
-  for (const p of [...PILLS, ...PILLS_T2]) {
+  for (const p of [...PILLS, ...PILLS_T2, ...COMBAT_PILLS_T2]) {
     // Idempotent: re-running the seed updates definitions without duplicating.
     await prisma.pill.upsert({ where: { id: p.id }, create: p, update: p });
   }
 
-  for (const material of [...MATERIALS, ...MATERIALS_T2, ...MATERIALS_CONGPHAP_T2]) {
+  for (const material of [...MATERIALS, ...MATERIALS_T2, ...MATERIALS_CONGPHAP_T2, ...MATERIALS_PHASE3]) {
     await prisma.material.upsert({
       where: { id: material.id },
       create: { ...material, active: true },
@@ -267,7 +294,7 @@ async function main() {
     await prisma.congPhap.upsert({ where: { id: c.id }, create: c, update: c });
   }
 
-  for (const recipe of [...RECIPES, ...RECIPES_T2]) {
+  for (const recipe of [...RECIPES, ...RECIPES_T2, ...COMBAT_RECIPES_T2]) {
     const { ingredients, ...recipeData } = recipe;
     await prisma.alchemyRecipe.upsert({
       where: { id: recipe.id },
@@ -310,6 +337,22 @@ async function main() {
         where: { branchId_materialId: { branchId: branch.id, materialId } },
         create: { id: `${branch.id}-${materialId}`, branchId: branch.id, materialId, weight },
         update: { weight },
+      });
+    }
+    // Phase 3 — boss rơi Bí Tịch (weight 1) + Đan Hỏa Tủy (weight theo tầng).
+    const boss = BOSS_DROPS[branch.id];
+    if (boss) {
+      for (const materialId of boss.biTich) {
+        await prisma.expeditionBossDropWeight.upsert({
+          where: { branchId_materialId: { branchId: branch.id, materialId } },
+          create: { branchId: branch.id, materialId, weight: 1 },
+          update: { weight: 1 },
+        });
+      }
+      await prisma.expeditionBossDropWeight.upsert({
+        where: { branchId_materialId: { branchId: branch.id, materialId: 'dan-hoa-tuy' } },
+        create: { branchId: branch.id, materialId: 'dan-hoa-tuy', weight: boss.danHoaTuy },
+        update: { weight: boss.danHoaTuy },
       });
     }
   }
