@@ -102,4 +102,16 @@ describe("expedition display helpers", () => {
       canQueueAlchemy(recipe, [{ materialId: "m", quantity: 4 }], 2, 9),
     ).toBe(false);
   });
+
+  it("chặn công thức bị khóa rank", () => {
+    const recipe = {
+      active: true,
+      linhThachCost: 10,
+      ingredients: [{ materialId: "m", quantity: 1 }],
+      locked: true,
+    };
+    expect(
+      canQueueAlchemy(recipe, [{ materialId: "m", quantity: 99 }], 1, 999),
+    ).toBe(false);
+  });
 });

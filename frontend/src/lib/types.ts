@@ -457,3 +457,10 @@ export interface AlchemyProfileDTO {
     affordableLinhThach: boolean;
   } | null;
 }
+
+// Response của POST /alchemy/rank-up và POST /alchemy/furnace/upgrade.
+export interface AlchemyProfileRecordDTO {
+  rank: number;
+  danKhi: number;
+  furnaceLevel: number;
+}

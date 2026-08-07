@@ -114,10 +114,13 @@ export default function Home() {
   const {
     recipes: alchemyRecipes,
     queue: alchemyQueue,
+    profile: alchemyProfile,
     loading: alchemyLoading,
     error: alchemyError,
     refetch: refetchAlchemy,
     enqueue: enqueueAlchemyAction,
+    rankUp: rankUpAlchemyAction,
+    upgradeFurnace: upgradeFurnaceAction,
   } = useAlchemyQueue(alchemyDrawerOpen);
   const particleRef = useRef<ParticleCanvasHandle>(null);
   // The POST result/error is stashed here while the tribulation animation plays,
@@ -218,6 +221,36 @@ export default function Home() {
     },
     [addToast, enqueueAlchemyAction, refetch, refetchMaterials],
   );
+
+  const handleRankUpAlchemy = useCallback(async () => {
+    setAlchemyBusy(true);
+    try {
+      await rankUpAlchemyAction();
+    } catch (err) {
+      addToast(
+        "Luyện Đan",
+        err instanceof Error ? err.message : "Không thăng cấp được",
+        "danger",
+      );
+    } finally {
+      setAlchemyBusy(false);
+    }
+  }, [addToast, rankUpAlchemyAction]);
+
+  const handleUpgradeFurnace = useCallback(async () => {
+    setAlchemyBusy(true);
+    try {
+      await upgradeFurnaceAction();
+    } catch (err) {
+      addToast(
+        "Luyện Đan",
+        err instanceof Error ? err.message : "Không nâng lò được",
+        "danger",
+      );
+    } finally {
+      setAlchemyBusy(false);
+    }
+  }, [addToast, upgradeFurnaceAction]);
 
   const handleSuccess = useCallback((result: BreakthroughResult) => {
     breakthroughResultRef.current = result;
@@ -547,6 +580,7 @@ export default function Home() {
             />
             <AlchemyCard
               queue={alchemyQueue}
+              profile={alchemyProfile}
               inventory={materialInventory}
               loading={alchemyLoading}
               error={alchemyError ?? materialError}
@@ -618,6 +652,7 @@ export default function Home() {
         open={alchemyDrawerOpen}
         recipes={alchemyRecipes}
         queue={alchemyQueue}
+        profile={alchemyProfile}
         inventory={materialInventory}
         linhThach={state.linhThach}
         loading={alchemyLoading || materialLoading}
@@ -630,6 +665,8 @@ export default function Home() {
         }}
         onClose={() => setAlchemyDrawerOpen(false)}
         onEnqueue={handleEnqueueAlchemy}
+        onRankUp={handleRankUpAlchemy}
+        onUpgradeFurnace={handleUpgradeFurnace}
       />
     </>
   );

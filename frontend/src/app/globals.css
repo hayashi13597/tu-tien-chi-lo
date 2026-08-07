@@ -3550,6 +3550,38 @@ body {
 .alchemy-empty-inline {
   padding: var(--space-4);
 }
+.alchemy-profile-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.alchemy-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.alchemy-tier-badge {
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  border: 1px solid rgba(120, 170, 255, 0.5);
+  color: rgb(160, 200, 255);
+}
+.alchemy-locked {
+  opacity: 0.55;
+}
+.alchemy-recipe-lock {
+  color: rgb(255, 180, 120);
+}
+.alchemy-cap-note {
+  opacity: 0.7;
+}
 
 @media (max-width: 768px) {
   .expedition-drawer,

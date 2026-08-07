@@ -4,6 +4,7 @@ import type {
   AdminStats,
   AdminUserDTO,
   AlchemyProfileDTO,
+  AlchemyProfileRecordDTO,
   AlchemyQueueDTO,
   AlchemyRecipeDTO,
   ApiError,
@@ -134,27 +135,17 @@ export function fetchAlchemyProfile(): Promise<AlchemyProfileDTO> {
 }
 
 // POST /alchemy/rank-up — thăng cấp Đan Sư khi đủ Đan Khí + cảnh giới.
-export function rankUpAlchemy(): Promise<{
-  rank: number;
-  danKhi: number;
-  furnaceLevel: number;
-}> {
-  return apiFetch<{ rank: number; danKhi: number; furnaceLevel: number }>(
-    "/alchemy/rank-up",
-    { method: "POST" },
-  );
+export function rankUpAlchemy(): Promise<AlchemyProfileRecordDTO> {
+  return apiFetch<AlchemyProfileRecordDTO>("/alchemy/rank-up", {
+    method: "POST",
+  });
 }
 
 // POST /alchemy/furnace/upgrade — nâng Đan Lô bằng Đan Khí + Linh Thạch.
-export function upgradeAlchemyFurnace(): Promise<{
-  rank: number;
-  danKhi: number;
-  furnaceLevel: number;
-}> {
-  return apiFetch<{ rank: number; danKhi: number; furnaceLevel: number }>(
-    "/alchemy/furnace/upgrade",
-    { method: "POST" },
-  );
+export function upgradeAlchemyFurnace(): Promise<AlchemyProfileRecordDTO> {
+  return apiFetch<AlchemyProfileRecordDTO>("/alchemy/furnace/upgrade", {
+    method: "POST",
+  });
 }
 
 // GET /expeditions/branches — active branch and difficulty configuration.

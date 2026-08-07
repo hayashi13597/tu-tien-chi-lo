@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { canQueueAlchemy, secondsRemaining } from "@/lib/expedition-display";
 import { formatNum } from "@/lib/format";
 import type {
+  AlchemyProfileDTO,
   AlchemyQueueDTO,
   AlchemyRecipeDTO,
   MaterialInventoryDTO,
@@ -13,6 +14,7 @@ interface AlchemyDrawerProps {
   open: boolean;
   recipes: AlchemyRecipeDTO[];
   queue: AlchemyQueueDTO | null;
+  profile: AlchemyProfileDTO | null;
   inventory: MaterialInventoryDTO[];
   linhThach: number;
   loading: boolean;
@@ -22,12 +24,15 @@ interface AlchemyDrawerProps {
   onRetry: () => void;
   onClose: () => void;
   onEnqueue: (recipeId: string, quantity: number) => void;
+  onRankUp: () => void;
+  onUpgradeFurnace: () => void;
 }
 
 export function AlchemyDrawer({
   open,
   recipes,
   queue,
+  profile,
   inventory,
   linhThach,
   loading,
@@ -37,6 +42,8 @@ export function AlchemyDrawer({
   onRetry,
   onClose,
   onEnqueue,
+  onRankUp,
+  onUpgradeFurnace,
 }: AlchemyDrawerProps) {
   const [recipeId, setRecipeId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -115,6 +122,67 @@ export function AlchemyDrawer({
               </span>
             </div>
 
+            {profile && (
+              <div className="alchemy-profile-strip">
+                <div className="alchemy-rank-row">
+                  <span className="stat-label">Đan Sư</span>
+                  <strong>Cấp {profile.profile.rank}</strong>
+                  <small>
+                    +{profile.successBonusPct}% thành công · −
+                    {profile.speedBonusPct}% thời gian
+                  </small>
+                  {profile.nextRank ? (
+                    <button
+                      type="button"
+                      className="alchemy-btn"
+                      disabled={
+                        !profile.nextRank.affordable ||
+                        !profile.nextRank.realmMet ||
+                        busy
+                      }
+                      onClick={onRankUp}
+                      title={
+                        profile.nextRank.realmMet
+                          ? `Tốn ${profile.nextRank.danKhiCost} Đan Khí`
+                          : "Cần cảnh giới cao hơn (Kết Đan)"
+                      }
+                    >
+                      Thăng cấp {profile.nextRank.target} ·{" "}
+                      {profile.nextRank.danKhiCost} ĐK
+                    </button>
+                  ) : (
+                    <small className="alchemy-cap-note">
+                      Cấp tối đa — chờ nội dung Thiên Giai
+                    </small>
+                  )}
+                </div>
+                <div className="alchemy-rank-row">
+                  <span className="stat-label">Đan Lô</span>
+                  <strong>Cấp {profile.profile.furnaceLevel}</strong>
+                  <small>
+                    Đan Khí <strong>{formatNum(profile.profile.danKhi)}</strong>
+                  </small>
+                  {profile.nextFurnace && (
+                    <button
+                      type="button"
+                      className="alchemy-btn"
+                      disabled={
+                        !profile.nextFurnace.affordableDanKhi ||
+                        !profile.nextFurnace.affordableLinhThach ||
+                        busy
+                      }
+                      onClick={onUpgradeFurnace}
+                      title={`Tốn ${profile.nextFurnace.danKhiCost} Đan Khí + ${profile.nextFurnace.linhThachCost} Linh Thạch`}
+                    >
+                      Nâng lò {profile.nextFurnace.target} ·{" "}
+                      {profile.nextFurnace.danKhiCost} ĐK +{" "}
+                      {profile.nextFurnace.linhThachCost} LT
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="alchemy-drawer-section">
               <div className="alchemy-section-heading">
                 <span>01</span>
@@ -125,16 +193,30 @@ export function AlchemyDrawer({
                   <button
                     type="button"
                     key={recipe.id}
-                    className={`alchemy-recipe-item${selectedRecipe?.id === recipe.id ? " selected" : ""}`}
+                    className={`alchemy-recipe-item${selectedRecipe?.id === recipe.id ? " selected" : ""}${recipe.locked ? " alchemy-locked" : ""}`}
                     onClick={() => setRecipeId(recipe.id)}
                   >
                     <span className="alchemy-recipe-glyph">丹</span>
                     <span className="alchemy-recipe-copy">
-                      <strong>{recipe.pillId}</strong>
+                      <strong>
+                        {recipe.pillId}
+                        {recipe.tier > 1 && (
+                          <span className="alchemy-tier-badge">Linh Giai</span>
+                        )}
+                      </strong>
                       <small>
-                        {formatAlchemyDuration(recipe.durationSec)} ·{" "}
-                        {recipe.linhThachCost} Linh Thạch
+                        {formatAlchemyDuration(
+                          recipe.effectiveDurationSec ?? recipe.durationSec,
+                        )}
+                        {typeof recipe.effectiveSuccessPct === "number" &&
+                          ` · ${recipe.effectiveSuccessPct}%`}{" "}
+                        · {recipe.linhThachCost} Linh Thạch
                       </small>
+                      {recipe.locked && (
+                        <small className="alchemy-recipe-lock">
+                          Cần Đan Sư cấp {recipe.minAlchemyRank}
+                        </small>
+                      )}
                     </span>
                   </button>
                 ))}
@@ -192,7 +274,13 @@ export function AlchemyDrawer({
                     {busy ? "Đang xếp hàng..." : "Đưa vào lò"}
                   </button>
                 </div>
-                {!canEnqueue && !busy && (
+                {selectedRecipe.locked && (
+                  <p className="alchemy-insufficient">
+                    Công thức khóa — yêu cầu Đan Sư cấp{" "}
+                    {selectedRecipe.minAlchemyRank}.
+                  </p>
+                )}
+                {!canEnqueue && !busy && !selectedRecipe.locked && (
                   <p className="alchemy-insufficient">
                     Thiếu Linh Thạch hoặc nguyên liệu cần thiết.
                   </p>
@@ -218,7 +306,7 @@ export function AlchemyDrawer({
                       </span>
                       <span className="alchemy-job-time">
                         {job.status === "completed"
-                          ? "Đã hoàn tất"
+                          ? `Thành công ${job.successCount} · Xuất sắc ${job.critCount} · Hỏng ${job.failCount}`
                           : `${secondsRemaining(job.completesAt, now)}s`}
                       </span>
                     </div>

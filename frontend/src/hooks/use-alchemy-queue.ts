@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   fetchAlchemyProfile,
   fetchAlchemyQueue,
@@ -37,6 +37,9 @@ export function useAlchemyQueue(enabled: boolean): UseAlchemyQueueResult {
     useState<UseAlchemyQueueResult["lastSettled"]>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Queue của lần fetch trước để diff completed jobs ngoài setState updater
+  // (updater phải thuần; diff theo id vì index đổi khi có job mới xếp vào).
+  const previousQueueRef = useRef<AlchemyQueueDTO | null>(null);
 
   const refetch = useCallback(async () => {
     setLoading(true);
@@ -47,23 +50,24 @@ export function useAlchemyQueue(enabled: boolean): UseAlchemyQueueResult {
         fetchAlchemyProfile(),
       ]);
       setRecipes(nextRecipes);
-      setQueue((previous) => {
-        if (
-          previous &&
-          nextQueue.jobs.some(
-            (job, i) =>
-              job.status === "completed" &&
-              previous.jobs[i]?.status !== "completed",
-          )
-        ) {
+      const previous = previousQueueRef.current;
+      if (previous) {
+        const prevStatus = new Map(
+          previous.jobs.map((job) => [job.id, job.status]),
+        );
+        const justCompleted = nextQueue.jobs.filter(
+          (job) =>
+            job.status === "completed" &&
+            prevStatus.get(job.id) !== "completed",
+        );
+        if (justCompleted.length > 0) {
           setLastSettled({
-            completedJobIds: nextQueue.jobs
-              .filter((j) => j.status === "completed")
-              .map((j) => j.id),
+            completedJobIds: justCompleted.map((job) => job.id),
           });
         }
-        return nextQueue;
-      });
+      }
+      previousQueueRef.current = nextQueue;
+      setQueue(nextQueue);
       setProfile(nextProfile);
       setError(null);
     } catch (err) {
