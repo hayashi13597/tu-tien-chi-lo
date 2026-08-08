@@ -64,10 +64,25 @@ export function validateMaterialCatalog(
         message: "Độ hiếm phải là số nguyên ≥ 0",
       });
     }
+    // Mirror backend materialCatalogRowSchema (admin.schemas.ts): tier int 1..3.
+    if (
+      !finiteInteger(material.tier) ||
+      material.tier < 1 ||
+      material.tier > 3
+    ) {
+      errors.push({
+        path: path("tier"),
+        message: "Bậc phải là số nguyên trong khoảng 1–3",
+      });
+    }
   });
 
   return errors;
 }
+
+// Mirror backend validateRecipe (domain/alchemy/alchemy.calc.ts): cấp Đan Sư
+// tối thiểu gắn cứng theo bậc công thức.
+const MIN_RANK_BY_TIER: Record<number, number> = { 1: 1, 2: 4, 3: 7 };
 
 export function validateAlchemyRecipes(
   recipes: AlchemyRecipeDTO[],
@@ -115,6 +130,35 @@ export function validateAlchemyRecipes(
       errors.push({
         path: path("linhThachCost"),
         message: "Phải là số nguyên ≥ 0",
+      });
+    }
+    // Mirror backend validateRecipe: tier int 1..3.
+    if (!finiteInteger(recipe.tier) || recipe.tier < 1 || recipe.tier > 3) {
+      errors.push({
+        path: path("tier"),
+        message: "Bậc phải là số nguyên trong khoảng 1–3",
+      });
+    }
+    // Mirror backend validateRecipe: baseSuccessPct int 5..100.
+    if (
+      !finiteInteger(recipe.baseSuccessPct) ||
+      recipe.baseSuccessPct < 5 ||
+      recipe.baseSuccessPct > 100
+    ) {
+      errors.push({
+        path: path("baseSuccessPct"),
+        message: "Phải là số nguyên trong khoảng 5–100",
+      });
+    }
+    // Mirror backend validateRecipe: minAlchemyRank === MIN_RANK_BY_TIER[tier]
+    // (tier ngoài 1..3 thì map tra undefined → rule này cũng fail như backend).
+    if (
+      !finiteInteger(recipe.minAlchemyRank) ||
+      recipe.minAlchemyRank !== MIN_RANK_BY_TIER[recipe.tier]
+    ) {
+      errors.push({
+        path: path("minAlchemyRank"),
+        message: "Phải là 1/4/7 tương ứng bậc 1/2/3",
       });
     }
     if (recipe.ingredients.length === 0) {
@@ -200,6 +244,48 @@ export function validateExpeditionConfig(
     if (!Number.isFinite(branch.basePower) || branch.basePower <= 0) {
       errors.push({ path: branchPath("basePower"), message: "Phải là số > 0" });
     }
+    // Phase 3 — tầng/gate/chiến lực (mirror UpdateExpeditionConfigAdminUseCase).
+    if (!Number.isInteger(branch.tier) || branch.tier < 1 || branch.tier > 3) {
+      errors.push({ path: branchPath("tier"), message: "Tầng 1–3" });
+    }
+    if (
+      !Number.isInteger(branch.minRealmMajor) ||
+      branch.minRealmMajor < 0 ||
+      branch.minRealmMajor > 10
+    ) {
+      errors.push({
+        path: branchPath("minRealmMajor"),
+        message: "Số nguyên 0–10",
+      });
+    }
+    if (
+      !Number.isFinite(branch.recommendedPower) ||
+      branch.recommendedPower < 0
+    ) {
+      errors.push({
+        path: branchPath("recommendedPower"),
+        message: "Phải là số ≥ 0",
+      });
+    }
+    // Boss drop: được phép rỗng (tầng 1); không lặp material, weight ≥ 0.
+    const bossMaterialIds = new Set<string>();
+    branch.bossDropWeights.forEach((weight, weightIndex) => {
+      const bossPath = (field: string) =>
+        `${branchIndex}.branch.bossDropWeights.${weightIndex}.${field}`;
+      if (
+        !isSlug(weight.materialId) ||
+        bossMaterialIds.has(weight.materialId)
+      ) {
+        errors.push({
+          path: bossPath("materialId"),
+          message: "Nguyên liệu hợp lệ, không lặp",
+        });
+      }
+      bossMaterialIds.add(weight.materialId);
+      if (!Number.isFinite(weight.weight) || weight.weight < 0) {
+        errors.push({ path: bossPath("weight"), message: "Phải là số ≥ 0" });
+      }
+    });
     if (!isSlug(branch.alchemyMaterialId)) {
       errors.push({
         path: branchPath("alchemyMaterialId"),

@@ -20,6 +20,14 @@ import type {
   MaterialDTO,
 } from "@/lib/types";
 
+// Phase 3 — gợi ý gate cảnh giới theo tầng (mirror backend {1→0, 2→3, 3→5}).
+const TIER_REALM_HINTS: Record<number, number> = { 1: 0, 2: 3, 3: 5 };
+const TIER_OPTIONS = [
+  { value: 1, label: "Tầng 1 · Phàm Giai" },
+  { value: 2, label: "Tầng 2 · Linh Giai" },
+  { value: 3, label: "Tầng 3 · Thiên Giai" },
+];
+
 const DIFFICULTIES: {
   key: ExpeditionDifficultyKey;
   label: string;
@@ -75,6 +83,10 @@ function emptyBranch(
       basePower: 100,
       alchemyMaterialId: materialId,
       upgradeMaterialWeights: materialId ? [{ materialId, weight: 1 }] : [],
+      tier: 1,
+      minRealmMajor: 0,
+      recommendedPower: 0,
+      bossDropWeights: [],
     },
     difficulties: DIFFICULTIES.map(({ key }) => emptyDifficulty(key)),
   };
@@ -159,17 +171,70 @@ export default function AdminExpeditionsPage() {
       | "glyph"
       | "description"
       | "basePower"
+      | "minRealmMajor"
+      | "recommendedPower"
       | "alchemyMaterialId",
     value: string,
   ) => {
     updateDraft((current) => {
       const branch = current[index]?.branch;
       if (!branch) return current;
-      if (field === "basePower") {
-        branch.basePower = value === "" ? Number.NaN : Number(value);
+      if (
+        field === "basePower" ||
+        field === "minRealmMajor" ||
+        field === "recommendedPower"
+      ) {
+        branch[field] = value === "" ? Number.NaN : Number(value);
       } else {
         branch[field] = value;
       }
+      return current;
+    });
+  };
+
+  // Phase 3 — tầng: đổi tier gợi ý minRealmMajor theo THRESHOLDS chung.
+  const setTier = (index: number, tier: number) => {
+    updateDraft((current) => {
+      const branch = current[index]?.branch;
+      if (!branch) return current;
+      branch.tier = tier;
+      branch.minRealmMajor = TIER_REALM_HINTS[tier] ?? 0;
+      return current;
+    });
+  };
+
+  const setBossWeight = (
+    branchIndex: number,
+    weightIndex: number,
+    field: "materialId" | "weight",
+    value: string,
+  ) => {
+    updateDraft((current) => {
+      const weight = current[branchIndex]?.branch.bossDropWeights[weightIndex];
+      if (!weight) return current;
+      if (field === "weight") {
+        weight.weight = value === "" ? Number.NaN : Number(value);
+      } else {
+        weight.materialId = value;
+      }
+      return current;
+    });
+  };
+
+  const addBossWeight = (branchIndex: number) => {
+    const firstMaterial =
+      materials.find((m) => m.id.startsWith("bi-tich-")) ?? materials[0];
+    if (!firstMaterial) return;
+    updateDraft((current) => {
+      const weights = current[branchIndex]?.branch.bossDropWeights;
+      if (weights) weights.push({ materialId: firstMaterial.id, weight: 1 });
+      return current;
+    });
+  };
+
+  const removeBossWeight = (branchIndex: number, weightIndex: number) => {
+    updateDraft((current) => {
+      current[branchIndex]?.branch.bossDropWeights.splice(weightIndex, 1);
       return current;
     });
   };
@@ -319,6 +384,11 @@ export default function AdminExpeditionsPage() {
     findAdminCatalogError(
       errors,
       `${selectedIndexSafe}.branch.upgradeMaterialWeights.${weightIndex}.${field}`,
+    );
+  const bossWeightError = (weightIndex: number, field: string) =>
+    findAdminCatalogError(
+      errors,
+      `${selectedIndexSafe}.branch.bossDropWeights.${weightIndex}.${field}`,
     );
   const difficultyError = (field: string) =>
     selectedDifficultyIndex >= 0
@@ -630,6 +700,106 @@ export default function AdminExpeditionsPage() {
                 <section className="admin-form-section">
                   <div className="admin-form-section-head">
                     <h4 className="admin-form-section-title">
+                      Phân Tầng (Phase 3)
+                    </h4>
+                    <span className="admin-form-section-hint">
+                      Gate cảnh giới là chặn cứng; chiến lực chỉ là cảnh báo
+                    </span>
+                  </div>
+                  <div className="admin-grid">
+                    <label className="admin-field">
+                      <span className="admin-field-label">Tầng</span>
+                      <select
+                        className={`admin-input${branchError("tier") ? " invalid" : ""}`}
+                        value={selected.branch.tier}
+                        onChange={(event) =>
+                          setTier(selectedIndexSafe, Number(event.target.value))
+                        }
+                        disabled={saving}
+                        aria-label="Tầng bí cảnh"
+                      >
+                        {TIER_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      {branchError("tier") && (
+                        <span className="admin-field-error">
+                          {branchError("tier")?.message}
+                        </span>
+                      )}
+                    </label>
+                    <label className="admin-field">
+                      <span className="admin-field-label">
+                        Cảnh giới tối thiểu
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={10}
+                        step={1}
+                        className={`admin-input${branchError("minRealmMajor") ? " invalid" : ""}`}
+                        value={
+                          Number.isNaN(selected.branch.minRealmMajor)
+                            ? ""
+                            : selected.branch.minRealmMajor
+                        }
+                        onChange={(event) =>
+                          setBranchField(
+                            selectedIndexSafe,
+                            "minRealmMajor",
+                            event.target.value,
+                          )
+                        }
+                        disabled={saving}
+                        aria-label="Cảnh giới tối thiểu"
+                      />
+                      <span className="admin-field-hint">
+                        0 Phàm Nhân · 3 Kết Đan · 5 Hóa Thần (gợi ý theo tầng)
+                      </span>
+                      {branchError("minRealmMajor") && (
+                        <span className="admin-field-error">
+                          {branchError("minRealmMajor")?.message}
+                        </span>
+                      )}
+                    </label>
+                    <label className="admin-field">
+                      <span className="admin-field-label">
+                        Chiến lực khuyến nghị
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={10}
+                        className={`admin-input${branchError("recommendedPower") ? " invalid" : ""}`}
+                        value={
+                          Number.isNaN(selected.branch.recommendedPower)
+                            ? ""
+                            : selected.branch.recommendedPower
+                        }
+                        onChange={(event) =>
+                          setBranchField(
+                            selectedIndexSafe,
+                            "recommendedPower",
+                            event.target.value,
+                          )
+                        }
+                        disabled={saving}
+                        aria-label="Chiến lực khuyến nghị"
+                      />
+                      {branchError("recommendedPower") && (
+                        <span className="admin-field-error">
+                          {branchError("recommendedPower")?.message}
+                        </span>
+                      )}
+                    </label>
+                  </div>
+                </section>
+
+                <section className="admin-form-section">
+                  <div className="admin-form-section-head">
+                    <h4 className="admin-form-section-title">
                       Nguyên liệu nâng cấp
                     </h4>
                     <span className="admin-form-section-hint">
@@ -739,6 +909,139 @@ export default function AdminExpeditionsPage() {
                     disabled={saving || materials.length === 0}
                   >
                     + Thêm trọng số
+                  </button>
+                </section>
+
+                <section className="admin-form-section">
+                  <div className="admin-form-section-head">
+                    <h4 className="admin-form-section-title">
+                      Vật phẩm đặc biệt (boss)
+                    </h4>
+                    <span className="admin-form-section-hint">
+                      Chỉ boss roll; tầng 1 thường để trống
+                    </span>
+                  </div>
+                  <div className="admin-row-list">
+                    {selected.branch.bossDropWeights.length === 0 && (
+                      <p className="admin-row-empty">
+                        Tầng này chưa rơi vật phẩm đặc biệt.
+                      </p>
+                    )}
+                    {selected.branch.bossDropWeights.map(
+                      (weight, weightIndex) => {
+                        const materialError = bossWeightError(
+                          weightIndex,
+                          "materialId",
+                        );
+                        const valueError = bossWeightError(
+                          weightIndex,
+                          "weight",
+                        );
+                        return (
+                          <div
+                            className="admin-row"
+                            key={`boss-${weight.materialId}-${weightIndex}`}
+                          >
+                            <label className="admin-row-grow">
+                              <span className="admin-field-label">
+                                Vật phẩm
+                              </span>
+                              <select
+                                className={`admin-input${materialError ? " invalid" : ""}`}
+                                value={weight.materialId}
+                                onChange={(event) =>
+                                  setBossWeight(
+                                    selectedIndexSafe,
+                                    weightIndex,
+                                    "materialId",
+                                    event.target.value,
+                                  )
+                                }
+                                disabled={saving || materials.length === 0}
+                                aria-label={`Vật phẩm boss #${weightIndex + 1}`}
+                              >
+                                {materials.length === 0 && (
+                                  <option value="">Chưa có nguyên liệu</option>
+                                )}
+                                {[...materials]
+                                  .sort(
+                                    (a, b) =>
+                                      Number(
+                                        b.id.startsWith("bi-tich-") ||
+                                          b.id === "dan-hoa-tuy",
+                                      ) -
+                                      Number(
+                                        a.id.startsWith("bi-tich-") ||
+                                          a.id === "dan-hoa-tuy",
+                                      ),
+                                  )
+                                  .map((material) => (
+                                    <option
+                                      key={material.id}
+                                      value={material.id}
+                                    >
+                                      {material.glyph} {material.name}
+                                    </option>
+                                  ))}
+                              </select>
+                              {materialError && (
+                                <span className="admin-field-error">
+                                  {materialError.message}
+                                </span>
+                              )}
+                            </label>
+                            <label className="admin-row-field">
+                              Trọng số
+                              <input
+                                type="number"
+                                min={0}
+                                step="0.1"
+                                className={`admin-input admin-row-num${valueError ? " invalid" : ""}`}
+                                value={
+                                  Number.isNaN(weight.weight)
+                                    ? ""
+                                    : weight.weight
+                                }
+                                onChange={(event) =>
+                                  setBossWeight(
+                                    selectedIndexSafe,
+                                    weightIndex,
+                                    "weight",
+                                    event.target.value,
+                                  )
+                                }
+                                disabled={saving}
+                                aria-label={`Trọng số vật phẩm boss #${weightIndex + 1}`}
+                              />
+                              {valueError && (
+                                <span className="admin-field-error">
+                                  {valueError.message}
+                                </span>
+                              )}
+                            </label>
+                            <button
+                              type="button"
+                              className="admin-btn admin-row-remove"
+                              onClick={() =>
+                                removeBossWeight(selectedIndexSafe, weightIndex)
+                              }
+                              disabled={saving}
+                              aria-label={`Xóa vật phẩm boss #${weightIndex + 1}`}
+                            >
+                              <CloseIcon width={16} height={16} />
+                            </button>
+                          </div>
+                        );
+                      },
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className="admin-btn admin-row-add"
+                    onClick={() => addBossWeight(selectedIndexSafe)}
+                    disabled={saving || materials.length === 0}
+                  >
+                    + Thêm vật phẩm boss
                   </button>
                 </section>
 

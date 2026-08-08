@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { levelUpCost, duplicateRefund, materialUpgradeCost } from './congphap.calc';
+import { LEARN_LINH_THACH_COST, learnGate, levelUpCost, duplicateRefund, materialUpgradeCost } from './congphap.calc';
 import { CongPhapRecord } from './congphap';
 
 const def: CongPhapRecord = {
@@ -7,7 +7,7 @@ const def: CongPhapRecord = {
   active: true, maxLevel: 10, baseCost: 100, costGrowth: 1.5,
   effects: [{ attribute: 'khiHuyet', flatPerLevel: 10, pctPerLevel: 0 }],
   powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null,
-  upgradeMaterialId: null, baseMaterialCost: 0, materialCostGrowth: 1, cooldownRounds: null,
+  upgradeMaterialId: null, baseMaterialCost: 0, materialCostGrowth: 1, cooldownRounds: null, tier: 1, branch: null, minRealmMajor: 0, biTichMaterialId: null,
 };
 
 describe('levelUpCost', () => {
@@ -32,5 +32,22 @@ describe('materialUpgradeCost', () => {
   });
   it('không có material thì cost bằng 0', () => {
     expect(materialUpgradeCost(def, 1)).toBe(0);
+  });
+});
+
+describe('learnGate (Phase 2)', () => {
+  it('môn không có biTich → not-learnable', () => {
+    expect(learnGate({ ...def, biTichMaterialId: null }, 5)).toEqual({ ok: false, reason: 'not-learnable' });
+  });
+  it('realm thấp hơn minRealmMajor → realm-gate', () => {
+    expect(learnGate({ ...def, biTichMaterialId: 'bi-tich-x', minRealmMajor: 3 }, 2))
+      .toEqual({ ok: false, reason: 'realm-gate' });
+  });
+  it('đủ điều kiện → ok', () => {
+    expect(learnGate({ ...def, biTichMaterialId: 'bi-tich-x', minRealmMajor: 3 }, 3)).toEqual({ ok: true });
+    expect(learnGate({ ...def, biTichMaterialId: 'bi-tich-x', minRealmMajor: 3 }, 6)).toEqual({ ok: true });
+  });
+  it('LEARN_LINH_THACH_COST = 300', () => {
+    expect(LEARN_LINH_THACH_COST).toBe(300);
   });
 });

@@ -25,6 +25,7 @@ function emptyMaterial(index: number): MaterialDTO {
     name: "Nguyên liệu mới",
     glyph: "◇",
     rarity: 0,
+    tier: 1,
     description: "Mô tả nguyên liệu.",
     active: true,
   };
@@ -100,7 +101,7 @@ export default function AdminMaterialsPage() {
       const material = current[index];
       if (!material) return current;
       const nextValue =
-        field === "rarity"
+        field === "rarity" || field === "tier"
           ? value === ""
             ? Number.NaN
             : Number(value)
@@ -395,6 +396,33 @@ export default function AdminMaterialsPage() {
                       {errorFor("rarity") && (
                         <span className="admin-field-error">
                           {errorFor("rarity")?.message}
+                        </span>
+                      )}
+                    </label>
+                    <label className="admin-field">
+                      <span className="admin-field-label">Bậc</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={3}
+                        className={`admin-input admin-num${errorFor("tier") ? " invalid" : ""}`}
+                        value={Number.isNaN(selected.tier) ? "" : selected.tier}
+                        onChange={(event) =>
+                          setField(
+                            selectedIndexSafe,
+                            "tier",
+                            event.target.value,
+                          )
+                        }
+                        disabled={saving}
+                        aria-label="Bậc nguyên liệu"
+                      />
+                      <span className="admin-field-hint">
+                        1 Phàm Giai · 2 Linh Giai · 3 Thiên Giai
+                      </span>
+                      {errorFor("tier") && (
+                        <span className="admin-field-error">
+                          {errorFor("tier")?.message}
                         </span>
                       )}
                     </label>

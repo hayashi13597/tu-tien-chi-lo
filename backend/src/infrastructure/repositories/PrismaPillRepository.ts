@@ -5,11 +5,17 @@ import { PillRecord, InventoryEntry, PillEffectKind } from '../../domain/pills/p
 // Prisma stores effectKind as a plain string column; narrow it back to the
 // domain union at the boundary (the seed only ever writes valid kinds).
 function toPillRecord(row: {
-  id: string; name: string; glyph: string; rarity: number; effectKind: string;
+  id: string; name: string; glyph: string; rarity: number; tier: number; effectKind: string;
   amount: number | null; multiplier: number | null; durationSec: number | null;
-  bonusPct: number | null; desc: string; active: boolean; starterQuantity: number;
+  bonusPct: number | null; combatAttribute: string | null; combatTrigger: string | null;
+  desc: string; active: boolean; starterQuantity: number;
 }): PillRecord {
-  return { ...row, effectKind: row.effectKind as PillEffectKind };
+  return {
+    ...row,
+    effectKind: row.effectKind as PillEffectKind,
+    combatAttribute: row.combatAttribute as PillRecord['combatAttribute'],
+    combatTrigger: row.combatTrigger as PillRecord['combatTrigger'],
+  };
 }
 
 export class PrismaPillRepository implements PillRepository {
@@ -18,6 +24,11 @@ export class PrismaPillRepository implements PillRepository {
   async findById(pillId: string): Promise<PillRecord | null> {
     const row = await this.client.pill.findUnique({ where: { id: pillId } });
     return row ? toPillRecord(row) : null;
+  }
+
+  async listByIds(pillIds: readonly string[]): Promise<PillRecord[]> {
+    const rows = await this.client.pill.findMany({ where: { id: { in: [...pillIds] } } });
+    return rows.map(toPillRecord);
   }
 
   async listAll(): Promise<PillRecord[]> {

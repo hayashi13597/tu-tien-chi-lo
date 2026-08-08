@@ -10,6 +10,7 @@ function toMaterial(row: {
   name: string;
   glyph: string;
   rarity: number;
+  tier: number;
   description: string;
   active: boolean;
 }): MaterialRecord {

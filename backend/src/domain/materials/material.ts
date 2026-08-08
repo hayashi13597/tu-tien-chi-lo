@@ -5,6 +5,8 @@ export interface MaterialRecord {
   name: string;
   glyph: string;
   rarity: number;
+  // Bậc nguyên liệu 1..3 (Phàm/Linh/Thiên Giai) — đồng nhất với pill/recipe.
+  tier: number;
   description: string;
   active: boolean;
 }

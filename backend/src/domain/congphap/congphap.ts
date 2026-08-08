@@ -2,6 +2,9 @@ import { PassiveEffect } from '../attributes/attributes.calc';
 
 export type CongPhapCategory = 'active' | 'passive';
 
+// Ba nhánh công pháp (Phase 2). null trên record = môn không thuộc nhánh (legacy tier 1).
+export type CongPhapBranch = 'tuLuyen' | 'chienDao' | 'danDao';
+
 // Số slot công pháp chủ động cố định (spec: 4).
 export const ACTIVE_SLOTS = 4;
 
@@ -26,6 +29,14 @@ export interface CongPhapRecord {
   baseMaterialCost: number;
   materialCostGrowth: number;
   cooldownRounds: number | null;
+  // Phase 2: tier chung (1 Phàm / 2 Linh / 3 Thiên Giai) của master spec tam hệ.
+  tier: number;
+  // Nhánh; null = không thuộc nhánh (môn tier 1 legacy không gán nhánh).
+  branch: CongPhapBranch | null;
+  // Cảnh giới (major, 0-based theo RealmConfigSet) tối thiểu để học; 0 = không gate.
+  minRealmMajor: number;
+  // Material Bí Tịch cần để nhập môn; null = môn chỉ nhận qua redeem/grant.
+  biTichMaterialId: string | null;
 }
 
 // Một công pháp người chơi sở hữu (kèm định nghĩa).

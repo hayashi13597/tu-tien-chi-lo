@@ -4,12 +4,14 @@ import { DiamondMarker } from "@/components/icons";
 import { secondsRemaining } from "@/lib/expedition-display";
 import type {
   AlchemyJobDTO,
+  AlchemyProfileDTO,
   AlchemyQueueDTO,
   MaterialInventoryDTO,
 } from "@/lib/types";
 
 interface AlchemyCardProps {
   queue: AlchemyQueueDTO | null;
+  profile: AlchemyProfileDTO | null;
   inventory: MaterialInventoryDTO[];
   loading: boolean;
   error: string | null;
@@ -20,6 +22,7 @@ interface AlchemyCardProps {
 
 export function AlchemyCard({
   queue,
+  profile,
   inventory,
   loading,
   error,
@@ -36,7 +39,11 @@ export function AlchemyCard({
       <div className="panel-title alchemy-card-title">
         <DiamondMarker className="panel-title-marker" />
         <span>Luyện Đan</span>
-        <span className="alchemy-status">Lò luyện</span>
+        <span className="alchemy-status">
+          {profile
+            ? `Đan Sư cấp ${profile.profile.rank} · Lò ${profile.profile.furnaceLevel}`
+            : "Lò luyện"}
+        </span>
       </div>
 
       {error ? (

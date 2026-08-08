@@ -1,7 +1,8 @@
-import { ATTRIBUTE_ORDER } from "./attribute-constants";
+import { ATTRIBUTE_ORDER, SYSTEM_EFFECT_LABELS } from "./attribute-constants";
 import type { CongPhapDTO } from "./types";
 
 const SLUG = /^[a-z0-9-]+$/;
+const SYSTEM_EFFECT_KEYS = Object.keys(SYSTEM_EFFECT_LABELS);
 
 // Client-side mirror of the backend's công pháp validation (zod shape checks +
 // domain validateCongPhapDefinition), so the editor pins errors to fields
@@ -65,7 +66,8 @@ export function validateCongPhapDraft(
       fail("effects", "Công pháp bị động cần ít nhất một hiệu ứng");
     } else {
       for (const e of def.effects) {
-        if (!ATTRIBUTE_ORDER.includes(e.attribute)) {
+        const isSystemKey = SYSTEM_EFFECT_KEYS.includes(e.attribute);
+        if (!isSystemKey && !ATTRIBUTE_ORDER.includes(e.attribute as never)) {
           fail("effects", `Thuộc tính không hợp lệ: "${e.attribute}"`);
           break;
         }
@@ -77,6 +79,11 @@ export function validateCongPhapDraft(
           fail("effects", "Giá trị hiệu ứng phải là số");
           break;
         }
+        // Mirror backend validate: buff hệ thống là % thuần (flat = 0, pct > 0).
+        if (isSystemKey && (e.flatPerLevel !== 0 || e.pctPerLevel <= 0)) {
+          fail("effects", "Hiệu ứng hệ thống: flat phải = 0 và % phải > 0");
+          break;
+        }
       }
     }
   } else {
@@ -86,6 +93,20 @@ export function validateCongPhapDraft(
     if (def.chanNguyenCost !== null && !(def.chanNguyenCost >= 0)) {
       fail("chanNguyenCost", "Bỏ trống hoặc số ≥ 0");
     }
+  }
+
+  // Phase 2 (mirror backend domain/congphap/congphap.validate.ts):
+  if (!Number.isInteger(def.tier) || def.tier < 1 || def.tier > 3) {
+    fail("tier", "Số nguyên từ 1 đến 3");
+  }
+  if (!Number.isInteger(def.minRealmMajor) || def.minRealmMajor < 0) {
+    fail("minRealmMajor", "Số nguyên ≥ 0");
+  }
+  if (def.tier >= 2) {
+    if (def.branch === null)
+      fail("branch", "Môn từ tier 2 bắt buộc thuộc một nhánh");
+    if (def.biTichMaterialId === null)
+      fail("biTichMaterialId", "Môn từ tier 2 cần Bí Tịch nhập môn");
   }
 
   return errors;

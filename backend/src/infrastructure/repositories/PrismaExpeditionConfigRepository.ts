@@ -4,13 +4,19 @@ import { ExpeditionBranchConfig, ExpeditionDifficultyConfig } from '../../domain
 
 function toBundle(row: {
   id: string; name: string; glyph: string; description: string; basePower: number; alchemyMaterialId: string;
+  tier: number; minRealmMajor: number; recommendedPower: number;
   difficulties: { key: string; enemyMultiplier: number; normalDropRate: number; bossDropRate: number; rewardMultiplier: number; adaptiveCoefficient: number }[];
   upgradeWeights: { materialId: string; weight: number }[];
+  bossDropWeights: { materialId: string; weight: number }[];
 }): ExpeditionBranchBundle {
   const branch: ExpeditionBranchConfig = {
     id: row.id, name: row.name, glyph: row.glyph, description: row.description, basePower: row.basePower,
     alchemyMaterialId: row.alchemyMaterialId,
     upgradeMaterialWeights: row.upgradeWeights.map((weight) => ({ materialId: weight.materialId, weight: weight.weight })),
+    tier: row.tier,
+    minRealmMajor: row.minRealmMajor,
+    recommendedPower: row.recommendedPower,
+    bossDropWeights: row.bossDropWeights.map((weight) => ({ materialId: weight.materialId, weight: weight.weight })),
   };
   const difficulties: ExpeditionDifficultyConfig[] = row.difficulties.map((difficulty) => ({
     key: difficulty.key as ExpeditionDifficultyConfig['key'],
@@ -28,7 +34,7 @@ export class PrismaExpeditionConfigRepository implements ExpeditionConfigReposit
 
   async listBranches(): Promise<ExpeditionBranchBundle[]> {
     const rows = await this.client.expeditionBranch.findMany({
-      include: { difficulties: { orderBy: { key: 'asc' } }, upgradeWeights: { orderBy: { materialId: 'asc' } } },
+      include: { difficulties: { orderBy: { key: 'asc' } }, upgradeWeights: { orderBy: { materialId: 'asc' } }, bossDropWeights: { orderBy: { materialId: 'asc' } } },
       orderBy: { id: 'asc' },
     });
     return rows.map(toBundle);
@@ -37,7 +43,7 @@ export class PrismaExpeditionConfigRepository implements ExpeditionConfigReposit
   async getBranch(branchId: string): Promise<ExpeditionBranchBundle | null> {
     const row = await this.client.expeditionBranch.findUnique({
       where: { id: branchId },
-      include: { difficulties: { orderBy: { key: 'asc' } }, upgradeWeights: { orderBy: { materialId: 'asc' } } },
+      include: { difficulties: { orderBy: { key: 'asc' } }, upgradeWeights: { orderBy: { materialId: 'asc' } }, bossDropWeights: { orderBy: { materialId: 'asc' } } },
     });
     return row ? toBundle(row) : null;
   }

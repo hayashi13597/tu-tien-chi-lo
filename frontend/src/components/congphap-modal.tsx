@@ -3,9 +3,12 @@
 import gsap from "gsap";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { CongPhapCard } from "@/components/congphap-card";
+import { LEARN_LINH_THACH_COST } from "@/lib/congphap-constants";
 import { getCongPhapRarityMeta, skillPowerAt } from "@/lib/congphap-display";
 import { formatNum } from "@/lib/format";
+import { getRealmMeta } from "@/lib/realm-constants";
 import type {
+  CongPhapBranch,
   CongPhapDTO,
   MaterialInventoryDTO,
   OwnedCongPhapDTO,
@@ -14,11 +17,31 @@ import type {
 // Fixed number of active công pháp slots (backend ACTIVE_SLOTS = 4).
 const ACTIVE_SLOTS = 4;
 
+// Phase 2: nhóm nhánh trong mục "Chưa Sở Hữu" (thứ tự cố định; null = môn cơ bản).
+const BRANCH_ORDER: (CongPhapBranch | null)[] = [
+  "tuLuyen",
+  "chienDao",
+  "danDao",
+  null,
+];
+const BRANCH_LABELS: Record<string, string> = {
+  tuLuyen: "Tu Luyện",
+  chienDao: "Chiến Đạo",
+  danDao: "Đan Đạo",
+};
+function branchLabel(branch: CongPhapBranch | null): string {
+  return branch === null ? "Cơ Bản" : (BRANCH_LABELS[branch] ?? branch);
+}
+
 interface CongPhapModalProps {
   open: boolean;
   owned: OwnedCongPhapDTO[];
   catalog: CongPhapDTO[];
   linhThach: number;
+  /** Cảnh giới hiện tại (major, 0-based) — gate học môn Bí Tịch. */
+  realmMajor: number;
+  /** Buff hệ thống (Phase 2) từ GET /congphap — hiển thị ở strip header. */
+  system: { linhKhiRatePct: number; danDaoSuccessPct: number };
   materialInventory: MaterialInventoryDTO[];
   loading: boolean;
   error: string | null;
@@ -28,6 +51,7 @@ interface CongPhapModalProps {
   onEquip: (congPhapId: string, slot: number) => void;
   onUnequip: (congPhapId: string) => void;
   onLevelUp: (congPhapId: string) => void;
+  onLearn: (congPhapId: string) => void;
 }
 
 export function CongPhapModal({
@@ -35,6 +59,8 @@ export function CongPhapModal({
   owned,
   catalog,
   linhThach,
+  realmMajor,
+  system,
   materialInventory,
   loading,
   error,
@@ -44,6 +70,7 @@ export function CongPhapModal({
   onEquip,
   onUnequip,
   onLevelUp,
+  onLearn,
 }: CongPhapModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const staggeredRef = useRef(false);
@@ -140,6 +167,18 @@ export function CongPhapModal({
             Đóng
           </button>
         </div>
+
+        {/* Phase 2: buff hệ thống từ môn đang sở hữu (ẩn khi cả hai = 0). */}
+        {(system.linhKhiRatePct !== 0 || system.danDaoSuccessPct !== 0) && (
+          <div className="congphap-system-strip">
+            {system.linhKhiRatePct !== 0 && (
+              <span>Tốc độ tu luyện +{system.linhKhiRatePct}%</span>
+            )}
+            {system.danDaoSuccessPct !== 0 && (
+              <span>Hiệu suất luyện đan +{system.danDaoSuccessPct}%</span>
+            )}
+          </div>
+        )}
 
         {error ? (
           <div className="pill-empty">
@@ -301,39 +340,96 @@ export function CongPhapModal({
               </div>
             )}
 
-            {/* 4. Not owned yet — visible goals, no actions. */}
+            {/* 4. Not owned yet — Phase 2: nhóm theo nhánh; môn gắn Bí Tịch học được. */}
             {unowned.length > 0 && (
               <>
                 <h3 className="congphap-section">
                   Chưa Sở Hữu
                   <span className="congphap-section-note">
-                    nhận qua đổi code hoặc quản trị cấp
+                    học bằng Bí Tịch hoặc nhận qua đổi code
                   </span>
                 </h3>
-                <div className="congphap-grid">
-                  {unowned.map((def) => {
-                    const meta = getCongPhapRarityMeta(def.rarity);
-                    return (
-                      <div
-                        key={def.id}
-                        className="congphap-card locked"
-                        style={{ "--rarity": meta.color } as CSSProperties}
-                      >
-                        <div className="congphap-card-head">
-                          <span className="congphap-glyph">{def.glyph}</span>
-                          <div className="congphap-card-title">
-                            <span className="congphap-name">{def.name}</span>
-                            <span className="congphap-rarity">{meta.name}</span>
-                          </div>
-                        </div>
-                        <p className="congphap-desc">{def.desc}</p>
-                        <span className="congphap-effect-note">
-                          {def.category === "passive" ? "Bị động" : "Chủ động"}
-                        </span>
+                {BRANCH_ORDER.map((branch) => {
+                  const group = unowned.filter((c) => c.branch === branch);
+                  if (group.length === 0) return null;
+                  return (
+                    <div key={branch ?? "base"}>
+                      <h4 className="congphap-branch-heading">
+                        {branchLabel(branch)}
+                      </h4>
+                      <div className="congphap-grid">
+                        {group.map((def) => {
+                          const meta = getCongPhapRarityMeta(def.rarity);
+                          const realmOk = realmMajor >= def.minRealmMajor;
+                          const biTichOk = (def.biTichOwned ?? 0) >= 1;
+                          const linhThachOk =
+                            linhThach >= LEARN_LINH_THACH_COST;
+                          const learnReason = !realmOk
+                            ? `Cần đạt cảnh giới ${getRealmMeta(def.minRealmMajor).name}`
+                            : !biTichOk
+                              ? "Thiếu Bí Tịch"
+                              : !linhThachOk
+                                ? "Thiếu Linh Thạch"
+                                : null;
+                          return (
+                            <div
+                              key={def.id}
+                              className="congphap-card locked"
+                              style={
+                                { "--rarity": meta.color } as CSSProperties
+                              }
+                            >
+                              <div className="congphap-card-head">
+                                <span className="congphap-glyph">
+                                  {def.glyph}
+                                </span>
+                                <div className="congphap-card-title">
+                                  <span className="congphap-name">
+                                    {def.name}
+                                  </span>
+                                  <span className="congphap-rarity">
+                                    {meta.name}
+                                  </span>
+                                </div>
+                              </div>
+                              <p className="congphap-desc">{def.desc}</p>
+                              <span className="congphap-effect-note">
+                                {def.category === "passive"
+                                  ? "Bị động"
+                                  : "Chủ động"}
+                              </span>
+                              {def.biTichMaterialId !== null ? (
+                                <div className="congphap-learn">
+                                  <button
+                                    type="button"
+                                    className="congphap-btn congphap-btn-primary"
+                                    disabled={busy || learnReason !== null}
+                                    title={
+                                      learnReason ??
+                                      `Học bằng 1 Bí Tịch + ${LEARN_LINH_THACH_COST} Linh Thạch`
+                                    }
+                                    onClick={() => onLearn(def.id)}
+                                  >
+                                    Học · 1 Bí Tịch + {LEARN_LINH_THACH_COST} LT
+                                  </button>
+                                  {learnReason !== null && (
+                                    <small className="alchemy-recipe-lock">
+                                      {learnReason}
+                                    </small>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="congphap-effect-note">
+                                  Nhận qua đổi code
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
               </>
             )}
           </>

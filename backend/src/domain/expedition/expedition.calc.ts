@@ -8,6 +8,7 @@ import {
   ExpeditionDifficultyConfig,
   ExpeditionEncounterResult,
   ExpeditionSimulation,
+  LoadoutEntry,
   RewardPayload,
   RewardRollInput,
 } from './expedition';
@@ -59,6 +60,11 @@ export function rollExpeditionRewards(input: RewardRollInput): RewardPayload {
       const selected = weightedMaterial(input.branch.upgradeMaterialWeights, input.random.next());
       if (selected) addMaterial(materials, selected, 1);
     }
+    // Phase 3 — bảng boss riêng (Bí Tịch / Đan Hỏa Tủy): chỉ encounter boss roll.
+    if (kind === 'boss' && input.branch.bossDropWeights.length > 0 && input.random.next() < chance) {
+      const selected = weightedMaterial(input.branch.bossDropWeights, input.random.next());
+      if (selected) addMaterial(materials, selected, 1);
+    }
   }
 
   const linhThach = Math.max(0, Math.round(20 * input.ticketCostUnits * input.difficulty.rewardMultiplier * multiplier));
@@ -74,6 +80,8 @@ export function simulateExpedition(input: {
   ticketCostUnits: 1 | 2 | 4;
   random: RandomSource;
   maxTurns: number;
+  // Phase 3 — đan combatBuff từ loadout; áp lại từ đầu mỗi encounter.
+  pillBuffs?: LoadoutEntry[];
 }): ExpeditionSimulation {
   const encounters: ExpeditionEncounterResult[] = [];
   let wins = 0;
@@ -91,6 +99,7 @@ export function simulateExpedition(input: {
       enemy: enemyForPower(power, input.player.attributes.tocDo),
       random: input.random,
       maxTurns: input.maxTurns,
+      pillBuffs: input.pillBuffs,
     });
     encounters.push({ kind, result: battle });
     if (battle.winner !== 'player') break;
@@ -128,4 +137,17 @@ function enemyForPower(power: number, playerSpeed: number): CombatantSnapshot {
     tocDo: Math.max(1, playerSpeed - 1),
   };
   return { id: 'enemy', attributes, battlePower: power, maxChanNguyen: 0, skills: [] };
+}
+
+// Phase 3 — hard gate cảnh giới theo tầng (chiến lực recommendedPower chỉ là
+// cảnh báo phía FE, server không chặn). realmName đã resolve ở application
+// layer để domain không phụ thuộc realm catalog.
+export function expeditionStartGate(
+  branch: Pick<ExpeditionBranchConfig, 'tier' | 'minRealmMajor'>,
+  realmMajor: number,
+  realmName: string,
+): void {
+  if (realmMajor < branch.minRealmMajor) {
+    throw new DomainError('EXPEDITION_REALM_GATE', `Tầng ${branch.tier} yêu cầu cảnh giới ${realmName}`);
+  }
 }

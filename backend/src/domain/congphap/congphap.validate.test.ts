@@ -9,12 +9,14 @@ const passive: CongPhapRecord = {
   effects: [{ attribute: 'khiHuyet', flatPerLevel: 50, pctPerLevel: 0 }],
   powerPerLevel: null, chanNguyenCost: null, dupRefundLinhThach: null,
   upgradeMaterialId: null, baseMaterialCost: 0, materialCostGrowth: 1, cooldownRounds: null,
+  tier: 1, branch: 'chienDao', minRealmMajor: 0, biTichMaterialId: null,
 };
 const active: CongPhapRecord = {
   id: 'liet-hoa', name: 'Liệt Hỏa', glyph: '火', rarity: 3, category: 'active',
   desc: 'd', active: true, maxLevel: 10, baseCost: 200, costGrowth: 1.6,
   effects: null, powerPerLevel: 120, chanNguyenCost: 30, dupRefundLinhThach: null,
   upgradeMaterialId: null, baseMaterialCost: 0, materialCostGrowth: 1, cooldownRounds: null,
+  tier: 1, branch: 'chienDao', minRealmMajor: 0, biTichMaterialId: null,
 };
 
 function expectFail(def: CongPhapRecord) {
@@ -38,4 +40,35 @@ describe('validateCongPhapDefinition', () => {
   it('passive lại có powerPerLevel', () => expectFail({ ...passive, powerPerLevel: 5 }));
   it('active không powerPerLevel > 0', () => expectFail({ ...active, powerPerLevel: 0 }));
   it('active lại có effects', () => expectFail({ ...active, effects: passive.effects }));
+
+  // Phase 2 rules
+  it('chấp nhận key đặc biệt (flat=0, pct>0)', () => {
+    expect(() => validateCongPhapDefinition({
+      ...passive,
+      effects: [{ attribute: 'danDaoSuccess', flatPerLevel: 0, pctPerLevel: 1 }],
+    })).not.toThrow();
+    expect(() => validateCongPhapDefinition({
+      ...passive,
+      effects: [{ attribute: 'linhKhiRate', flatPerLevel: 0, pctPerLevel: 2 }],
+    })).not.toThrow();
+  });
+  it('key đặc biệt phải flat=0 và pct>0', () => {
+    expectFail({ ...passive, effects: [{ attribute: 'linhKhiRate', flatPerLevel: 1, pctPerLevel: 2 }] });
+    expectFail({ ...passive, effects: [{ attribute: 'danDaoSuccess', flatPerLevel: 0, pctPerLevel: 0 }] });
+    expectFail({ ...passive, effects: [{ attribute: 'danDaoSuccess', flatPerLevel: 0, pctPerLevel: -1 }] });
+  });
+  it('tier >= 2 bắt buộc branch và biTich', () => {
+    expectFail({ ...passive, tier: 2, branch: null, biTichMaterialId: 'bi-tich-x' });
+    expectFail({ ...passive, tier: 2, biTichMaterialId: null });
+    expect(() => validateCongPhapDefinition({ ...passive, tier: 2, branch: 'danDao', biTichMaterialId: 'bi-tich-x', minRealmMajor: 3 })).not.toThrow();
+  });
+  it('tier ngoài 1..3 bị chặn', () => {
+    expectFail({ ...passive, tier: 0 });
+    expectFail({ ...passive, tier: 4 });
+  });
+  it('branch lạ bị chặn; branch null hợp lệ với tier 1', () => {
+    expectFail({ ...passive, branch: 'xxx' as never });
+    expect(() => validateCongPhapDefinition({ ...passive, branch: null })).not.toThrow();
+  });
+  it('minRealmMajor âm bị chặn', () => expectFail({ ...passive, minRealmMajor: -1 }));
 });

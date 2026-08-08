@@ -1,8 +1,9 @@
 export interface RewardEntry {
-  // Đúng một trong ba khác undefined.
+  // Đúng một trong bốn khác undefined.
   pillId?: string;
   congPhapId?: string;
   linhThach?: number;
+  materialId?: string;
   quantity: number;
 }
 
@@ -17,7 +18,7 @@ export interface RedeemCodeRecord {
 }
 
 export interface RedeemRewardResult {
-  kind: 'pill' | 'congphap' | 'linhThach';
+  kind: 'pill' | 'congphap' | 'linhThach' | 'material';
   id: string;        // pillId / congPhapId / 'linh-thach'
   name: string;
   glyph: string;

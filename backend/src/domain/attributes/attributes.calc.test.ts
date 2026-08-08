@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeAttributes, computeBattlePower } from './attributes.calc';
+import { computeAttributes, computeBattlePower, sumSystemBuffs } from './attributes.calc';
 import { AttributeSet, BATTLE_POWER_WEIGHTS } from './attributes';
 
 const ZERO: AttributeSet = { khiHuyet: 0, chanNguyen: 0, congVatLy: 0, congPhep: 0, phongThu: 0, tocDo: 0 };
@@ -39,5 +39,42 @@ describe('computeBattlePower', () => {
   });
   it('mặc định dùng BATTLE_POWER_WEIGHTS', () => {
     expect(computeBattlePower(ZERO)).toBe(0);
+  });
+});
+
+describe('sumSystemBuffs', () => {
+  it('gom pctPerLevel × level của 2 key đặc biệt qua nhiều môn', () => {
+    const buffs = sumSystemBuffs([
+      { level: 3, effects: [{ attribute: 'linhKhiRate', flatPerLevel: 0, pctPerLevel: 2 }] },
+      { level: 2, effects: [{ attribute: 'danDaoSuccess', flatPerLevel: 0, pctPerLevel: 1.5 }] },
+    ]);
+    expect(buffs.linhKhiRatePct).toBe(6);
+    expect(buffs.danDaoSuccessPct).toBe(3);
+  });
+
+  it('bỏ qua key attribute thường', () => {
+    expect(
+      sumSystemBuffs([{ level: 5, effects: [{ attribute: 'khiHuyet', flatPerLevel: 10, pctPerLevel: 2 }] }]),
+    ).toEqual({ linhKhiRatePct: 0, danDaoSuccessPct: 0 });
+  });
+
+  it('rỗng → 0/0', () => {
+    expect(sumSystemBuffs([])).toEqual({ linhKhiRatePct: 0, danDaoSuccessPct: 0 });
+  });
+});
+
+describe('computeAttributes với key đặc biệt', () => {
+  it('không crash và bỏ qua key đặc biệt (linhKhiRate/danDaoSuccess)', () => {
+    const { final } = computeAttributes(base, [
+      {
+        level: 2,
+        effects: [
+          { attribute: 'linhKhiRate', flatPerLevel: 0, pctPerLevel: 5 },
+          { attribute: 'danDaoSuccess', flatPerLevel: 0, pctPerLevel: 1 },
+          { attribute: 'khiHuyet', flatPerLevel: 10, pctPerLevel: 0 },
+        ],
+      },
+    ]);
+    expect(final.khiHuyet).toBe(120); // 100 + 2*10 flat; hai key đặc biệt bị lờ
   });
 });

@@ -48,6 +48,7 @@ import { ListCongPhapUseCase } from './application/ListCongPhapUseCase';
 import { EquipCongPhapUseCase } from './application/EquipCongPhapUseCase';
 import { UnequipCongPhapUseCase } from './application/UnequipCongPhapUseCase';
 import { LevelUpCongPhapUseCase } from './application/LevelUpCongPhapUseCase';
+import { LearnCongPhapUseCase } from './application/LearnCongPhapUseCase';
 import { ListCongPhapAdminUseCase } from './application/ListCongPhapAdminUseCase';
 import { CreateCongPhapUseCase } from './application/CreateCongPhapUseCase';
 import { UpdateCongPhapUseCase } from './application/UpdateCongPhapUseCase';
@@ -55,8 +56,11 @@ import { GrantUseCase } from './application/GrantUseCase';
 import { SearchUsersUseCase } from './application/SearchUsersUseCase';
 import { GetMaterialInventoryUseCase } from './application/GetMaterialInventoryUseCase';
 import { ListAlchemyRecipesUseCase } from './application/ListAlchemyRecipesUseCase';
+import { GetAlchemyProfileUseCase } from './application/GetAlchemyProfileUseCase';
 import { GetAlchemyQueueUseCase } from './application/GetAlchemyQueueUseCase';
 import { QueueAlchemyUseCase } from './application/QueueAlchemyUseCase';
+import { RankUpAlchemyUseCase } from './application/RankUpAlchemyUseCase';
+import { UpgradeFurnaceUseCase } from './application/UpgradeFurnaceUseCase';
 import { ListExpeditionBranchesUseCase } from './application/ListExpeditionBranchesUseCase';
 import { GetCurrentExpeditionUseCase } from './application/GetCurrentExpeditionUseCase';
 import { StartExpeditionUseCase } from './application/StartExpeditionUseCase';
@@ -100,7 +104,7 @@ export function createApp(overrides: AppOverrides = {}) {
   const congPhapRepository = new PrismaCongPhapRepository(client);
   const ownedCongPhapRepository = new PrismaOwnedCongPhapRepository(client);
   const materialRepository = new PrismaMaterialRepository(client);
-  const alchemyRepository = new PrismaAlchemyRepository(client);
+  const alchemyRepository = new PrismaAlchemyRepository(client, randomSource);
   const progressionRepository = new PrismaProgressionRepository(client);
   const expeditionConfigRepository = new PrismaExpeditionConfigRepository(client);
   const expeditionRepository = new PrismaExpeditionRepository(client);
@@ -151,7 +155,7 @@ export function createApp(overrides: AppOverrides = {}) {
   const refreshAccessTokenUseCase = new RefreshAccessTokenUseCase(tokenService, userRepository);
   const logoutUseCase = new LogoutUseCase(tokenService, userRepository);
   const getCultivationStateUseCase = new GetCultivationStateUseCase(characterRepository, realmConfigProvider, ownedCongPhapRepository);
-  const attemptBreakthroughUseCase = new AttemptBreakthroughUseCase(characterRepository, randomSource, realmConfigProvider);
+  const attemptBreakthroughUseCase = new AttemptBreakthroughUseCase(characterRepository, randomSource, realmConfigProvider, ownedCongPhapRepository);
   const getInventoryUseCase = new GetInventoryUseCase(pillRepository);
   const consumePillUseCase = new ConsumePillUseCase(characterRepository, pillRepository, realmConfigProvider, ownedCongPhapRepository);
   const updateRealmConfigUseCase = new UpdateRealmConfigUseCase(realmConfigRepository);
@@ -160,26 +164,30 @@ export function createApp(overrides: AppOverrides = {}) {
   const updatePillUseCase = new UpdatePillUseCase(pillRepository);
   const getCurrentUserUseCase = new GetCurrentUserUseCase(userRepository);
   const getAdminStatsUseCase = new GetAdminStatsUseCase(statsRepository, realmConfigProvider);
-  const redeemCodeUseCase = new RedeemCodeUseCase(redeemCodeRepository, pillRepository, congPhapRepository, ownedCongPhapRepository, characterRepository);
+  const redeemCodeUseCase = new RedeemCodeUseCase(redeemCodeRepository, pillRepository, congPhapRepository, ownedCongPhapRepository, characterRepository, materialRepository);
   const listRedeemCodesUseCase = new ListRedeemCodesUseCase(redeemCodeRepository);
   const createRedeemCodeUseCase = new CreateRedeemCodeUseCase(redeemCodeRepository);
   const updateRedeemCodeUseCase = new UpdateRedeemCodeUseCase(redeemCodeRepository);
-  const listCongPhapUseCase = new ListCongPhapUseCase(ownedCongPhapRepository, congPhapRepository);
+  const listCongPhapUseCase = new ListCongPhapUseCase(ownedCongPhapRepository, congPhapRepository, materialRepository);
   const equipCongPhapUseCase = new EquipCongPhapUseCase(ownedCongPhapRepository, congPhapRepository);
   const unequipCongPhapUseCase = new UnequipCongPhapUseCase(ownedCongPhapRepository);
   const levelUpCongPhapUseCase = new LevelUpCongPhapUseCase(ownedCongPhapRepository, congPhapRepository, characterRepository, progressionRepository);
+  const learnCongPhapUseCase = new LearnCongPhapUseCase(congPhapRepository, progressionRepository, characterRepository, realmConfigProvider);
   const listCongPhapAdminUseCase = new ListCongPhapAdminUseCase(congPhapRepository);
   const createCongPhapUseCase = new CreateCongPhapUseCase(congPhapRepository);
   const updateCongPhapUseCase = new UpdateCongPhapUseCase(congPhapRepository);
   const grantUseCase = new GrantUseCase(ownedCongPhapRepository, characterRepository);
   const searchUsersUseCase = new SearchUsersUseCase(adminUserRepository);
   const getMaterialInventoryUseCase = new GetMaterialInventoryUseCase(materialRepository);
-  const listAlchemyRecipesUseCase = new ListAlchemyRecipesUseCase(alchemyRepository);
+  const listAlchemyRecipesUseCase = new ListAlchemyRecipesUseCase(alchemyRepository, ownedCongPhapRepository);
   const getAlchemyQueueUseCase = new GetAlchemyQueueUseCase(alchemyRepository);
   const queueAlchemyUseCase = new QueueAlchemyUseCase(alchemyRepository, materialRepository, characterRepository);
+  const getAlchemyProfileUseCase = new GetAlchemyProfileUseCase(alchemyRepository, characterRepository, materialRepository);
+  const rankUpAlchemyUseCase = new RankUpAlchemyUseCase(alchemyRepository, characterRepository, materialRepository);
+  const upgradeFurnaceUseCase = new UpgradeFurnaceUseCase(alchemyRepository, characterRepository);
   const listExpeditionBranchesUseCase = new ListExpeditionBranchesUseCase(expeditionConfigRepository);
   const getCurrentExpeditionUseCase = new GetCurrentExpeditionUseCase(expeditionRepository);
-  const startExpeditionUseCase = new StartExpeditionUseCase(expeditionConfigRepository, expeditionRepository, getCultivationStateUseCase, ownedCongPhapRepository, randomSource);
+  const startExpeditionUseCase = new StartExpeditionUseCase(expeditionConfigRepository, expeditionRepository, getCultivationStateUseCase, ownedCongPhapRepository, pillRepository, realmConfigProvider, randomSource);
   const claimExpeditionUseCase = new ClaimExpeditionUseCase(expeditionRepository);
   const listMaterialAdminUseCase = new ListMaterialAdminUseCase(materialCatalogAdminRepository);
   const updateMaterialAdminUseCase = new UpdateMaterialAdminUseCase(materialCatalogAdminRepository);
@@ -230,11 +238,17 @@ export function createApp(overrides: AppOverrides = {}) {
   );
   app.use('/redeem', createRedeemRouter({ redeemCodeUseCase, requireAuth }));
   app.use('/materials', createMaterialsRouter({ getMaterialInventoryUseCase, requireAuth }));
-  app.use('/alchemy', createAlchemyRouter({ listAlchemyRecipesUseCase, getAlchemyQueueUseCase, queueAlchemyUseCase, requireAuth }));
+  app.use(
+    '/alchemy',
+    createAlchemyRouter({
+      listAlchemyRecipesUseCase, getAlchemyQueueUseCase, queueAlchemyUseCase,
+      getAlchemyProfileUseCase, rankUpAlchemyUseCase, upgradeFurnaceUseCase, requireAuth,
+    }),
+  );
   app.use('/expeditions', createExpeditionsRouter({ listExpeditionBranchesUseCase, getCurrentExpeditionUseCase, startExpeditionUseCase, claimExpeditionUseCase, requireAuth }));
   app.use(
     '/congphap',
-    createCongPhapRouter({ listCongPhapUseCase, equipCongPhapUseCase, unequipCongPhapUseCase, levelUpCongPhapUseCase, requireAuth }),
+    createCongPhapRouter({ listCongPhapUseCase, equipCongPhapUseCase, unequipCongPhapUseCase, levelUpCongPhapUseCase, learnCongPhapUseCase, requireAuth }),
   );
   app.use(
     '/admin',

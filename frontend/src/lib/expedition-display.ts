@@ -79,12 +79,16 @@ export function canStartExpedition(
 }
 
 export function canQueueAlchemy(
-  recipe: Pick<AlchemyRecipeDTO, "active" | "linhThachCost" | "ingredients">,
+  recipe: Pick<
+    AlchemyRecipeDTO,
+    "active" | "linhThachCost" | "ingredients" | "locked"
+  >,
   inventory: readonly Pick<MaterialInventoryDTO, "materialId" | "quantity">[],
   quantity: number,
   linhThach: number,
 ): boolean {
-  if (!recipe.active || !Number.isInteger(quantity) || quantity <= 0) {
+  if (!recipe.active || recipe.locked) return false;
+  if (!Number.isInteger(quantity) || quantity <= 0) {
     return false;
   }
   if (linhThach < recipe.linhThachCost * quantity) return false;

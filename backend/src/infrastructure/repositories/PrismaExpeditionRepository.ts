@@ -49,6 +49,15 @@ export class PrismaExpeditionRepository implements ExpeditionRepository {
         });
         if (reserved.count !== 1) throw new DomainError('INSUFFICIENT_EXPEDITION_TICKETS', 'Không đủ điểm vé bí cảnh');
 
+        // Đan loadout (Phase 3): trừ guard nguyên tử, rollback cả vé lẫn expedition khi thiếu.
+        for (const item of input.loadoutConsumptions ?? []) {
+          const decremented = await tx.inventoryItem.updateMany({
+            where: { userId: input.userId, pillId: item.pillId, quantity: { gte: item.quantity } },
+            data: { quantity: { decrement: item.quantity } },
+          });
+          if (decremented.count !== 1) throw new DomainError('INSUFFICIENT_INVENTORY', `Không đủ đan trong kho: ${item.pillId}`);
+        }
+
         const difficulty = await tx.expeditionDifficulty.findUnique({ where: { branchId_key: { branchId: input.branchId, key: input.difficulty } } });
         if (!difficulty) throw new DomainError('EXPEDITION_DIFFICULTY_NOT_FOUND', 'Cấu hình độ khó không tồn tại');
         const row = await tx.expedition.create({

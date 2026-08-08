@@ -1,3 +1,4 @@
+import { ATTRIBUTE_ORDER } from "./attribute-constants";
 import { RARITY_META } from "./pill-constants";
 import type {
   AttributeKey,
@@ -64,8 +65,12 @@ export function passiveBonusAt(
   const bonus: Partial<Record<AttributeKey, { flat: number; pct: number }>> =
     {};
   for (const e of def.effects) {
-    const current = bonus[e.attribute] ?? { flat: 0, pct: 0 };
-    bonus[e.attribute] = {
+    // Key hệ thống (Phase 2: linhKhiRate/danDaoSuccess) không thuộc AttributeSet —
+    // breakdown thuộc tính bỏ qua; chúng hiển thị qua system panel riêng.
+    if (!ATTRIBUTE_ORDER.includes(e.attribute as AttributeKey)) continue;
+    const attr = e.attribute as AttributeKey;
+    const current = bonus[attr] ?? { flat: 0, pct: 0 };
+    bonus[attr] = {
       flat: current.flat + e.flatPerLevel * level,
       pct: current.pct + e.pctPerLevel * level,
     };

@@ -47,6 +47,20 @@ describe('pills routes', () => {
     expect(hoiKhi.quantity).toBe(4);
   });
 
+  it('Phase 3: inventory trả combatAttribute/combatTrigger; consume đan combat → 400 PILL_NOT_CONSUMABLE', async () => {
+    const agent = request.agent(app);
+    await agent.post('/auth/register').send({ username: 'inv-combat', password: 'password123' });
+    const u = await prisma.user.findUniqueOrThrow({ where: { username: 'inv-combat' } });
+    await prisma.inventoryItem.create({ data: { userId: u.id, pillId: 'cuong-the-dan', quantity: 2 } });
+    const inv = await agent.get('/pills/inventory');
+    const dan = inv.body.find((p: { id: string }) => p.id === 'cuong-the-dan');
+    expect(dan).toMatchObject({ effectKind: 'combatBuff', combatAttribute: 'congVatLy', combatTrigger: 'start', bonusPct: 25 });
+    const res = await agent.post('/pills/consume').send({ pillId: 'cuong-the-dan' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('PILL_NOT_CONSUMABLE');
+    await prisma.user.delete({ where: { id: u.id } });
+  });
+
   it('POST /pills/consume of a not-punished clearPunishment pill -> 400 PILL_NOT_APPLICABLE', async () => {
     const agent = request.agent(app);
     await agent.post('/auth/register').send({ username: 'inv-carol', password: 'password123' });

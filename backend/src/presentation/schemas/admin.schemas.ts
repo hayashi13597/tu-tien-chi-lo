@@ -39,7 +39,12 @@ const pillBodySchema = z.object({
   name: z.string().min(1),
   glyph: z.string().min(1),
   rarity: z.number().int().min(0).max(4),
-  effectKind: z.enum(['linhKhi', 'cultivationBuff', 'breakthroughBoost', 'clearPunishment']),
+  // Default giữ hành vi cũ (tier 1) cho body admin chưa gửi field mới.
+  tier: z.number().int().min(1).max(3).default(1),
+  effectKind: z.enum(['linhKhi', 'cultivationBuff', 'breakthroughBoost', 'clearPunishment', 'combatBuff']),
+  // Phase 3 combatBuff: bất biến (field ngoài kind phải null) ở domain validatePillDefinition.
+  combatAttribute: z.enum(['khiHuyet', 'chanNguyen', 'congVatLy', 'congPhep', 'phongThu', 'tocDo']).nullable().default(null),
+  combatTrigger: z.enum(['start', 'lowHp30']).nullable().default(null),
   amount: z.number().nullable(),
   multiplier: z.number().nullable(),
   durationSec: z.number().int().nullable(),
@@ -60,7 +65,8 @@ export const updatePillSchema = pillBodySchema;
 // còn bất biến theo category (passive cần effects, active cần powerPerLevel…)
 // nằm ở domain validateCongPhapDefinition.
 const passiveEffectSchema = z.object({
-  attribute: z.enum(['khiHuyet', 'chanNguyen', 'congVatLy', 'congPhep', 'phongThu', 'tocDo']),
+  // Hai key cuối là buff hệ thống Phase 2 (rule flat=0/pct>0 nằm ở domain validate).
+  attribute: z.enum(['khiHuyet', 'chanNguyen', 'congVatLy', 'congPhep', 'phongThu', 'tocDo', 'linhKhiRate', 'danDaoSuccess']),
   flatPerLevel: z.number(),
   pctPerLevel: z.number(),
 });
@@ -83,6 +89,11 @@ const congPhapBodySchema = z.object({
   baseMaterialCost: z.number().int().min(0).default(0),
   materialCostGrowth: z.number().min(1).default(1),
   cooldownRounds: z.number().int().min(0).nullable().default(null),
+  // Phase 2. Bất biến (tier>=2 => branch + biTich, key đặc biệt flat=0/pct>0) ở domain validate.
+  tier: z.number().int().min(1).max(3).default(1),
+  branch: z.enum(['tuLuyen', 'chienDao', 'danDao']).nullable().default(null),
+  minRealmMajor: z.number().int().min(0).default(0),
+  biTichMaterialId: z.string().regex(/^[a-z0-9-]+$/).nullable().default(null),
 });
 
 export const createCongPhapSchema = congPhapBodySchema.extend({
@@ -108,6 +119,7 @@ const materialCatalogRowSchema = z.object({
   name: z.string().min(1),
   glyph: z.string().min(1),
   rarity: z.number().int().min(0),
+  tier: z.number().int().min(1).max(3).default(1),
   description: z.string().min(1),
   active: z.boolean(),
 });
@@ -119,6 +131,10 @@ const alchemyRecipeSchema = z.object({
   durationSec: z.number().int().positive(),
   linhThachCost: z.number().int().min(0),
   active: z.boolean(),
+  // Default giữ hành vi cũ (tier 1, deterministic) cho payload admin chưa gửi field mới.
+  tier: z.number().int().min(1).max(3).default(1),
+  minAlchemyRank: z.number().int().min(1).default(1),
+  baseSuccessPct: z.number().int().min(5).max(100).default(100),
   ingredients: z.array(z.object({ materialId: z.string().regex(/^[a-z0-9-]+$/), quantity: z.number().int().positive() })).min(1),
 });
 export const updateAlchemyRecipesSchema = z.object({ recipes: z.array(alchemyRecipeSchema).min(1) });
@@ -136,6 +152,11 @@ const expeditionBranchSchema = z.object({
     id: z.string().regex(/^[a-z0-9-]+$/), name: z.string().min(1), glyph: z.string().min(1), description: z.string().min(1),
     basePower: z.number().positive(), alchemyMaterialId: z.string().regex(/^[a-z0-9-]+$/),
     upgradeMaterialWeights: z.array(z.object({ materialId: z.string().regex(/^[a-z0-9-]+$/), weight: z.number().min(0) })).min(1),
+    // Phase 3. Defaults giữ hành vi cũ cho payload admin chưa gửi field mới.
+    tier: z.number().int().min(1).max(3).default(1),
+    minRealmMajor: z.number().int().min(0).max(10).default(0),
+    recommendedPower: z.number().min(0).default(0),
+    bossDropWeights: z.array(z.object({ materialId: z.string().regex(/^[a-z0-9-]+$/), weight: z.number().min(0) })).default([]),
   }),
   difficulties: z.array(expeditionDifficultySchema).min(1),
 });

@@ -53,4 +53,94 @@ describe('expedition routes', () => {
     expect(repeated.status).toBe(409);
     expect(repeated.body.error.code).toBe('EXPEDITION_ALREADY_CLAIMED');
   });
+
+  it('Phase 3: branches trả tier/gate/recommendedPower/bossDropWeights', async () => {
+    const agent = request.agent(app);
+    await agent.post('/auth/login').send({ username, password: 'password123' });
+    const branches = await agent.get('/expeditions/branches');
+    expect(branches.status).toBe(200);
+    const thanhLam = branches.body.find((b: { branch: { id: string } }) => b.branch.id === 'thanh-lam');
+    expect(thanhLam.branch.tier).toBe(2);
+    expect(thanhLam.branch.minRealmMajor).toBe(3);
+    expect(thanhLam.branch.recommendedPower).toBe(600);
+    expect(thanhLam.branch.bossDropWeights.length).toBeGreaterThan(0);
+    const hoaVuc = branches.body.find((b: { branch: { id: string } }) => b.branch.id === 'hoa-vuc');
+    expect(hoaVuc.branch.tier).toBe(1);
+    expect(hoaVuc.branch.bossDropWeights).toHaveLength(0);
+  });
+
+  it('Phase 3: start tầng 2 khi cảnh giới thấp → 409 EXPEDITION_REALM_GATE', async () => {
+    const agent = request.agent(app);
+    await agent.post('/auth/login').send({ username, password: 'password123' });
+    // user mới Phàm Nhân (realmMajor 0) < gate 3 của thanh-lam
+    const res = await agent.post('/expeditions/start').send({ branchId: 'thanh-lam', difficulty: 'easy', durationSec: 1_800 });
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe('EXPEDITION_REALM_GATE');
+    expect(res.body.error.message).toContain('Kết Đan');
+  });
+
+  it('Phase 3: zod chặn loadout > 2 hay trùng id', async () => {
+    const agent = request.agent(app);
+    await agent.post('/auth/login').send({ username, password: 'password123' });
+    for (const ids of [['a', 'b', 'c'], ['a', 'a']]) {
+      const res = await agent.post('/expeditions/start').send({ branchId: 'hoa-vuc', difficulty: 'easy', durationSec: 1_800, loadoutPillIds: ids });
+      expect(res.status).toBe(400);
+    }
+  });
+
+  it('Phase 3: start với đan combatBuff trừ kho, đan linhKhi → 400', async () => {
+    const user2 = `route_exp2_${Date.now()}`;
+    const agent2 = request.agent(app);
+    expect((await agent2.post('/auth/register').send({ username: user2, password: 'password123' })).status).toBe(201);
+    const u2 = await prisma.user.findUniqueOrThrow({ where: { username: user2 } });
+    // cấp đan thủ công
+    await prisma.inventoryItem.create({ data: { userId: u2.id, pillId: 'cuong-the-dan', quantity: 1 } });
+    await prisma.inventoryItem.create({ data: { userId: u2.id, pillId: 'hoi-khi-dan', quantity: 1 } });
+    // nhánh tầng 1 không gate; battlePower < recommendedPower = 0 → soft, vẫn start
+    const wrong = await agent2.post('/expeditions/start').send({ branchId: 'hoa-vuc', difficulty: 'easy', durationSec: 1_800, loadoutPillIds: ['hoi-khi-dan'] });
+    expect(wrong.status).toBe(400);
+    expect(wrong.body.error.code).toBe('LOADOUT_INVALID');
+    const started = await agent2.post('/expeditions/start').send({ branchId: 'hoa-vuc', difficulty: 'easy', durationSec: 1_800, loadoutPillIds: ['cuong-the-dan'] });
+    expect(started.status).toBe(200);
+    expect(started.body.combatSnapshot.loadout).toEqual([{ pillId: 'cuong-the-dan', combatAttribute: 'congVatLy', combatTrigger: 'start', pct: 25 }]);
+    const inv = await prisma.inventoryItem.findUnique({ where: { userId_pillId: { userId: u2.id, pillId: 'cuong-the-dan' } } });
+    expect(inv?.quantity).toBe(0);
+    // hết đan → start lại loadout → 409 INSUFFICIENT_INVENTORY
+    await prisma.expedition.deleteMany({ where: { userId: u2.id } });
+    const again = await agent2.post('/expeditions/start').send({ branchId: 'hoa-vuc', difficulty: 'easy', durationSec: 1_800, loadoutPillIds: ['cuong-the-dan'] });
+    expect(again.status).toBe(409);
+    expect(again.body.error.code).toBe('INSUFFICIENT_INVENTORY');
+    await prisma.user.deleteMany({ where: { username: user2 } });
+  });
+
+  it('Phase 3: claim chuyến rơi Bí Tịch → MaterialInventory có bí tịch đó', async () => {
+    const user3 = `route_exp3_${Date.now()}`;
+    const agent3 = request.agent(app);
+    expect((await agent3.post('/auth/register').send({ username: user3, password: 'password123' })).status).toBe(201);
+    const u3 = await prisma.user.findUniqueOrThrow({ where: { username: user3 } });
+    const difficulty = await prisma.expeditionDifficulty.findUniqueOrThrow({ where: { branchId_key: { branchId: 'thanh-lam', key: 'normal' } } });
+    await prisma.expedition.create({
+      data: {
+        userId: u3.id, branchId: 'thanh-lam', difficultyId: difficulty.id,
+        durationSec: 1800, ticketCostUnits: 1,
+        startedAt: new Date(Date.now() - 3_600_000), completesAt: new Date(Date.now() - 1_000),
+        status: 'completed', seed: '1',
+        combatSnapshot: {}, combatResult: {},
+        rewardResult: { multiplier: 1, linhThach: 10, materials: [{ materialId: 'bi-tich-vong-coc', quantity: 1 }, { materialId: 'dan-hoa-tuy', quantity: 1 }] },
+      },
+    });
+    const claimed = await agent3.post('/expeditions/claim');
+    expect(claimed.status).toBe(200);
+    expect(claimed.body.reward.materials).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ materialId: 'bi-tich-vong-coc', quantity: 1 }),
+        expect.objectContaining({ materialId: 'dan-hoa-tuy', quantity: 1 }),
+      ]),
+    );
+    const biTich = await prisma.materialInventory.findUnique({ where: { userId_materialId: { userId: u3.id, materialId: 'bi-tich-vong-coc' } } });
+    expect(biTich?.quantity).toBe(1);
+    const tuy = await prisma.materialInventory.findUnique({ where: { userId_materialId: { userId: u3.id, materialId: 'dan-hoa-tuy' } } });
+    expect(tuy?.quantity).toBe(1);
+    await prisma.user.delete({ where: { id: u3.id } });
+  });
 });

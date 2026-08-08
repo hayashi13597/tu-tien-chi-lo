@@ -30,7 +30,7 @@ export class InMemoryPillRepository implements PillRepository {
    *  production where the DB catalog drives the starter kit. */
   seedStarterDefinitions(): void {
     for (const { pillId, quantity } of DEFAULT_STARTERS) {
-      this.seedPill({ id: pillId, name: pillId, glyph: 'x', rarity: 0, effectKind: 'linhKhi', amount: 0, multiplier: null, durationSec: null, bonusPct: null, desc: '', active: true, starterQuantity: quantity });
+      this.seedPill({ id: pillId, name: pillId, glyph: 'x', rarity: 0, tier: 1, effectKind: 'linhKhi', amount: 0, multiplier: null, durationSec: null, bonusPct: null, desc: '', active: true, starterQuantity: quantity });
     }
   }
 

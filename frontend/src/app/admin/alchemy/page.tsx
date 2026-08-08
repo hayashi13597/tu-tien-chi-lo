@@ -44,6 +44,10 @@ function emptyRecipe(
     ingredients: materials[0]
       ? [{ materialId: materials[0].id, quantity: 1 }]
       : [],
+    // Backend mặc định khi thiếu: tier 1, rank 1, deterministic 100%.
+    tier: 1,
+    minAlchemyRank: 1,
+    baseSuccessPct: 100,
   };
 }
 
@@ -137,7 +141,11 @@ export default function AdminAlchemyPage() {
       const recipe = current[index];
       if (!recipe) return current;
       const nextValue =
-        field === "durationSec" || field === "linhThachCost"
+        field === "durationSec" ||
+        field === "linhThachCost" ||
+        field === "tier" ||
+        field === "minAlchemyRank" ||
+        field === "baseSuccessPct"
           ? value === ""
             ? Number.NaN
             : Number(value)
@@ -521,6 +529,99 @@ export default function AdminAlchemyPage() {
                       {errorFor("linhThachCost") && (
                         <span className="admin-field-error">
                           {errorFor("linhThachCost")?.message}
+                        </span>
+                      )}
+                    </label>
+                    <label className="admin-field">
+                      <span className="admin-field-label">Bậc công thức</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={3}
+                        className={`admin-input admin-num${errorFor("tier") ? " invalid" : ""}`}
+                        value={Number.isNaN(selected.tier) ? "" : selected.tier}
+                        onChange={(event) =>
+                          setRecipeField(
+                            selectedIndexSafe,
+                            "tier",
+                            event.target.value,
+                          )
+                        }
+                        disabled={saving}
+                        aria-label="Bậc công thức"
+                      />
+                      <span className="admin-field-hint">
+                        1 Phàm Giai · 2 Linh Giai · 3 Thiên Giai
+                      </span>
+                      {errorFor("tier") && (
+                        <span className="admin-field-error">
+                          {errorFor("tier")?.message}
+                        </span>
+                      )}
+                    </label>
+                    <label className="admin-field">
+                      <span className="admin-field-label">
+                        Cấp Đan Sư tối thiểu
+                      </span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={9}
+                        className={`admin-input admin-num${errorFor("minAlchemyRank") ? " invalid" : ""}`}
+                        value={
+                          Number.isNaN(selected.minAlchemyRank)
+                            ? ""
+                            : selected.minAlchemyRank
+                        }
+                        onChange={(event) =>
+                          setRecipeField(
+                            selectedIndexSafe,
+                            "minAlchemyRank",
+                            event.target.value,
+                          )
+                        }
+                        disabled={saving}
+                        aria-label="Cấp Đan Sư tối thiểu"
+                      />
+                      <span className="admin-field-hint">
+                        Gắn theo bậc: 1 → cấp 1, 2 → cấp 4, 3 → cấp 7
+                      </span>
+                      {errorFor("minAlchemyRank") && (
+                        <span className="admin-field-error">
+                          {errorFor("minAlchemyRank")?.message}
+                        </span>
+                      )}
+                    </label>
+                    <label className="admin-field">
+                      <span className="admin-field-label">
+                        Tỉ lệ thành công cơ bản (%)
+                      </span>
+                      <input
+                        type="number"
+                        min={5}
+                        max={100}
+                        className={`admin-input admin-num${errorFor("baseSuccessPct") ? " invalid" : ""}`}
+                        value={
+                          Number.isNaN(selected.baseSuccessPct)
+                            ? ""
+                            : selected.baseSuccessPct
+                        }
+                        onChange={(event) =>
+                          setRecipeField(
+                            selectedIndexSafe,
+                            "baseSuccessPct",
+                            event.target.value,
+                          )
+                        }
+                        disabled={saving}
+                        aria-label="Tỉ lệ thành công cơ bản (%)"
+                      />
+                      <span className="admin-field-hint">
+                        100 = luôn thành công như hệ cũ
+                      </span>
+                      {errorFor("baseSuccessPct") && (
+                        <span className="admin-field-error">
+                          {errorFor("baseSuccessPct")?.message}
                         </span>
                       )}
                     </label>

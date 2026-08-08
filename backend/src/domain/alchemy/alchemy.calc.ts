@@ -1,5 +1,18 @@
 import { DomainError } from '../errors';
+import { RandomSource } from '../ports/RandomSource';
 import { AlchemyJobRecord, AlchemyRecipeRecord, AlchemySettlement } from './alchemy';
+import {
+  AlchemyProfileRecord,
+  SUCCESS_PCT_MAX,
+  SUCCESS_PCT_MIN,
+  danKhiForJob,
+  failRefundPerUnit,
+  furnaceSpeedPct,
+  furnaceSuccessPct,
+  rankSpeedPct,
+  rankSuccessPct,
+  rollJobOutcome,
+} from './alchemy.profile';
 
 export function validateRecipe(recipe: AlchemyRecipeRecord): void {
   if (!recipe.id || !recipe.pillId || !recipe.active || !Number.isInteger(recipe.durationSec) || recipe.durationSec <= 0 ||
@@ -14,6 +27,13 @@ export function validateRecipe(recipe: AlchemyRecipeRecord): void {
     }
     materialIds.add(ingredient.materialId);
   }
+
+  const minRankByTier: Record<number, number> = { 1: 1, 2: 4, 3: 7 };
+  if (!Number.isInteger(recipe.tier) || recipe.tier < 1 || recipe.tier > 3 ||
+      recipe.minAlchemyRank !== minRankByTier[recipe.tier] ||
+      !Number.isInteger(recipe.baseSuccessPct) || recipe.baseSuccessPct < 5 || recipe.baseSuccessPct > 100) {
+    throw new DomainError('ALCHEMY_RECIPE_INVALID', `invalid tier/success config in recipe: ${recipe.id}`);
+  }
 }
 
 export function reserveRecipeInput(recipe: AlchemyRecipeRecord, quantity: number) {
@@ -27,16 +47,40 @@ export function reserveRecipeInput(recipe: AlchemyRecipeRecord, quantity: number
   }));
 }
 
+// Tỉ lệ thành công hiển thị/dùng khi roll: base + cấp Đan Sư + cấp lò + buff Đan Đạo, clamp 5..95.
+export function computeSuccessPct(input: {
+  baseSuccessPct: number; rank: number; furnaceLevel: number; danDaoPct?: number;
+}): number {
+  // base 100 = recipe deterministic (8 công thức cũ + nút admin opt-out khỏi RNG):
+  // miễn roll fail, bảo toàn hành vi người chơi cũ. Bonus rank/lò/đan đạo không
+  // vượt quá 100.
+  if (input.baseSuccessPct >= 100) return 100;
+  const raw = input.baseSuccessPct + rankSuccessPct(input.rank) + furnaceSuccessPct(input.furnaceLevel) + (input.danDaoPct ?? 0);
+  return Math.min(SUCCESS_PCT_MAX, Math.max(SUCCESS_PCT_MIN, raw));
+}
+
+// Thời gian luyện giảm theo tốc độ rank + lò, không dưới 50% gốc.
+export function computeDurationSec(input: { durationSec: number; rank: number; furnaceLevel: number }): number {
+  const factor = Math.max(0.5, 1 - (rankSpeedPct(input.rank) + furnaceSpeedPct(input.furnaceLevel)) / 100);
+  return Math.round(input.durationSec * factor);
+}
+
 export function settleAlchemyQueue(input: {
   now: Date;
   jobs: readonly AlchemyJobRecord[];
   recipes: ReadonlyMap<string, AlchemyRecipeRecord>;
+  profile: AlchemyProfileRecord;
+  random: RandomSource;
+  danDaoPct?: number;
 }): AlchemySettlement {
   const jobs = [...input.jobs]
+    // chú ý bất biến: shares Date refs với input rows — chỉ thay reference, không mutate in-place
     .map((job) => ({ ...job }))
     .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime() || a.queuedAt.getTime() - b.queuedAt.getTime() || a.id.localeCompare(b.id));
   const completedJobIds: string[] = [];
   const outputGrants = [] as AlchemySettlement['outputGrants'];
+  let danKhiGain = 0;
+  let linhThachRefund = 0;
 
   for (const job of jobs) {
     const recipe = input.recipes.get(job.recipeId);
@@ -54,7 +98,24 @@ export function settleAlchemyQueue(input: {
     }
 
     if (job.status === 'completed' && job.outputGrantedAt === null) {
-      outputGrants.push({ pillId: recipe.pillId, quantity: job.quantity });
+      // Roll outcome đúng một lần khi job hoàn tất: success/fail/crit từng đơn vị,
+      // Đan Khí cộng cả đơn vị hỏng, refund 30% phí Linh Thạch cho đơn vị hỏng.
+      // outputGrantedAt gắn cờ đã roll (kể cả khi toàn hỏng) để settle sau không roll lại.
+      const successPct = computeSuccessPct({
+        baseSuccessPct: recipe.baseSuccessPct,
+        rank: input.profile.rank,
+        furnaceLevel: input.profile.furnaceLevel,
+        danDaoPct: input.danDaoPct,
+      });
+      const outcome = rollJobOutcome({ quantity: job.quantity, successPct, random: input.random });
+      job.successCount = outcome.successCount;
+      job.failCount = outcome.failCount;
+      job.critCount = outcome.critCount;
+      if (outcome.grantQuantity > 0) {
+        outputGrants.push({ pillId: recipe.pillId, quantity: outcome.grantQuantity });
+      }
+      danKhiGain += danKhiForJob({ tier: recipe.tier, successCount: outcome.successCount, failCount: outcome.failCount });
+      linhThachRefund += failRefundPerUnit(recipe.linhThachCost) * outcome.failCount;
       job.outputGrantedAt = input.now;
     }
   }
@@ -65,5 +126,13 @@ export function settleAlchemyQueue(input: {
     if (nextRunning) nextRunning.status = 'running';
   }
 
-  return { jobs, completedJobIds, nextRunning, outputGrants };
+  return {
+    jobs,
+    completedJobIds,
+    nextRunning,
+    outputGrants,
+    danKhiGain,
+    linhThachRefund,
+    profile: { ...input.profile, danKhi: input.profile.danKhi + danKhiGain },
+  };
 }

@@ -2,7 +2,7 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import { RedeemCodeRepository, ReserveResult } from '../../domain/ports/RedeemCodeRepository';
 import { RedeemCodeRecord, RewardEntry } from '../../domain/redeem/redeemCode';
 
-function toRecord(row: { id: string; code: string; active: boolean; maxRedemptions: number; redeemedCount: number; expiresAt: Date | null; createdAt: Date; rewards: Array<{ pillId: string | null; congPhapId: string | null; linhThach: number | null; quantity: number }> }): RedeemCodeRecord {
+function toRecord(row: { id: string; code: string; active: boolean; maxRedemptions: number; redeemedCount: number; expiresAt: Date | null; createdAt: Date; rewards: Array<{ pillId: string | null; congPhapId: string | null; linhThach: number | null; materialId: string | null; quantity: number }> }): RedeemCodeRecord {
   return {
     id: row.id, code: row.code, active: row.active, maxRedemptions: row.maxRedemptions,
     redeemedCount: row.redeemedCount, expiresAt: row.expiresAt,
@@ -11,6 +11,7 @@ function toRecord(row: { id: string; code: string; active: boolean; maxRedemptio
       ...(r.pillId !== null ? { pillId: r.pillId } : {}),
       ...(r.congPhapId !== null ? { congPhapId: r.congPhapId } : {}),
       ...(r.linhThach !== null ? { linhThach: r.linhThach } : {}),
+      ...(r.materialId !== null ? { materialId: r.materialId } : {}),
       quantity: r.quantity,
     })),
   };
@@ -22,6 +23,7 @@ function toRewardData(r: RewardEntry) {
     pillId: r.pillId ?? null,
     congPhapId: r.congPhapId ?? null,
     linhThach: r.linhThach ?? null,
+    materialId: r.materialId ?? null,
     quantity: r.quantity,
   };
 }

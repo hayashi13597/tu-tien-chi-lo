@@ -7,6 +7,7 @@ Game tu tiên idle chạy trên web: tích lũy **linh khí** theo thời gian t
 - **Tu luyện idle** — linh khí tự tích lũy kể cả khi offline (công thức lazy accumulation, server là nguồn sự thật; client nội suy mỗi giây cho mượt).
 - **Đột phá cảnh giới** — tỉ lệ thành công giảm dần theo cảnh giới, có **cơ chế pity** (mỗi lần thất bại tăng tỉ lệ lần sau) và **hình phạt** khóa đột phá có đếm ngược khi độ kiếp thất bại.
 - **Đan dược** — kho đan dược cấp cho tân thủ khi đăng ký; dùng đan tăng linh khí, buff tốc độ tu luyện có hạn giờ, tăng tỉ lệ đột phá một lần, hoặc giải trừng phạt. Toàn bộ trạng thái do server nắm giữ (buff/boost sống sót qua reload).
+- **Luyện đan 2.0** — cấp Đan Sư (1–6), Đan Khí tích từ mọi mẻ (kể cả hỏng), Đan Lô nâng cấp bằng Đan Khí + Linh Thạch, tỉ lệ thành công/xuất sắc theo rank + lò; 8 công thức Linh Giai (tier 2) yêu cầu Đan Sư cấp 4 + cảnh giới Kết Đan.
 - **Đan điền pháp trận** — vòng Hán tự xoay 3D (GSAP), hạt linh khí bay vào đan điền (canvas), hiệu ứng thiên kiếp sấm sét khi đột phá, parallax theo chuột.
 - **Xác thực bằng cookie httpOnly** — access token 15 phút + refresh token 7 ngày (sliding renewal), client tự động refresh khi gặp 401 rồi phát lại request; JS không bao giờ chạm vào token.
 - **Trang quản trị** (`/admin`, chỉ role `admin`) — thống kê người chơi, chỉnh cấu hình cảnh giới và catalog đan dược tại runtime (không cần deploy lại).
@@ -70,6 +71,13 @@ Mở http://localhost:3000 → đăng ký tài khoản (tên 3–32 ký tự, m�
 | `POST` | `/cultivation/breakthrough` | Thử đột phá (server tự kiểm tra lại điều kiện) |
 | `GET` | `/pills/inventory` | Kho đan dược của người chơi |
 | `POST` | `/pills/consume` | Dùng một viên đan |
+| `GET` | `/congphap` | Công pháp sở hữu + danh mục (kèm `tier`/`branch`/gate, `biTichOwned`, buff hệ thống `system`) |
+| `POST` | `/congphap/:id/learn` | Học môn bằng 1 Bí Tịch + 300 Linh Thạch (gate cảnh giới) |
+| `GET` | `/expeditions/branches` | Nhánh bí cảnh (kèm `tier`/`minRealmMajor`/`recommendedPower`/`bossDropWeights`) |
+| `POST` | `/expeditions/start` | Xuất phát (body thêm `loadoutPillIds?` — ≤2 đan combatBuff, trừ kho ngay) |
+| `GET` | `/alchemy/profile` | Hồ sơ Đan Sư (lazy-create) + bước rank/lò tiếp theo |
+| `POST` | `/alchemy/rank-up` | Thăng cấp Đan Sư (tốn Đan Khí, gate cảnh giới) |
+| `POST` | `/alchemy/furnace/upgrade` | Nâng Đan Lô (Đan Khí + Linh Thạch) |
 | `GET` | `/admin/stats` | Thống kê người chơi (chỉ admin) |
 | `GET`/`PUT` | `/admin/realms` | Xem/ghi đè cấu hình cảnh giới (chỉ admin) |
 | `GET`/`POST` | `/admin/pills` | Xem/tạo đan dược (chỉ admin) |
@@ -80,8 +88,8 @@ Lỗi trả về dạng `{ "error": { "code", "message" } }`. Endpoint `/admin/*
 ## Kiểm thử
 
 ```bash
-cd backend && npm test     # 228 test: unit (fake in-memory) + integration (Postgres thật)
-cd frontend && pnpm test   # 48 test logic thuần: format, realm-constants, luồng refresh của api, validation
+cd backend && npm test     # 544 test: unit (fake in-memory) + integration (Postgres thật)
+cd frontend && pnpm test   # 139 test logic thuần: format, realm-constants, luồng refresh của api, validation
 pnpm lint                  # Biome (frontend)
 ```
 

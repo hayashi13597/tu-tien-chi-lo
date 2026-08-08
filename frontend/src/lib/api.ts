@@ -3,6 +3,8 @@ import type {
   AdminRedeemCodeDTO,
   AdminStats,
   AdminUserDTO,
+  AlchemyProfileDTO,
+  AlchemyProfileRecordDTO,
   AlchemyQueueDTO,
   AlchemyRecipeDTO,
   ApiError,
@@ -13,6 +15,7 @@ import type {
   ExpeditionBranchDTO,
   ExpeditionClaimDTO,
   ExpeditionDTO,
+  LearnCongPhapResult,
   LevelUpResult,
   MaterialDTO,
   MaterialInventoryDTO,
@@ -124,6 +127,25 @@ export function queueAlchemy(
   return apiFetch<AlchemyQueueDTO>("/alchemy/queue", {
     method: "POST",
     body: JSON.stringify({ recipeId, quantity }),
+  });
+}
+
+// GET /alchemy/profile — hồ sơ Đan Sư (server lazy-create khi chưa có).
+export function fetchAlchemyProfile(): Promise<AlchemyProfileDTO> {
+  return apiFetch<AlchemyProfileDTO>("/alchemy/profile");
+}
+
+// POST /alchemy/rank-up — thăng cấp Đan Sư khi đủ Đan Khí + cảnh giới.
+export function rankUpAlchemy(): Promise<AlchemyProfileRecordDTO> {
+  return apiFetch<AlchemyProfileRecordDTO>("/alchemy/rank-up", {
+    method: "POST",
+  });
+}
+
+// POST /alchemy/furnace/upgrade — nâng Đan Lô bằng Đan Khí + Linh Thạch.
+export function upgradeAlchemyFurnace(): Promise<AlchemyProfileRecordDTO> {
+  return apiFetch<AlchemyProfileRecordDTO>("/alchemy/furnace/upgrade", {
+    method: "POST",
   });
 }
 
@@ -316,6 +338,15 @@ export function levelUpCongPhap(congPhapId: string): Promise<LevelUpResult> {
   return apiFetch<LevelUpResult>("/congphap/levelup", {
     method: "POST",
     body: JSON.stringify({ congPhapId }),
+  });
+}
+
+// POST /congphap/:id/learn — học môn bằng 1 Bí Tịch + 300 Linh Thạch (Phase 2).
+export function learnCongPhap(
+  congPhapId: string,
+): Promise<LearnCongPhapResult> {
+  return apiFetch<LearnCongPhapResult>(`/congphap/${congPhapId}/learn`, {
+    method: "POST",
   });
 }
 

@@ -128,4 +128,84 @@ describe('congphap routes', () => {
     const res = await request(app).get('/congphap');
     expect(res.status).toBe(401);
   });
+
+  // Phase 2 — POST /congphap/:id/learn (spec §9.2/§9.3)
+  describe('POST /congphap/:id/learn (Phase 2)', () => {
+    async function prepLearnable(userId: string, opts: { realmMajor: number; biTich: number; linhThach: number }) {
+      const character = await prisma.character.findUniqueOrThrow({ where: { userId } });
+      await prisma.character.update({ where: { id: character.id }, data: { realmMajor: opts.realmMajor, linhThach: opts.linhThach } });
+      await prisma.materialInventory.upsert({
+        where: { userId_materialId: { userId, materialId: 'bi-tich-dieu-hoa' } },
+        create: { userId, materialId: 'bi-tich-dieu-hoa', quantity: opts.biTich },
+        update: { quantity: opts.biTich },
+      });
+    }
+
+    it('học môn Điều Hỏa Tán Quyết: trừ 1 Bí Tịch + 300 LT + owned level 1; gọi lại → 409 ALREADY_OWNED', async () => {
+      const { agent, userId } = await player('cp-learn-ok');
+      await prepLearnable(userId, { realmMajor: 3, biTich: 1, linhThach: 500 });
+
+      const res = await agent.post('/congphap/dieu-hoa-tan-quyet/learn');
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ owned: 'dieu-hoa-tan-quyet', linhThach: 200, biTich: { id: 'bi-tich-dieu-hoa', quantity: 0 } });
+
+      const again = await agent.post('/congphap/dieu-hoa-tan-quyet/learn');
+      expect(again.status).toBe(409);
+      expect(again.body).toMatchObject({ error: { code: 'CONGPHAP_ALREADY_OWNED' } });
+    });
+
+    it('realm thấp (Trúc Cơ) → 409 CONGPHAP_REALM_GATE; biTich không bị trừ', async () => {
+      const { agent, userId } = await player('cp-learn-gate');
+      await prepLearnable(userId, { realmMajor: 2, biTich: 1, linhThach: 500 });
+
+      const res = await agent.post('/congphap/dieu-hoa-tan-quyet/learn');
+      expect(res.status).toBe(409);
+      expect(res.body).toMatchObject({ error: { code: 'CONGPHAP_REALM_GATE' } });
+      const inv = await prisma.materialInventory.findUniqueOrThrow({ where: { userId_materialId: { userId, materialId: 'bi-tich-dieu-hoa' } } });
+      expect(inv.quantity).toBe(1);
+    });
+
+    it('thiếu Bí Tịch → 409 CONGPHAP_MISSING_BITICH', async () => {
+      const { agent, userId } = await player('cp-learn-nobitich');
+      await prepLearnable(userId, { realmMajor: 5, biTich: 0, linhThach: 500 });
+
+      const res = await agent.post('/congphap/dieu-hoa-tan-quyet/learn');
+      expect(res.status).toBe(409);
+      expect(res.body).toMatchObject({ error: { code: 'CONGPHAP_MISSING_BITICH' } });
+    });
+
+    it('thiếu Linh Thạch → 409 INSUFFICIENT_LINH_THACH', async () => {
+      const { agent, userId } = await player('cp-learn-poor');
+      await prepLearnable(userId, { realmMajor: 5, biTich: 1, linhThach: 100 });
+
+      const res = await agent.post('/congphap/dieu-hoa-tan-quyet/learn');
+      expect(res.status).toBe(409);
+      expect(res.body).toMatchObject({ error: { code: 'INSUFFICIENT_LINH_THACH' } });
+    });
+
+    it('môn không gắn Bí Tịch (tier 1) → 400 CONGPHAP_NOT_LEARNABLE', async () => {
+      const { agent, userId } = await player('cp-learn-t1');
+      await prepLearnable(userId, { realmMajor: 5, biTich: 0, linhThach: 500 });
+
+      const res = await agent.post('/congphap/thiet-cot-quyet/learn');
+      expect(res.status).toBe(400);
+      expect(res.body).toMatchObject({ error: { code: 'CONGPHAP_NOT_LEARNABLE' } });
+    });
+
+    it('GET /congphap trả field Phase 2 + system sau khi học', async () => {
+      const { agent, userId } = await player('cp-learn-list');
+      await prepLearnable(userId, { realmMajor: 3, biTich: 1, linhThach: 500 });
+
+      const before = await agent.get('/congphap');
+      const entry = before.body.catalog.find((c: { id: string }) => c.id === 'dieu-hoa-tan-quyet');
+      expect(entry).toMatchObject({ tier: 2, branch: 'danDao', minRealmMajor: 3, biTichMaterialId: 'bi-tich-dieu-hoa', biTichOwned: 1 });
+      expect(before.body.system).toEqual({ linhKhiRatePct: 0, danDaoSuccessPct: 0 });
+
+      await agent.post('/congphap/dieu-hoa-tan-quyet/learn');
+      const after = await agent.get('/congphap');
+      expect(after.body.system).toEqual({ linhKhiRatePct: 0, danDaoSuccessPct: 1 });
+      const afterEntry = after.body.catalog.find((c: { id: string }) => c.id === 'dieu-hoa-tan-quyet');
+      expect(afterEntry.biTichOwned).toBe(0);
+    });
+  });
 });

@@ -14,7 +14,7 @@ describe('pills schema + seed', () => {
   it('seeds all 8 pills with valid rarities and effect kinds', async () => {
     const pills = await prisma.pill.findMany();
     expect(pills.length).toBeGreaterThanOrEqual(8);
-    const kinds = ['linhKhi', 'cultivationBuff', 'breakthroughBoost', 'clearPunishment'];
+    const kinds = ['linhKhi', 'cultivationBuff', 'breakthroughBoost', 'clearPunishment', 'combatBuff'];
     for (const p of pills) {
       expect(p.rarity).toBeGreaterThanOrEqual(0);
       expect(p.rarity).toBeLessThanOrEqual(4);
@@ -30,6 +30,18 @@ describe('pills schema + seed', () => {
     expect(c.cultivationBuffUntil).toBeNull();
     await prisma.character.delete({ where: { id: c.id } });
     await prisma.user.delete({ where: { id: user.id } });
+  });
+
+  it('Phase 3: 2 đan combat Thiên Giai + recipe minRank 7', async () => {
+    for (const [id, attr, trigger, pct] of [
+      ['pha-thien-dan', 'congVatLy', 'start', 50],
+      ['hoi-nguyen-dan', 'khiHuyet', 'lowHp30', 70],
+    ] as const) {
+      const pill = await prisma.pill.findUnique({ where: { id } });
+      expect(pill).toMatchObject({ effectKind: 'combatBuff', tier: 3, combatAttribute: attr, combatTrigger: trigger, bonusPct: pct });
+      const recipe = await prisma.alchemyRecipe.findUnique({ where: { id: `recipe-${id}` } });
+      expect(recipe).toMatchObject({ tier: 3, minAlchemyRank: 7, baseSuccessPct: 60 });
+    }
   });
 
   it('seeds every pill active with a zero starter quantity (no starter kit)', async () => {

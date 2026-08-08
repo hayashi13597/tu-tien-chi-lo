@@ -9,7 +9,7 @@ import { PillRecord } from '../../src/domain/pills/pill';
 import { CharacterRecord } from '../../src/domain/entities/Character';
 
 function pill(id: string, over: Partial<PillRecord> = {}): PillRecord {
-  return { id, name: `N-${id}`, glyph: 'x', rarity: 0, effectKind: 'linhKhi', amount: 10, multiplier: null, durationSec: null, bonusPct: null, desc: 'd', active: true, starterQuantity: 0, ...over };
+  return { id, name: `N-${id}`, glyph: 'x', rarity: 0, tier: 1, effectKind: 'linhKhi', amount: 10, multiplier: null, durationSec: null, bonusPct: null, desc: 'd', active: true, starterQuantity: 0, ...over };
 }
 function code(over: Partial<RedeemCodeRecord> = {}): RedeemCodeRecord {
   return { id: 'c1', code: 'ABC', active: true, maxRedemptions: 2, redeemedCount: 0, expiresAt: null, rewards: [{ pillId: 'p1', quantity: 3 }], ...over };
@@ -22,6 +22,8 @@ function character(userId: string): CharacterRecord {
   };
 }
 
+const materialsFake = { increment: async () => {}, getById: async () => null, listInventory: async () => [], spendMany: async () => true };
+
 function build() {
   const codes = new InMemoryRedeemCodeRepository();
   const pills = new InMemoryPillRepository();
@@ -33,7 +35,7 @@ function build() {
   // users used across these cases need one seeded.
   characters.seed(character('u1'));
   characters.seed(character('u2'));
-  return { codes, pills, uc: new RedeemCodeUseCase(codes, pills, congphap, owned, characters) };
+  return { codes, pills, uc: new RedeemCodeUseCase(codes, pills, congphap, owned, characters, materialsFake) };
 }
 
 describe('RedeemCodeUseCase', () => {
@@ -75,5 +77,28 @@ describe('RedeemCodeUseCase', () => {
     codes.seedCode(code({ maxRedemptions: 1 }));
     await uc.execute({ userId: 'u1', code: 'ABC' });
     await expect(uc.execute({ userId: 'u2', code: 'ABC' })).rejects.toMatchObject({ code: 'REDEEM_CODE_EXHAUSTED' });
+  });
+});
+
+describe('reward material (Phase 2)', () => {
+  it('code có material reward → increment MaterialInventory + kind material trong kết quả', async () => {
+    const codes = new InMemoryRedeemCodeRepository();
+    const materials = {
+      incremented: [] as { materialId: string; quantity: number }[],
+      increment: async (_u: string, materialId: string, quantity: number) => { materials.incremented.push({ materialId, quantity }); },
+      getById: async (materialId: string) => ({ id: materialId, name: `Bí Tịch Test`, glyph: '秘', rarity: 4, tier: 2, description: 'd', active: true }),
+    };
+    const uc = new RedeemCodeUseCase(
+      codes,
+      { findById: async () => null } as never,
+      { findById: async () => null, listActive: async () => [], listAll: async () => [], create: async () => {}, update: async () => true },
+      new InMemoryOwnedCongPhapRepository(),
+      (() => { const c = new InMemoryCharacterRepository(); c.seed(character('u1')); return c; })(),
+      materials as never,
+    );
+    codes.seedCode(code({ rewards: [{ materialId: 'bi-tich-test', quantity: 2 }] }));
+    const res = await uc.execute({ userId: 'u1', code: 'ABC' });
+    expect(materials.incremented).toEqual([{ materialId: 'bi-tich-test', quantity: 2 }]);
+    expect(res.rewards).toEqual([{ kind: 'material', id: 'bi-tich-test', name: 'Bí Tịch Test', glyph: '秘', quantity: 2 }]);
   });
 });

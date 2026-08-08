@@ -8,6 +8,7 @@ import {
   rewardMultiplier,
   rollExpeditionRewards,
   simulateExpedition,
+  expeditionStartGate,
 } from './expedition.calc';
 import { ExpeditionBranchConfig, ExpeditionDifficultyConfig } from './expedition';
 
@@ -18,6 +19,7 @@ const branch: ExpeditionBranchConfig = {
     { materialId: 'linh-tai-than-phap', weight: 2 },
     { materialId: 'linh-tai-hoa-luc', weight: 3 },
   ],
+  tier: 1, minRealmMajor: 0, recommendedPower: 0, bossDropWeights: [],
 };
 
 const easy: ExpeditionDifficultyConfig = {
@@ -97,5 +99,46 @@ describe('expedition calculations', () => {
     const result = simulateExpedition({ player: { ...player, battlePower: 1, attributes: { ...playerAttributes, khiHuyet: 10, congVatLy: 1 } }, branch: { ...branch, basePower: 10_000 }, difficulty: hard, realmMultiplier: 1, realmReferencePower: 1, ticketCostUnits: 4, random: new ConstantRandom(0.5), maxTurns: 1 });
     expect(result.wins).toBe(0);
     expect(result.reward.multiplier).toBe(0.25);
+  });
+});
+
+describe('expeditionStartGate', () => {
+  it('chặn khi realm thấp hơn gate, message mang tên cảnh giới', () => {
+    expect(() => expeditionStartGate({ ...branch, tier: 2, minRealmMajor: 3 }, 2, 'Kết Đan'))
+      .toThrowError(/Tầng 2 yêu cầu cảnh giới Kết Đan/);
+  });
+  it('qua khi đủ cảnh', () => {
+    expect(() => expeditionStartGate({ ...branch, tier: 2, minRealmMajor: 3 }, 3, 'Kết Đan')).not.toThrow();
+  });
+  it('tầng 1 không gate (minRealmMajor 0)', () => {
+    expect(() => expeditionStartGate(branch, 0, 'Phàm Nhân')).not.toThrow();
+  });
+});
+
+describe('simulateExpedition với pillBuffs', () => {
+  it('buff start áp cho mọi encounter (reset mỗi battle, không dồn)', () => {
+    const buff = { pillId: 'p', combatAttribute: 'congVatLy' as const, combatTrigger: 'start' as const, pct: 100 };
+    const input = { player, branch, difficulty: easy, realmMultiplier: 0.01, realmReferencePower: 200, ticketCostUnits: 1 as const, random: new SeededRandom(42), maxTurns: 5 };
+    const plain = simulateExpedition({ ...input });
+    const buffed = simulateExpedition({ ...input, random: new SeededRandom(42), pillBuffs: [buff] });
+    const dmgOf = (sim: typeof plain, idx: number) =>
+      sim.encounters[idx]?.result.turns.filter((t) => t.actor === 'player').reduce((s, t) => s + t.damage, 0) ?? 0;
+    expect(buffed.wins).toBe(3);
+    expect(dmgOf(buffed, 0)).toBeGreaterThan(dmgOf(plain, 0));
+    expect(dmgOf(buffed, 1)).toBeGreaterThan(dmgOf(plain, 1));
+    // encounter 2 buff ≈ encounter 1 buff (không nhân chồng cộng dồn giữa battles)
+    expect(Math.abs(dmgOf(buffed, 0) - dmgOf(buffed, 1))).toBeLessThanOrEqual(Math.max(1, dmgOf(buffed, 0) * 0.3));
+  });
+});
+
+describe('boss drop (Phase 3)', () => {
+  it('boss roll thêm từ bossDropWeights (quantity 1) khi trúng rate', () => {
+    const bossBranch = { ...branch, bossDropWeights: [{ materialId: 'bi-tich-vong-coc', weight: 1 }] };
+    const reward = rollExpeditionRewards({ branch: bossBranch, difficulty: { ...easy, bossDropRate: 1, normalDropRate: 0 }, ticketCostUnits: 1, wins: 3, random: new ConstantRandom(0.01) });
+    expect(reward.materials.find((m) => m.materialId === 'bi-tich-vong-coc')?.quantity).toBe(1);
+  });
+  it('bảng boss rỗng → hành vi cũ y nguyên', () => {
+    const reward = rollExpeditionRewards({ branch, difficulty: { ...easy, bossDropRate: 1, normalDropRate: 0 }, ticketCostUnits: 1, wins: 3, random: new ConstantRandom(0.01) });
+    expect(reward.materials.every((m) => !m.materialId.startsWith('bi-tich'))).toBe(true);
   });
 });

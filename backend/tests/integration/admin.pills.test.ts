@@ -80,6 +80,19 @@ describe('/admin/pills', () => {
     expect(row.amount).toBe(77);
   });
 
+  it('tier round-trip: POST pill tier 2 → GET admin trả đúng tier 2; không gửi tier mặc định 1', async () => {
+    const token = await registerAdminAndLogin('root');
+    const auth = (r: request.Test) => r.set('Authorization', `Bearer ${token}`);
+
+    expect((await auth(request(app).post('/admin/pills').send(pillBody('test-tier-2', { tier: 2 })))).status).toBe(201);
+    expect((await auth(request(app).post('/admin/pills').send(pillBody('test-tier-default')))).status).toBe(201);
+
+    const list = await auth(request(app).get('/admin/pills'));
+    expect(list.status).toBe(200);
+    expect(list.body.pills.find((p: { id: string }) => p.id === 'test-tier-2')?.tier).toBe(2);
+    expect(list.body.pills.find((p: { id: string }) => p.id === 'test-tier-default')?.tier).toBe(1);
+  });
+
   it('rejects a duplicate id with 409 PILL_ID_TAKEN', async () => {
     const token = await registerAdminAndLogin('root');
     const res = await request(app).post('/admin/pills')

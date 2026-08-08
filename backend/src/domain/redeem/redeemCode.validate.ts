@@ -27,12 +27,12 @@ export function validateRedeemCodeDefinition(input: {
     if (!Number.isInteger(r.quantity) || r.quantity < 1) {
       throw new DomainError('INVALID_REDEEM_CODE', 'each reward quantity must be an integer >= 1');
     }
-    // Một reward mang đúng MỘT loại (pill | congphap | linhThach) — cùng bất biến
-    // với cột nullable trên RedeemCodeReward. Không loại nào hoặc nhiều hơn một
-    // loại đều khiến grant mơ hồ, nên chặn ngay lúc tạo/sửa code.
-    const kinds = [r.pillId !== undefined, r.congPhapId !== undefined, r.linhThach !== undefined].filter(Boolean).length;
+    // Một reward mang đúng MỘT loại (pill | congphap | linhThach | material) — cùng
+    // bất biến với cột nullable trên RedeemCodeReward. Không loại nào hoặc nhiều hơn
+    // một loại đều khiến grant mơ hồ, nên chặn ngay lúc tạo/sửa code.
+    const kinds = [r.pillId !== undefined, r.congPhapId !== undefined, r.linhThach !== undefined, r.materialId !== undefined].filter(Boolean).length;
     if (kinds !== 1) {
-      throw new DomainError('INVALID_REDEEM_CODE', 'each reward must set exactly one of pillId, congPhapId, linhThach');
+      throw new DomainError('INVALID_REDEEM_CODE', 'each reward must set exactly one of pillId, congPhapId, linhThach, materialId');
     }
     if (r.linhThach !== undefined && (!Number.isInteger(r.linhThach) || r.linhThach < 1)) {
       throw new DomainError('INVALID_REDEEM_CODE', 'linhThach reward must be an integer >= 1');
@@ -40,7 +40,8 @@ export function validateRedeemCodeDefinition(input: {
     // Khóa trùng lặp gắn theo loại: pill "p1" và công pháp "p1" là hai thứ khác nhau.
     const key = r.pillId !== undefined ? `pill:${r.pillId}`
       : r.congPhapId !== undefined ? `congphap:${r.congPhapId}`
-        : 'linhThach';
+        : r.materialId !== undefined ? `material:${r.materialId}`
+          : 'linhThach';
     if (seen.has(key)) {
       throw new DomainError('INVALID_REDEEM_CODE', `duplicate reward "${key}"`);
     }

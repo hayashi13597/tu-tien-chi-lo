@@ -109,7 +109,18 @@ export type PillEffectKind =
   | "linhKhi"
   | "cultivationBuff"
   | "breakthroughBoost"
-  | "clearPunishment";
+  | "clearPunishment"
+  // Phase 3 — đan combat: chỉ dùng qua loadout bí cảnh.
+  | "combatBuff";
+
+export type CombatAttribute =
+  | "khiHuyet"
+  | "chanNguyen"
+  | "congVatLy"
+  | "congPhep"
+  | "phongThu"
+  | "tocDo";
+export type CombatBuffTrigger = "start" | "lowHp30";
 
 // Flat inventory item as returned by GET /pills/inventory (backend InventoryDto).
 export interface PillInventoryItem {
@@ -122,6 +133,8 @@ export interface PillInventoryItem {
   multiplier: number | null;
   durationSec: number | null;
   bonusPct: number | null;
+  combatAttribute: CombatAttribute | null;
+  combatTrigger: CombatBuffTrigger | null;
   desc: string;
   quantity: number;
 }
@@ -134,17 +147,22 @@ export interface AdminPillDTO {
   name: string;
   glyph: string;
   rarity: PillRarity;
+  // Bậc đan 1..3 (Phàm/Linh/Thiên Giai) — chỉ route admin trả; player
+  // /pills/inventory (PillInventoryItem) không có field này.
+  tier: number;
   effectKind: PillEffectKind;
   amount: number | null;
   multiplier: number | null;
   durationSec: number | null;
   bonusPct: number | null;
+  combatAttribute: CombatAttribute | null;
+  combatTrigger: CombatBuffTrigger | null;
   desc: string;
   active: boolean;
   starterQuantity: number;
 }
 
-export type RedeemRewardKind = "pill" | "congphap" | "linhThach";
+export type RedeemRewardKind = "pill" | "congphap" | "linhThach" | "material";
 
 export interface RedeemRewardDTO {
   kind: RedeemRewardKind;
@@ -165,6 +183,8 @@ export interface AdminRedeemRewardDTO {
   pillId?: string;
   congPhapId?: string;
   linhThach?: number;
+  /** Phase 2: reward vật phẩm material (vd: bi-tich-*). */
+  materialId?: string;
   quantity: number;
 }
 
@@ -180,8 +200,14 @@ export interface AdminRedeemCodeDTO {
 
 export type CongPhapCategory = "active" | "passive";
 
+// Ba nhánh công pháp (Phase 2). null = môn không thuộc nhánh (legacy).
+export type CongPhapBranch = "tuLuyen" | "chienDao" | "danDao";
+
+// Key hiệu ứng: 6 attribute chiến đấu HOẶC 2 key hệ thống Phase 2.
+export type SystemEffectAttribute = "linhKhiRate" | "danDaoSuccess";
+
 export interface PassiveEffectDTO {
-  attribute: AttributeKey;
+  attribute: AttributeKey | SystemEffectAttribute;
   flatPerLevel: number;
   pctPerLevel: number;
 }
@@ -209,6 +235,15 @@ export interface CongPhapDTO {
   powerPerLevel: number | null;
   chanNguyenCost: number | null;
   dupRefundLinhThach: number | null;
+  /** Phase 2: 1 Phàm / 2 Linh / 3 Thiên Giai. */
+  tier: number;
+  branch: CongPhapBranch | null;
+  /** Cảnh giới major (0-based) tối thiểu để học; 0 = không gate. */
+  minRealmMajor: number;
+  /** Material Bí Tịch cần để nhập môn; null = môn chỉ qua redeem/grant. */
+  biTichMaterialId: string | null;
+  /** Số Bí Tịch user đang có (player view; admin payload có thể không gửi → undefined-safe). */
+  biTichOwned?: number;
 }
 
 export interface OwnedCongPhapDTO {
@@ -223,6 +258,14 @@ export interface CongPhapListResult {
   owned: OwnedCongPhapDTO[];
   /** Catalog is active-only. */
   catalog: CongPhapDTO[];
+  /** Buff hệ thống gom từ mọi passive đang sở hữu (Phase 2). */
+  system: { linhKhiRatePct: number; danDaoSuccessPct: number };
+}
+
+export interface LearnCongPhapResult {
+  owned: string;
+  linhThach: number;
+  biTich: { id: string; quantity: number };
 }
 
 export interface LevelUpResult {
@@ -245,6 +288,8 @@ export interface MaterialDTO {
   name: string;
   glyph: string;
   rarity: number;
+  // Bậc nguyên liệu 1..3 (Phàm/Linh/Thiên Giai).
+  tier: number;
   description: string;
   active: boolean;
 }
@@ -267,6 +312,13 @@ export interface AlchemyRecipeDTO {
   linhThachCost: number;
   active: boolean;
   ingredients: AlchemyIngredientDTO[];
+  tier: number;
+  minAlchemyRank: number;
+  baseSuccessPct: number;
+  // Player route: tính theo profile người gọi. Admin route: không có — optional.
+  effectiveSuccessPct?: number;
+  effectiveDurationSec?: number;
+  locked?: boolean;
 }
 
 export type AlchemyJobStatus = "queued" | "running" | "completed";
@@ -283,6 +335,9 @@ export interface AlchemyJobDTO {
   completedAt: string | null;
   outputGrantedAt: string | null;
   status: AlchemyJobStatus;
+  successCount: number;
+  failCount: number;
+  critCount: number;
 }
 
 export interface AlchemyOutputGrantDTO {
@@ -313,6 +368,11 @@ export interface ExpeditionBranchConfigDTO {
   basePower: number;
   alchemyMaterialId: string;
   upgradeMaterialWeights: ExpeditionUpgradeMaterialWeightDTO[];
+  // Phase 3 — tầng 1..3, gate cảnh giới hard, chiến lực đề xuất soft.
+  tier: number;
+  minRealmMajor: number;
+  recommendedPower: number;
+  bossDropWeights: ExpeditionUpgradeMaterialWeightDTO[];
 }
 
 export interface ExpeditionDifficultyDTO {
@@ -379,8 +439,16 @@ export interface ExpeditionSimulationDTO {
   reward: ExpeditionRewardDTO;
 }
 
+export interface LoadoutEntryDTO {
+  pillId: string;
+  combatAttribute: CombatAttribute;
+  combatTrigger: CombatBuffTrigger;
+  pct: number;
+}
+
 export interface ExpeditionCombatSnapshotDTO {
   player: CombatantSnapshotDTO;
+  loadout?: LoadoutEntryDTO[];
   realmMajor: number;
   realmSub: number;
   realmMultiplier: number;
@@ -420,4 +488,37 @@ export interface StartExpeditionInput {
   branchId: string;
   difficulty: ExpeditionDifficultyKey;
   durationSec: ExpeditionDurationSec;
+  loadoutPillIds?: string[];
+}
+
+export interface AlchemyProfileDTO {
+  profile: { rank: number; danKhi: number; furnaceLevel: number };
+  successBonusPct: number;
+  speedBonusPct: number;
+  nextRank: {
+    target: number;
+    danKhiCost: number;
+    realmGateMajor: number | null;
+    realmMet: boolean;
+    affordable: boolean;
+    locked: boolean;
+    // Phase 3 Thiên Giai (cấp 7-9): cần thêm Đan Hỏa Tủy (boss bí cảnh tầng 2+).
+    danHoaTuyCost: number;
+    danHoaTuyOwned: number;
+    affordableDanHoaTuy: boolean;
+  } | null;
+  nextFurnace: {
+    target: number;
+    danKhiCost: number;
+    linhThachCost: number;
+    affordableDanKhi: boolean;
+    affordableLinhThach: boolean;
+  } | null;
+}
+
+// Response của POST /alchemy/rank-up và POST /alchemy/furnace/upgrade.
+export interface AlchemyProfileRecordDTO {
+  rank: number;
+  danKhi: number;
+  furnaceLevel: number;
 }

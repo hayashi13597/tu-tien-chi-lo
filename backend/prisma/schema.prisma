@@ -31,6 +31,7 @@ model User {
   alchemyJobs           AlchemyJob[]
   expeditionDailyQuotas ExpeditionDailyQuota[]
   expeditions           Expedition[]
+  alchemyProfile        AlchemyProfile?
 }
 
 model Character {
@@ -58,8 +59,9 @@ model Character {
   // consumed pill; added to the next attempt's rate, then reset to 0.
   breakthroughBonusPct Float @default(0)
 
-  createdAt   DateTime     @default(now())
-  alchemyJobs AlchemyJob[]
+  createdAt      DateTime        @default(now())
+  alchemyJobs    AlchemyJob[]
+  alchemyProfile AlchemyProfile?
 }
 
 model Pill {
@@ -67,11 +69,15 @@ model Pill {
   name            String
   glyph           String
   rarity          Int
+  tier            Int                @default(1)
   effectKind      String
   amount          Float?
   multiplier      Float?
   durationSec     Int?
   bonusPct        Float?
+  // Phase 3 — đan combatBuff: thuộc tính bị buff trong simulateBattle + trigger kích.
+  combatAttribute String?
+  combatTrigger   String?
   desc            String
   // Soft-disable: an inactive pill is hidden from player inventories and cannot
   // be consumed, but InventoryItem rows survive — re-enabling restores holdings.
@@ -135,12 +141,15 @@ model RedeemCodeReward {
   id         String     @id @default(uuid())
   codeId     String
   code       RedeemCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
-  // Đúng MỘT trong ba loại reward dưới đây khác null (validate ở domain khi tạo code).
+  // Đúng MỘT trong bốn loại reward dưới đây khác null (validate ở domain khi tạo code).
   pillId     String?
   pill       Pill?      @relation(fields: [pillId], references: [id])
   congPhapId String?
   congPhap   CongPhap?  @relation(fields: [congPhapId], references: [id])
   linhThach  Int?
+  // Loại reward thứ tư (Phase 2): vật phẩm material (vd: bi-tich-*).
+  materialId String?
+  material   Material? @relation(fields: [materialId], references: [id])
   quantity   Int
 }
 
@@ -180,6 +189,14 @@ model CongPhap {
   cooldownRounds     Int?
   owned              OwnedCongPhap[]
   redeemRewards      RedeemCodeReward[]
+  // Phase 2 (Công Pháp 2.0): tier chung + nhánh + gate cảnh giới + Bí Tịch nhập môn.
+  tier             Int       @default(1)
+  branch           String? // "tuLuyen" | "chienDao" | "danDao"; null = không thuộc nhánh
+  minRealmMajor    Int       @default(0)
+  biTichMaterialId String?
+  biTichMaterial   Material? @relation("CongPhapBiTichMaterial", fields: [biTichMaterialId], references: [id])
+
+  @@index([tier, branch])
 }
 
 model OwnedCongPhap {
@@ -200,6 +217,7 @@ model Material {
   name                     String
   glyph                    String
   rarity                   Int
+  tier                     Int                               @default(1)
   description              String
   active                   Boolean                           @default(true)
   inventories              MaterialInventory[]
@@ -207,6 +225,9 @@ model Material {
   branchAlchemyMaterial    ExpeditionBranch?                 @relation("BranchAlchemyMaterial")
   upgradeCongPhaps         CongPhap[]                        @relation("CongPhapUpgradeMaterial")
   expeditionUpgradeWeights ExpeditionUpgradeMaterialWeight[]
+  biTichCongPhaps          CongPhap[]                        @relation("CongPhapBiTichMaterial")
+  redeemRewards            RedeemCodeReward[]
+  bossDropWeights          ExpeditionBossDropWeight[]
 }
 
 model MaterialInventory {
@@ -221,14 +242,17 @@ model MaterialInventory {
 }
 
 model AlchemyRecipe {
-  id            String                    @id
-  pillId        String                    @unique
-  durationSec   Int
-  linhThachCost Int
-  active        Boolean                   @default(true)
-  pill          Pill                      @relation(fields: [pillId], references: [id])
-  ingredients   AlchemyRecipeIngredient[]
-  jobs          AlchemyJob[]
+  id             String                    @id
+  pillId         String                    @unique
+  durationSec    Int
+  linhThachCost  Int
+  tier           Int                       @default(1)
+  minAlchemyRank Int                       @default(1)
+  baseSuccessPct Int                       @default(100)
+  active         Boolean                   @default(true)
+  pill           Pill                      @relation(fields: [pillId], references: [id])
+  ingredients    AlchemyRecipeIngredient[]
+  jobs           AlchemyJob[]
 }
 
 model AlchemyRecipeIngredient {
@@ -254,6 +278,9 @@ model AlchemyJob {
   completedAt     DateTime?
   outputGrantedAt DateTime?
   status          String        @default("queued")
+  successCount    Int           @default(0)
+  failCount       Int           @default(0)
+  critCount       Int           @default(0)
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   character       Character     @relation(fields: [characterId], references: [id], onDelete: Cascade)
   recipe          AlchemyRecipe @relation(fields: [recipeId], references: [id])
@@ -269,9 +296,25 @@ model ExpeditionBranch {
   basePower         Float
   alchemyMaterialId String                            @unique
   alchemyMaterial   Material                          @relation("BranchAlchemyMaterial", fields: [alchemyMaterialId], references: [id])
+  // Phase 3 — tầng bí cảnh 1..3: gate cảnh giới (hard) + chiến lực đề xuất (soft).
+  tier              Int                               @default(1)
+  minRealmMajor     Int                               @default(0)
+  recommendedPower  Float                             @default(0)
   difficulties      ExpeditionDifficulty[]
   upgradeWeights    ExpeditionUpgradeMaterialWeight[]
+  bossDropWeights   ExpeditionBossDropWeight[]
   expeditions       Expedition[]
+}
+
+model ExpeditionBossDropWeight {
+  id         String           @id @default(uuid())
+  branchId   String
+  materialId String
+  weight     Float
+  branch     ExpeditionBranch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  material   Material         @relation(fields: [materialId], references: [id])
+
+  @@unique([branchId, materialId])
 }
 
 model ExpeditionDifficulty {
@@ -330,4 +373,19 @@ model Expedition {
   difficulty      ExpeditionDifficulty @relation(fields: [difficultyId], references: [id])
 
   @@index([userId, status])
+}
+
+// Hồ sơ luyện đan của người chơi (Luyện Đan 2.0). Lazy-create: user cũ được tạo
+// profile lần đầu khi đọc/ghi — không cần backfill.
+model AlchemyProfile {
+  id           String    @id @default(uuid())
+  userId       String    @unique
+  characterId  String    @unique
+  rank         Int       @default(1) // 1..6 phase 1 (7-9 chờ nội dung Thiên Giai)
+  danKhi       Int       @default(0)
+  furnaceLevel Int       @default(1) // 1..5
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  character    Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
 }

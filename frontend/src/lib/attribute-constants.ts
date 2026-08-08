@@ -24,3 +24,16 @@ export const ATTRIBUTE_LABELS: Record<AttributeKey, string> = {
 export function attributeLabel(key: AttributeKey): string {
   return ATTRIBUTE_LABELS[key];
 }
+
+// Phase 2: hai key hiệu ứng hệ thống (không nằm trong AttributeSet).
+export const SYSTEM_EFFECT_LABELS = {
+  linhKhiRate: "Tốc độ tu luyện",
+  danDaoSuccess: "Hiệu suất luyện đan",
+} as const;
+
+export function effectAttributeLabel(key: string): string {
+  if (key in ATTRIBUTE_LABELS) return ATTRIBUTE_LABELS[key as AttributeKey];
+  if (key in SYSTEM_EFFECT_LABELS)
+    return SYSTEM_EFFECT_LABELS[key as keyof typeof SYSTEM_EFFECT_LABELS];
+  return key;
+}

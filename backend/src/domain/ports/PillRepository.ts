@@ -2,6 +2,8 @@ import { PillRecord, InventoryEntry } from '../pills/pill';
 
 export interface PillRepository {
   findById(pillId: string): Promise<PillRecord | null>;
+  // Phase 3 — loadout bí cảnh: fetch nhiều id một lượt (kể cả inactive; validate ở domain).
+  listByIds(pillIds: readonly string[]): Promise<PillRecord[]>;
   // Full catalog INCLUDING inactive pills — admin-only. Player-facing reads use
   // listInventory (which filters inactive out).
   listAll(): Promise<PillRecord[]>;

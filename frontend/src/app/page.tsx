@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlchemyCard } from "@/components/alchemy-card";
 import { AlchemyDrawer } from "@/components/alchemy-drawer";
 import { AttributePanel } from "@/components/attribute-panel";
@@ -82,7 +82,7 @@ export default function Home() {
     error: inventoryError,
     refetch: refetchInventory,
     consume,
-  } = usePillInventory(pillModalOpen);
+  } = usePillInventory(pillModalOpen || expeditionDrawerOpen);
   const {
     owned: congPhapOwned,
     catalog: congPhapCatalog,
@@ -92,6 +92,8 @@ export default function Home() {
     equip: equipCongPhapAction,
     unequip: unequipCongPhapAction,
     levelUp: levelUpCongPhapAction,
+    learn: learnCongPhapAction,
+    system: congPhapSystem,
   } = useCongPhap(congPhapModalOpen);
   const {
     branches: expeditionBranches,
@@ -114,10 +116,15 @@ export default function Home() {
   const {
     recipes: alchemyRecipes,
     queue: alchemyQueue,
+    profile: alchemyProfile,
+    lastSettled: alchemyLastSettled,
+    clearLastSettled: clearAlchemyLastSettled,
     loading: alchemyLoading,
     error: alchemyError,
     refetch: refetchAlchemy,
     enqueue: enqueueAlchemyAction,
+    rankUp: rankUpAlchemyAction,
+    upgradeFurnace: upgradeFurnaceAction,
   } = useAlchemyQueue(alchemyDrawerOpen);
   const particleRef = useRef<ParticleCanvasHandle>(null);
   // The POST result/error is stashed here while the tribulation animation plays,
@@ -148,6 +155,22 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
+  // Spec §9.2: khi refetch thấy mẻ vừa settle (lastSettled), toast tổng hợp
+  // kết quả từng mẻ; reset cờ ngay sau đó để render/refetch sau không toast lặp.
+  useEffect(() => {
+    if (!alchemyLastSettled) return;
+    for (const jobId of alchemyLastSettled.completedJobIds) {
+      const job = alchemyQueue?.jobs.find((j) => j.id === jobId);
+      if (!job) continue; // queue refetch chưa về — bỏ qua, không toast
+      addToast(
+        "Luyện Đan",
+        `Hoàn thành mẻ: thành công ${job.successCount}, xuất sắc ${job.critCount}, hỏng ${job.failCount}`,
+        "success",
+      );
+    }
+    clearAlchemyLastSettled();
+  }, [alchemyLastSettled, alchemyQueue, addToast, clearAlchemyLastSettled]);
+
   const handleLogout = useCallback(async () => {
     await logout();
     router.replace("/login");
@@ -176,15 +199,32 @@ export default function Home() {
     [addToast, startExpeditionAction],
   );
 
+  // Phase 3 — đan combat cho loadout bí cảnh (lọc từ inventory đã fetch).
+  const combatPills = useMemo(
+    () => inventory.filter((p) => p.effectKind === "combatBuff"),
+    [inventory],
+  );
+
   const handleClaimExpedition = useCallback(async () => {
     setExpeditionBusy(true);
     try {
       const result = await claimExpeditionAction();
       await refetch();
       await refetchMaterials();
+      // Phase 3 — nhấn riêng drop đặc biệt (Bí Tịch / Đan Hỏa Tủy) trong toast.
+      const biTich = result.reward.materials
+        .filter((m) => m.materialId.startsWith("bi-tich-"))
+        .reduce((sum, m) => sum + m.quantity, 0);
+      const danHoaTuy = result.reward.materials
+        .filter((m) => m.materialId === "dan-hoa-tuy")
+        .reduce((sum, m) => sum + m.quantity, 0);
+      const special = [
+        biTich > 0 ? `Bí Tịch ×${biTich}` : null,
+        danHoaTuy > 0 ? `Đan Hỏa Tủy ×${danHoaTuy}` : null,
+      ].filter(Boolean);
       addToast(
         "Nhận thưởng bí cảnh",
-        `Linh Thạch +${result.reward.linhThach} · ${result.reward.materials.length} loại nguyên liệu`,
+        `Linh Thạch +${result.reward.linhThach} · ${result.reward.materials.length} loại nguyên liệu${special.length > 0 ? ` · ${special.join(" · ")}` : ""}`,
         "success",
       );
     } catch (err) {
@@ -218,6 +258,38 @@ export default function Home() {
     },
     [addToast, enqueueAlchemyAction, refetch, refetchMaterials],
   );
+
+  const handleRankUpAlchemy = useCallback(async () => {
+    setAlchemyBusy(true);
+    try {
+      await rankUpAlchemyAction();
+      addToast("Luyện Đan", "Đã thăng cấp Đan Sư", "success");
+    } catch (err) {
+      addToast(
+        "Luyện Đan",
+        err instanceof Error ? err.message : "Không thăng cấp được",
+        "danger",
+      );
+    } finally {
+      setAlchemyBusy(false);
+    }
+  }, [addToast, rankUpAlchemyAction]);
+
+  const handleUpgradeFurnace = useCallback(async () => {
+    setAlchemyBusy(true);
+    try {
+      await upgradeFurnaceAction();
+      addToast("Luyện Đan", "Đã nâng Đan Lô", "success");
+    } catch (err) {
+      addToast(
+        "Luyện Đan",
+        err instanceof Error ? err.message : "Không nâng lò được",
+        "danger",
+      );
+    } finally {
+      setAlchemyBusy(false);
+    }
+  }, [addToast, upgradeFurnaceAction]);
 
   const handleSuccess = useCallback((result: BreakthroughResult) => {
     breakthroughResultRef.current = result;
@@ -317,6 +389,29 @@ export default function Home() {
     [congPhapOwned, levelUpCongPhapAction, refetchMaterials, refetch, addToast],
   );
 
+  // Phase 2: học môn công pháp bằng Bí Tịch + Linh Thạch.
+  const handleLearnCongPhap = useCallback(
+    async (congPhapId: string) => {
+      const def = congPhapCatalog.find((c) => c.id === congPhapId);
+      setCongPhapBusy(true);
+      try {
+        await learnCongPhapAction(congPhapId);
+        await refetchMaterials();
+        await refetch();
+        addToast("Công Pháp", `Đã học ${def?.name ?? congPhapId}`, "success");
+      } catch (err) {
+        addToast(
+          "Lỗi",
+          err instanceof Error ? err.message : "Học công pháp thất bại",
+          "danger",
+        );
+      } finally {
+        setCongPhapBusy(false);
+      }
+    },
+    [congPhapCatalog, learnCongPhapAction, refetchMaterials, refetch, addToast],
+  );
+
   const handleEquipCongPhap = useCallback(
     async (congPhapId: string, slot: number) => {
       setCongPhapBusy(true);
@@ -358,6 +453,10 @@ export default function Home() {
   const isPillDisabled = useCallback(
     (kind: PillEffectKind): { disabled: boolean; reason?: string } => {
       if (!state) return { disabled: true };
+      // Phase 3 — đan combat không consume trực tiếp; chỉ mang vào loadout bí cảnh.
+      if (kind === "combatBuff") {
+        return { disabled: true, reason: "Chỉ dùng trong loadout bí cảnh" };
+      }
       if (
         (kind === "linhKhi" || kind === "breakthroughBoost") &&
         state.isMaxStage
@@ -547,6 +646,7 @@ export default function Home() {
             />
             <AlchemyCard
               queue={alchemyQueue}
+              profile={alchemyProfile}
               inventory={materialInventory}
               loading={alchemyLoading}
               error={alchemyError ?? materialError}
@@ -583,6 +683,8 @@ export default function Home() {
         owned={congPhapOwned}
         catalog={congPhapCatalog}
         linhThach={state.linhThach}
+        realmMajor={state.realmMajor}
+        system={congPhapSystem}
         materialInventory={materialInventory}
         loading={congPhapLoading}
         error={congPhapError}
@@ -592,6 +694,7 @@ export default function Home() {
         onEquip={handleEquipCongPhap}
         onUnequip={handleUnequipCongPhap}
         onLevelUp={handleLevelUpCongPhap}
+        onLearn={handleLearnCongPhap}
       />
 
       <RedeemModal
@@ -608,6 +711,9 @@ export default function Home() {
         error={expeditionError}
         busy={expeditionBusy}
         now={now}
+        realmMajor={state?.realmMajor ?? 0}
+        battlePower={state?.battlePower ?? 0}
+        combatPills={combatPills}
         onRetry={refetchExpedition}
         onClose={() => setExpeditionDrawerOpen(false)}
         onStart={handleStartExpedition}
@@ -618,6 +724,7 @@ export default function Home() {
         open={alchemyDrawerOpen}
         recipes={alchemyRecipes}
         queue={alchemyQueue}
+        profile={alchemyProfile}
         inventory={materialInventory}
         linhThach={state.linhThach}
         loading={alchemyLoading || materialLoading}
@@ -630,6 +737,8 @@ export default function Home() {
         }}
         onClose={() => setAlchemyDrawerOpen(false)}
         onEnqueue={handleEnqueueAlchemy}
+        onRankUp={handleRankUpAlchemy}
+        onUpgradeFurnace={handleUpgradeFurnace}
       />
     </>
   );

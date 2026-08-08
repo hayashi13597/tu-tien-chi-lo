@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  findAdminCatalogError,
   validateAlchemyRecipes,
   validateExpeditionConfig,
   validateMaterialCatalog,
@@ -15,6 +16,7 @@ const material: MaterialDTO = {
   name: "Xích Viêm Tinh",
   glyph: "炎",
   rarity: 1,
+  tier: 1,
   description: "Một tinh thể nóng rực.",
   active: true,
 };
@@ -26,6 +28,9 @@ const recipe: AlchemyRecipeDTO = {
   linhThachCost: 10,
   active: true,
   ingredients: [{ materialId: material.id, quantity: 2 }],
+  tier: 1,
+  minAlchemyRank: 1,
+  baseSuccessPct: 100,
 };
 
 const branch: ExpeditionBranchDTO = {
@@ -37,6 +42,10 @@ const branch: ExpeditionBranchDTO = {
     basePower: 100,
     alchemyMaterialId: material.id,
     upgradeMaterialWeights: [{ materialId: material.id, weight: 1 }],
+    tier: 1,
+    minRealmMajor: 0,
+    recommendedPower: 0,
+    bossDropWeights: [],
   },
   difficulties: [
     {
@@ -87,6 +96,21 @@ describe("admin catalog validation", () => {
     );
   });
 
+  it("rejects a material tier outside 1–3", () => {
+    expect(
+      findAdminCatalogError(
+        validateMaterialCatalog([{ ...material, tier: 0 }]),
+        "0.tier",
+      ),
+    ).toBeDefined();
+    expect(
+      findAdminCatalogError(
+        validateMaterialCatalog([{ ...material, tier: 4 }]),
+        "0.tier",
+      ),
+    ).toBeDefined();
+  });
+
   it("rejects duplicate material ids and negative rarity", () => {
     const errors = validateMaterialCatalog([
       material,
@@ -99,6 +123,56 @@ describe("admin catalog validation", () => {
         expect.objectContaining({ path: "1.rarity" }),
       ]),
     );
+  });
+
+  it("rejects a recipe tier outside 1–3", () => {
+    expect(
+      findAdminCatalogError(
+        validateAlchemyRecipes([{ ...recipe, tier: 5 }]),
+        "0.tier",
+      ),
+    ).toBeDefined();
+  });
+
+  it("rejects baseSuccessPct outside 5–100", () => {
+    for (const baseSuccessPct of [4, 120]) {
+      expect(
+        findAdminCatalogError(
+          validateAlchemyRecipes([{ ...recipe, baseSuccessPct }]),
+          "0.baseSuccessPct",
+        ),
+      ).toBeDefined();
+    }
+  });
+
+  it("rejects minAlchemyRank lệch map bậc (tier 1→1, 2→4, 3→7)", () => {
+    expect(
+      findAdminCatalogError(
+        validateAlchemyRecipes([{ ...recipe, tier: 2, minAlchemyRank: 3 }]),
+        "0.minAlchemyRank",
+      ),
+    ).toBeDefined();
+    expect(
+      findAdminCatalogError(
+        validateAlchemyRecipes([
+          { ...recipe, tier: 2, minAlchemyRank: Number.NaN },
+        ]),
+        "0.minAlchemyRank",
+      ),
+    ).toBeDefined();
+  });
+
+  it("accepts tier/rank đúng map và baseSuccessPct ở biên", () => {
+    expect(
+      validateAlchemyRecipes([
+        { ...recipe, tier: 2, minAlchemyRank: 4, baseSuccessPct: 5 },
+      ]),
+    ).toEqual([]);
+    expect(
+      validateAlchemyRecipes([
+        { ...recipe, tier: 3, minAlchemyRank: 7, baseSuccessPct: 100 },
+      ]),
+    ).toEqual([]);
   });
 
   it("rejects invalid recipe numbers, duplicate outputs and ingredients", () => {
@@ -135,6 +209,10 @@ describe("admin catalog validation", () => {
             { materialId: material.id, weight: -1 },
             { materialId: material.id, weight: 0.5 },
           ],
+          tier: 1,
+          minRealmMajor: 0,
+          recommendedPower: 0,
+          bossDropWeights: [],
         },
       },
     ]);
@@ -147,6 +225,64 @@ describe("admin catalog validation", () => {
         }),
         expect.objectContaining({
           path: "0.branch.upgradeMaterialWeights.1.materialId",
+        }),
+      ]),
+    );
+  });
+});
+
+describe("expedition Phase 3 fields", () => {
+  it("rejects tier ngoài 1..3 hoặc không nguyên", () => {
+    for (const tier of [0, 4, 1.5]) {
+      const errors = validateExpeditionConfig([
+        { ...branch, branch: { ...branch.branch, tier } },
+      ]);
+      expect(errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ path: "0.branch.tier" }),
+        ]),
+      );
+    }
+  });
+
+  it("rejects minRealmMajor ngoài 0..10 và recommendedPower âm", () => {
+    const bad = validateExpeditionConfig([
+      {
+        ...branch,
+        branch: { ...branch.branch, minRealmMajor: 11, recommendedPower: -1 },
+      },
+    ]);
+    expect(bad).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: "0.branch.minRealmMajor" }),
+        expect.objectContaining({ path: "0.branch.recommendedPower" }),
+      ]),
+    );
+  });
+
+  it("bossDropWeights: cho phép rỗng; chặn weight âm, material lạ hoặc lặp", () => {
+    expect(validateExpeditionConfig([branch])).toEqual([]);
+    const errors = validateExpeditionConfig([
+      {
+        ...branch,
+        branch: {
+          ...branch.branch,
+          bossDropWeights: [
+            { materialId: "", weight: -1 },
+            { materialId: "bi-tich-vong-coc", weight: 1 },
+            { materialId: "bi-tich-vong-coc", weight: 1 },
+          ],
+        },
+      },
+    ]);
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: "0.branch.bossDropWeights.0.materialId",
+        }),
+        expect.objectContaining({ path: "0.branch.bossDropWeights.0.weight" }),
+        expect.objectContaining({
+          path: "0.branch.bossDropWeights.2.materialId",
         }),
       ]),
     );

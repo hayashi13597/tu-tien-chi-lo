@@ -4,15 +4,17 @@ import { UpdateMaterialAdminUseCase } from './UpdateMaterialAdminUseCase';
 import { UpdateAlchemyRecipeAdminUseCase } from './UpdateAlchemyRecipeAdminUseCase';
 import { UpdateExpeditionConfigAdminUseCase } from './UpdateExpeditionConfigAdminUseCase';
 
-const material = { id: 'xich-viem-tinh', name: 'Xích', glyph: '炎', rarity: 1, description: 'd', active: true };
+const material = { id: 'xich-viem-tinh', name: 'Xích', glyph: '炎', rarity: 1, tier: 1, description: 'd', active: true };
 const recipe = {
   id: 'recipe-hoi-khi-dan', pillId: 'hoi-khi-dan', durationSec: 1_800, linhThachCost: 10, active: true,
+  tier: 1, minAlchemyRank: 1, baseSuccessPct: 100,
   ingredients: [{ materialId: material.id, quantity: 2 }],
 };
 const branch = {
   branch: {
     id: 'hoa-vuc', name: 'Hỏa Vực', glyph: '火', description: 'd', basePower: 100, alchemyMaterialId: material.id,
     upgradeMaterialWeights: [{ materialId: 'linh-tai-khi-huyet', weight: 1 }, { materialId: 'linh-tai-than-phap', weight: 1 }, { materialId: 'linh-tai-hoa-luc', weight: 1 }],
+    tier: 1, minRealmMajor: 0, recommendedPower: 0, bossDropWeights: [],
   },
   difficulties: [
     { key: 'easy' as const, enemyMultiplier: 0.8, normalDropRate: 0.5, bossDropRate: 0.7, rewardMultiplier: 0.8, adaptiveCoefficient: 0.1 },
@@ -27,10 +29,24 @@ describe('admin catalog validation', () => {
     await expect(useCase.execute([material, { ...material, name: 'Duplicate' }])).rejects.toMatchObject({ code: 'INVALID_MATERIAL_CONFIG' });
   });
 
+  it('reject material tier ngoài 1..3', async () => {
+    const useCase = new UpdateMaterialAdminUseCase({ replace: async () => [] } as never);
+    await expect(useCase.execute([{ ...material, tier: 0 }])).rejects.toMatchObject({ code: 'INVALID_MATERIAL_CONFIG' });
+    await expect(useCase.execute([{ ...material, tier: 4 }])).rejects.toMatchObject({ code: 'INVALID_MATERIAL_CONFIG' });
+  });
+
   it('reject duplicate recipe ingredient IDs và quantity không dương', async () => {
     const useCase = new UpdateAlchemyRecipeAdminUseCase({ replace: async () => [] } as never);
     await expect(useCase.execute([{ ...recipe, ingredients: [{ materialId: 'm', quantity: 1 }, { materialId: 'm', quantity: 2 }] }])).rejects.toMatchObject({ code: 'ALCHEMY_RECIPE_INVALID' });
     await expect(useCase.execute([{ ...recipe, ingredients: [{ materialId: 'm', quantity: 0 }] }])).rejects.toMatchObject({ code: 'ALCHEMY_RECIPE_INVALID' });
+  });
+
+  it('admin được bật-tắt recipe: active:false hợp lệ ở admin path', async () => {
+    // Player path (QueueAlchemyUseCase) giữ rule "recipe phải active"; admin path
+    // quản lý vòng đời active nên validate bỏ qua cờ này.
+    const useCase = new UpdateAlchemyRecipeAdminUseCase({ replace: async (rows: unknown) => rows } as never);
+    const out = (await useCase.execute([{ ...recipe, active: false }])) as (typeof recipe)[];
+    expect(out[0].active).toBe(false);
   });
 
   it('propagate recipe pill không tồn tại từ catalog repository', async () => {
@@ -38,10 +54,34 @@ describe('admin catalog validation', () => {
     await expect(useCase.execute([recipe])).rejects.toMatchObject({ code: 'PILL_NOT_FOUND' });
   });
 
+  it.each([
+    ['tier 0', { tier: 0 }],
+    ['tier 4', { tier: 4 }],
+    ['tier không nguyên', { tier: 1.5 }],
+    ['minRealmMajor âm', { minRealmMajor: -1 }],
+    ['minRealmMajor > 10', { minRealmMajor: 11 }],
+    ['recommendedPower âm', { recommendedPower: -1 }],
+  ])('INVALID_EXPEDITION_CONFIG khi %s', async (_label, overrides) => {
+    const useCase = new UpdateExpeditionConfigAdminUseCase({ replace: async () => [] } as never);
+    await expect(useCase.execute([{ ...branch, branch: { ...branch.branch, ...overrides } }])).rejects.toMatchObject({ code: 'INVALID_EXPEDITION_CONFIG' });
+    await expect(useCase.execute([branch])).resolves.toEqual([]);
+  });
+
+  it('bossDropWeights weight âm/id rỗng → INVALID_EXPEDITION_CONFIG', async () => {
+    const useCase = new UpdateExpeditionConfigAdminUseCase({ replace: async () => [] } as never);
+    await expect(useCase.execute([{ ...branch, branch: { ...branch.branch, bossDropWeights: [{ materialId: 'm', weight: -1 }] } }])).rejects.toMatchObject({ code: 'INVALID_EXPEDITION_CONFIG' });
+    await expect(useCase.execute([{ ...branch, branch: { ...branch.branch, bossDropWeights: [{ materialId: '', weight: 1 }] } }])).rejects.toMatchObject({ code: 'INVALID_EXPEDITION_CONFIG' });
+    // hợp lệ: truyền xuống repo giữ nguyên
+    const replaced: unknown[] = [];
+    await new UpdateExpeditionConfigAdminUseCase({ replace: async (rows: unknown[]) => { replaced.push(rows); return []; } } as never)
+      .execute([{ ...branch, branch: { ...branch.branch, tier: 2, minRealmMajor: 3, recommendedPower: 600, bossDropWeights: [{ materialId: 'dan-hoa-tuy', weight: 0.3 }] } }]);
+    expect(replaced).toHaveLength(1);
+  });
+
   it('reject branch thiếu easy/normal/hard và weight âm', async () => {
     const useCase = new UpdateExpeditionConfigAdminUseCase({ replace: async () => [] } as never);
     await expect(useCase.execute([{ ...branch, difficulties: branch.difficulties.slice(0, 2) }])).rejects.toMatchObject({ code: 'INVALID_EXPEDITION_CONFIG' });
-    await expect(useCase.execute([{ ...branch, branch: { ...branch.branch, upgradeMaterialWeights: [{ materialId: 'm', weight: -1 }] } }])).rejects.toMatchObject({ code: 'INVALID_EXPEDITION_CONFIG' });
+    await expect(useCase.execute([{ ...branch, branch: { ...branch.branch, upgradeMaterialWeights: [{ materialId: 'm', weight: -1 }], tier: 1, minRealmMajor: 0, recommendedPower: 0, bossDropWeights: [] } }])).rejects.toMatchObject({ code: 'INVALID_EXPEDITION_CONFIG' });
   });
 
   it('reject reward multiplier không dương và duration ngoài whitelist', async () => {

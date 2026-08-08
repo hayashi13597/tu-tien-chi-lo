@@ -21,6 +21,19 @@ export class UpdateExpeditionConfigAdminUseCase {
           throw new DomainError('INVALID_EXPEDITION_CONFIG', `invalid difficulty: ${difficulty.key}`);
         }
       }
+      // Phase 3 — tầng/gate/chiến lực + bảng boss drop.
+      if (!Number.isInteger(row.branch.tier) || row.branch.tier < 1 || row.branch.tier > 3) {
+        throw new DomainError('INVALID_EXPEDITION_CONFIG', `branch ${row.branch.id}: tier must be 1..3`);
+      }
+      if (!Number.isInteger(row.branch.minRealmMajor) || row.branch.minRealmMajor < 0 || row.branch.minRealmMajor > 10) {
+        throw new DomainError('INVALID_EXPEDITION_CONFIG', `branch ${row.branch.id}: minRealmMajor must be 0..10`);
+      }
+      if (!(row.branch.recommendedPower >= 0)) {
+        throw new DomainError('INVALID_EXPEDITION_CONFIG', `branch ${row.branch.id}: recommendedPower must be >= 0`);
+      }
+      for (const weight of row.branch.bossDropWeights) {
+        if (!weight.materialId || weight.weight < 0) throw new DomainError('INVALID_EXPEDITION_CONFIG', `invalid boss drop weight: ${weight.materialId}`);
+      }
       for (const weight of row.branch.upgradeMaterialWeights) {
         if (!weight.materialId || weight.weight < 0) throw new DomainError('INVALID_EXPEDITION_CONFIG', `invalid upgrade weight: ${weight.materialId}`);
       }
