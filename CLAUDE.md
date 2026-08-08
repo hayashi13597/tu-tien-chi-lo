@@ -27,7 +27,7 @@ Contributor workflows are summarized in the root `AGENTS.md`; keep that guide al
 - Backend env: `JWT_SECRET`, `JWT_REFRESH_SECRET`, `CORS_ORIGIN=http://localhost:3000`, `PORT=5000`. Frontend: `NEXT_PUBLIC_API_BASE=http://localhost:5000` in `frontend/.env.local`.
 - Docker/Prisma gotcha: `node:20-alpine` needs `openssl` in the image + `linux-musl-openssl-3.0.x` binary target in `prisma/schema.prisma`, or the query engine fails to load.
 - Integration-test gotchas: pre-warm Prisma connections before racing concurrent requests (cold pool makes races non-deterministic); usernames must satisfy `registerSchema` `min(3)`.
-- Current test counts: **backend 543, frontend 139**.
+- Current test counts: **backend 544, frontend 139**.
 
 ## Backend: Phase 1 (core) + Phase 2 (cookie auth)
 
@@ -107,7 +107,7 @@ Contributor workflows are summarized in the root `AGENTS.md`; keep that guide al
 - Frontend data layer: `useExpedition`, `useMaterialInventory`, `useAlchemyQueue` lazy-load server state and refetch after mutations; `lib/expedition-display.ts` formats duration/ticket cost/reward percentage and clamps countdowns.
 - Frontend UI: `ExpeditionCard`/`ExpeditionDrawer` và `AlchemyCard`/`AlchemyDrawer` dùng server-authoritative mutations, local countdown, accessible backdrop/Escape và responsive layout; page refetches cultivation/material balances after claim/enqueue.
 - Công Pháp frontend: `CongPhapDTO` carries material upgrade config; `CongPhapCard` shows Linh Thạch + material balance and disables level-up when either is insufficient. Level-up refetches material inventory and cultivation state; `LevelUpResult.material` carries the committed balance.
-- Backend gate hiện tại: **543 tests**, frontend **139 tests**, backend `npm run build`, frontend lint/typecheck/build pass. Integration cần `backend/.env` với PostgreSQL chạy ở `localhost:5432`.
+- Backend gate hiện tại: **544 tests**, frontend **139 tests**, backend `npm run build`, frontend lint/typecheck/build pass. Integration cần `backend/.env` với PostgreSQL chạy ở `localhost:5432`.
 
 ## Luyện Đan 2.0 (Tam hệ Liên hoàn — Phase 1)
 
@@ -119,7 +119,7 @@ Contributor workflows are summarized in the root `AGENTS.md`; keep that guide al
 - Error codes mới (map ở `errorHandler`): `ALCHEMY_RANK_TOO_LOW` 409, `ALCHEMY_RANK_LOCKED` 409 (rank-up quá cấp 6), `ALCHEMY_REALM_GATE` 409, `INSUFFICIENT_DAN_KHI` 409, `ALCHEMY_FURNACE_MAX` 409, `ALCHEMY_RANK_INVALID`/`ALCHEMY_FURNACE_INVALID` 400.
 - Admin: `PUT /admin/alchemy/recipes` nhận thêm `tier`/`minAlchemyRank`/`baseSuccessPct` (validate domain `validateRecipe`: tier 1..3, T2→minRank 4); editors `/admin/materials` + `/admin/pills` có ô `tier` — round-trip T2 đã pin bằng integration test.
 - Frontend: `lib/api.ts` thêm `fetchAlchemyProfile`/`rankUpAlchemy`/`upgradeAlchemyFurnace`; `use-alchemy-queue` expose `rankUp()`/`upgradeFurnace()`; `alchemy-drawer` header Cấp Đan Sư + Đan Khí + Đan Lô (nút kèm cost, disable khi thiếu), recipe row hiển thị `effectiveSuccessPct` + badge tier + trạng thái khóa; `alchemy-card` chip "Đan Sư cấp N · Lò M"; dòng kết quả settle trong drawer: "Thành công a · Xuất sắc b · Hỏng c".
-- Trạng thái: backend **543/543**, frontend **139/139** + lint + tsc + build xanh; các tiêu chí nghiệm thu spec §9 Phase 1+2 đã verify ở API level; phần UI (header, toast, lock tooltip) nghiệm thu bằng mắt người theo quy ước repo.
+- Trạng thái: backend **544/544**, frontend **139/139** + lint + tsc + build xanh; các tiêu chí nghiệm thu spec §9 Phase 1+2 đã verify ở API level; phần UI (header, toast, lock tooltip) nghiệm thu bằng mắt người theo quy ước repo.
 
 ## Công Pháp 2.0 (Tam hệ Liên hoàn — Phase 2)
 
@@ -140,6 +140,8 @@ Contributor workflows are summarized in the root `AGENTS.md`; keep that guide al
 - Boss drop: bảng `ExpeditionBossDropWeight` — chỉ boss encounter roll thêm (rate = `bossDropRate`); seed tầng 2/3: 3 Bí Tịch (weight 1) + Đan Hỏa Tủy (0.3/0.5). Đan Hỏa Tủy chỉ tích lũy — rank 7–9 phase sau tiêu thụ.
 - Error codes mới: `EXPEDITION_REALM_GATE` 409, `LOADOUT_INVALID` 400, `PILL_NOT_CONSUMABLE` 400, `INSUFFICIENT_INVENTORY` 409. Migration `20260807190000_bi_canh_2` additive + backfill tier.
 - FE: `expedition-drawer` group theo tầng + nhánh khóa mờ + warning vàng chiến lực + 2 slot loadout (picker đan combat từ inventory); toast claim nhấn riêng Bí Tịch/Đan Hỏa Tủy; admin expeditions section "Phân Tầng" + editor boss drop; admin pills kind combatBuff + 2 select.
+- Đan combat Thiên Giai (seed-only): `pha-thien-dan` (congVatLy +50%, start) + `hoi-nguyen-dan` (khiHuyet +70%, lowHp30); 2 recipe tier 3 `minAlchemyRank 7` (domain `minRankByTier` đã có {3:7}), base 60%, duration 8h, nguyên liệu T2 số lượng lớn — không cần migration.
+- Knob cân bằng qua admin (không cần deploy): tỉ lệ Bí Tịch/Đan Hỏa Tủy = difficulty `bossDropRate` × trọng số trong editor boss drop; tầng power gate qua `recommendedPower`; giá buff đan qua `bonusPct` ở /admin/pills.
 
 ## Security hardening (backend)
 

@@ -177,6 +177,17 @@ const COMBAT_RECIPES_T2 = [
   { id: 'recipe-huyen-huyet-dan', pillId: 'huyen-huyet-dan', durationSec: 14400, linhThachCost: 120, tier: 2, minAlchemyRank: 4, baseSuccessPct: 65, ingredients: [['huyet-long-sam', 3], ['hoang-tuyen-thuy', 2], ['long-mach-sa', 2]] },
 ];
 
+// Đan combat Thiên Giai (T3): chỉ 2 trigger start/lowHp30 theo scope Phase 3.
+const COMBAT_PILLS_T3 = [
+  { id: 'pha-thien-dan', name: 'Phá Thiên Đan', glyph: '破', rarity: 4, effectKind: 'combatBuff', ...NO_STATS, bonusPct: 50, combatAttribute: 'congVatLy', combatTrigger: 'start', desc: 'Thiên uy vạn quân, tăng 50% Công Vật Lý trong suốt chuyến bí cảnh.', active: true, starterQuantity: 0, tier: 3 },
+  { id: 'hoi-nguyen-dan', name: 'Hồi Nguyên Đan', glyph: '回', rarity: 4, effectKind: 'combatBuff', ...NO_STATS, bonusPct: 70, combatAttribute: 'khiHuyet', combatTrigger: 'lowHp30', desc: 'Nguyên khí tái sinh: khi Khí Huyết tụt dưới 30%, tăng 70% Khí Huyết (một lần mỗi trận).', active: true, starterQuantity: 0, tier: 3 },
+];
+
+const COMBAT_RECIPES_T3 = [
+  { id: 'recipe-pha-thien-dan', pillId: 'pha-thien-dan', durationSec: 28800, linhThachCost: 200, tier: 3, minAlchemyRank: 7, baseSuccessPct: 60, ingredients: [['huyet-long-sam', 5], ['kim-sa-luc', 4], ['hoang-tuyen-thuy', 4], ['xich-viem-tinh', 3]] },
+  { id: 'recipe-hoi-nguyen-dan', pillId: 'hoi-nguyen-dan', durationSec: 28800, linhThachCost: 220, tier: 3, minAlchemyRank: 7, baseSuccessPct: 60, ingredients: [['nguyet-hoa-thao', 5], ['chu-tuoc-vu', 4], ['loi-minh-thach', 4], ['han-bang-ngoc', 3]] },
+];
+
 // Phase 3 — bảng drop boss theo nhánh (tầng 2/3): 3 Bí Tịch + Đan Hỏa Tủy.
 const BOSS_DROPS: Record<string, { biTich: readonly string[]; danHoaTuy: number }> = {
   'thanh-lam': { biTich: ['bi-tich-vong-coc', 'bi-tich-ngu-kiem', 'bi-tich-dieu-hoa'], danHoaTuy: 0.3 },
@@ -277,7 +288,7 @@ const TIER2_DROPS: readonly (readonly [string, string, number])[] = [
 const UPGRADE_MATERIALS = ['linh-tai-khi-huyet', 'linh-tai-than-phap', 'linh-tai-hoa-luc'] as const;
 
 async function main() {
-  for (const p of [...PILLS, ...PILLS_T2, ...COMBAT_PILLS_T2]) {
+  for (const p of [...PILLS, ...PILLS_T2, ...COMBAT_PILLS_T2, ...COMBAT_PILLS_T3]) {
     // Idempotent: re-running the seed updates definitions without duplicating.
     await prisma.pill.upsert({ where: { id: p.id }, create: p, update: p });
   }
@@ -294,7 +305,7 @@ async function main() {
     await prisma.congPhap.upsert({ where: { id: c.id }, create: c, update: c });
   }
 
-  for (const recipe of [...RECIPES, ...RECIPES_T2, ...COMBAT_RECIPES_T2]) {
+  for (const recipe of [...RECIPES, ...RECIPES_T2, ...COMBAT_RECIPES_T2, ...COMBAT_RECIPES_T3]) {
     const { ingredients, ...recipeData } = recipe;
     await prisma.alchemyRecipe.upsert({
       where: { id: recipe.id },

@@ -34,7 +34,7 @@ describe('materials/alchemy routes', () => {
 
     const recipes = await agent.get('/alchemy/recipes');
     expect(recipes.status).toBe(200);
-    expect(recipes.body).toHaveLength(19);
+    expect(recipes.body).toHaveLength(21);
     // Player view: recipe tier 1 ở rank 1 → hiệu lực đầy đủ, không locked.
     const starter = recipes.body.find((r: { id: string }) => r.id === 'recipe-hoi-khi-dan');
     expect(starter).toMatchObject({ tier: 1, minAlchemyRank: 1, baseSuccessPct: 100, effectiveSuccessPct: 100, locked: false });

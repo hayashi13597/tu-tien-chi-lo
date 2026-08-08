@@ -88,7 +88,7 @@ Lỗi trả về dạng `{ "error": { "code", "message" } }`. Endpoint `/admin/*
 ## Kiểm thử
 
 ```bash
-cd backend && npm test     # 543 test: unit (fake in-memory) + integration (Postgres thật)
+cd backend && npm test     # 544 test: unit (fake in-memory) + integration (Postgres thật)
 cd frontend && pnpm test   # 139 test logic thuần: format, realm-constants, luồng refresh của api, validation
 pnpm lint                  # Biome (frontend)
 ```

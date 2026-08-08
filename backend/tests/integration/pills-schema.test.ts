@@ -32,6 +32,18 @@ describe('pills schema + seed', () => {
     await prisma.user.delete({ where: { id: user.id } });
   });
 
+  it('Phase 3: 2 đan combat Thiên Giai + recipe minRank 7', async () => {
+    for (const [id, attr, trigger, pct] of [
+      ['pha-thien-dan', 'congVatLy', 'start', 50],
+      ['hoi-nguyen-dan', 'khiHuyet', 'lowHp30', 70],
+    ] as const) {
+      const pill = await prisma.pill.findUnique({ where: { id } });
+      expect(pill).toMatchObject({ effectKind: 'combatBuff', tier: 3, combatAttribute: attr, combatTrigger: trigger, bonusPct: pct });
+      const recipe = await prisma.alchemyRecipe.findUnique({ where: { id: `recipe-${id}` } });
+      expect(recipe).toMatchObject({ tier: 3, minAlchemyRank: 7, baseSuccessPct: 60 });
+    }
+  });
+
   it('seeds every pill active with a zero starter quantity (no starter kit)', async () => {
     const ids = [
       'hoi-khi-dan', 'tu-linh-dan', 'cuu-chuyen-kim-dan', 'tinh-tam-dan',
